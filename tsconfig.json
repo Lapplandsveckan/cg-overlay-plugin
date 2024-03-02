@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "outDir": "./out",
+    "declaration": true,
+    "declarationDir": "./dist",
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "jsx": "react",
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}
