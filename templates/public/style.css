@@ -1,18 +1,4 @@
-:root {
-    /*--primary: #279B61;*/
-    /*--secondary: #136C40;*/
-
-    --primary: #1F7A4D;
-    --secondary: #0B4126;
-
-    --primary-bg: #D1FAE5;
-
-
-    --text-primary: hsl(0, 60%, 50%);
-    --text-secondary: hsl(0, 90%, 30%);
-}
-
-body {
+:root, body, #__next {
     display: flex;
     overflow: hidden;
 

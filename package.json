@@ -22,15 +22,21 @@
   ],
   "scripts": {
     "tsc": "tsc --noEmit",
-    "build": "webpack && node build.js",
-    "watch": "webpack --watch"
+    "build": "webpack",
+    "watch": "webpack --watch",
+    "dev": "next ./templates dev",
+    "package": "node package.js"
   },
   "dependencies": {
     "@babel/preset-react": "^7.23.3",
+    "@gsap/react": "^2.1.0",
     "@lappis/cg-manager": "^0.0.4",
     "@mui/material": "^5.15.11",
     "babel-loader": "^8.2.5",
+    "gsap": "^3.12.5",
+    "next": "^14.1.1",
     "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "ts-node": "^10.9.1"
   }
 }

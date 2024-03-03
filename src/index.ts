@@ -1,11 +1,12 @@
 import path from 'path';
 import {SwishEffect, SwishEffectOptions} from './effects/swish';
 import {CasparPlugin, UI_INJECTION_ZONE} from '@lappis/cg-manager';
+import {Templates} from './templates';
 
 export default class VideoPlugin extends CasparPlugin {
     private effect: SwishEffect;
     private swishState = -1;
-    private templateRoot: string;
+    private templates: Templates;
 
     public static get pluginName() {
         return 'overlay';
@@ -20,10 +21,7 @@ export default class VideoPlugin extends CasparPlugin {
             (group, options) => new SwishEffect(group, options as SwishEffectOptions),
         );
 
-        this.api.registerFile('template', path.join(__dirname, 'templates'))
-            .then(template => this.templateRoot = template.identifier)
-            .then(() => this.initialize());
-
+        this.templates = new Templates(() => this.initialize());
         this.api.registerRoute('swish', async req => {
             this.toggleSwish();
         }, "ACTION");
@@ -36,10 +34,13 @@ export default class VideoPlugin extends CasparPlugin {
             this.effect.dispose();
             this.effect = null;
         }
+
+        this.templates.dispose();
+        this.templates = null;
     }
 
     private initialize() {
-        const template = `${this.templateRoot}/SWISH/INDEX`;
+        const template = this.templates.getFilePath('swish');
         this.effect = this.api.createEffect('swish', '1:overlay', {
             template,
             number: '070 797 78 20',

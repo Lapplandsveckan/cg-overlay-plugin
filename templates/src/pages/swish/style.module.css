@@ -6,7 +6,7 @@
     width: 100vw;
     height: 110vh;
 
-    background-image: url(../images/banner1.png);
+    background-image: url(/images/banner1.png);
     background-size: 100vw 110vh;
     background-repeat: no-repeat;
 }
@@ -118,6 +118,8 @@
     text-anchor: middle;
     alignment-baseline: middle;
 }
+
+.swish__sliding__top, .swish__sliding__bottom {}
 
 /* Animation of the sliding swish texts */
 
