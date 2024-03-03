@@ -27,6 +27,7 @@ export const SwishAnimation: React.FC<{ number: string, state: number }> = ({ nu
         if (state === prevState) return;
         setPrevState(state);
 
+        if (timeline.current) timeline.current.kill();
         const tl = timeline.current = gsap.timeline({
             defaults: {
                 duration: 2,

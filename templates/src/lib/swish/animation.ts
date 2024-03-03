@@ -97,9 +97,6 @@ function handleMinimize(tl: gsap.core.Timeline, styles: Record<string, string>, 
 
 function handleHide(tl: gsap.core.Timeline, styles: Record<string, string>) {
     tl.clear();
-    // if there is currently a delay, it will not be cleared
-    // so if you want to hide directly after a minimize, it will not work
-    // TODO: fix this ^^
 
     tl.to(styles.swish__main, {
         top: '-110%',
