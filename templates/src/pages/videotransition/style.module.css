@@ -1,0 +1,27 @@
+.container {
+    position: absolute;
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    width: 100vw;
+    height: 100vh;
+
+    margin: 0;
+    padding: 0;
+
+    overflow: hidden;
+    top: -100%;
+
+    background-image: url(/images/banner1.png);
+    background-size: 100vw 110vh;
+    background-repeat: no-repeat;
+}
+
+.container .banner-logo {
+    position: absolute;
+    font-size: 250px;
+    color: #FFF;
+    transform: translate(-50px, 30px);
+}

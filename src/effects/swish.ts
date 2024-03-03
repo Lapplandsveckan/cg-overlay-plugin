@@ -1,21 +1,20 @@
 import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
 
 export interface SwishEffectOptions {
-    template: string;
     number: string;
 }
 
 export class SwishEffect extends Effect {
     private options: SwishEffectOptions;
 
-    public constructor(group: EffectGroup, options: SwishEffectOptions) {
+    public constructor(group: EffectGroup, options: SwishEffectOptions, template: string) {
         super(group);
 
         this.options = options;
         this.allocateLayers(1);
         this.executor.executeAllocations();
 
-        const cmd = CgCommand.add(this.options.template, false, { number: this.options.number });
+        const cmd = CgCommand.add(template, false, { number: this.options.number });
         cmd.allocate(this.layer);
 
         this.executor.execute(cmd)
@@ -63,7 +62,7 @@ export class SwishEffect extends Effect {
 
     public getMetadata(): {} {
         return {
-
+            number: this.options.number,
         };
     }
 }

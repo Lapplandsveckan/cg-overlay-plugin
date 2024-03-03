@@ -3,6 +3,7 @@ import {SwishEffect, SwishEffectOptions} from './effects/swish';
 import {CasparPlugin, UI_INJECTION_ZONE} from '@lappis/cg-manager';
 import {Templates} from './templates';
 import {NamnskyltEffect, NamnskyltEffectOptions} from './effects/namnskylt';
+import {VideoTransitionEffect, VideoTransitionEffectOptions} from './effects/videotransition';
 
 export default class VideoPlugin extends CasparPlugin {
     private effect: SwishEffect;
@@ -14,20 +15,39 @@ export default class VideoPlugin extends CasparPlugin {
     }
 
     protected onEnable() {
+        this.templates = new Templates(() => this.initialize());
+
         // TODO: sanitize options input, verify that the options are valid
         this.api.getEffectGroup('1:overlay'); // TODO: not hardcode channel
 
         this.api.registerEffect(
             'swish',
-            (group, options) => new SwishEffect(group, options as SwishEffectOptions),
+            (group, options) => new SwishEffect(
+                group,
+                options as SwishEffectOptions,
+                this.templates.getFilePath('swish'),
+            ),
         );
 
         this.api.registerEffect(
             'namnskylt',
-            (group, options) => new NamnskyltEffect(group, options as NamnskyltEffectOptions),
+            (group, options) => new NamnskyltEffect(
+                group,
+                options as NamnskyltEffectOptions,
+                this.templates.getFilePath('namnskylt'),
+            ),
         );
 
-        this.templates = new Templates(() => this.initialize());
+        this.api.registerEffect(
+            'videotransition',
+            (group, options) => new VideoTransitionEffect(
+                group,
+                options as VideoTransitionEffectOptions,
+                this.templates.getFilePath('videotransition'),
+            ),
+        );
+
+        // These are debug api routes, could be removed at a later date
         this.api.registerRoute('swish', async req => {
             this.toggleSwish();
         }, "ACTION");
@@ -38,6 +58,10 @@ export default class VideoPlugin extends CasparPlugin {
 
             const {name} = data as {name: string};
             this.showNamnskylt(name);
+        }, "ACTION");
+
+        this.api.registerRoute('videotransition', async req => {
+            this.showVideoTransition();
         }, "ACTION");
 
         this.api.registerUI(UI_INJECTION_ZONE.EFFECT_CREATOR, path.join(__dirname, 'ui', 'overlay'));
@@ -54,19 +78,25 @@ export default class VideoPlugin extends CasparPlugin {
     }
 
     private initialize() {
-        const template = this.templates.getFilePath('swish');
         this.effect = this.api.createEffect('swish', '1:overlay', {
-            template,
             number: '070 797 78 20',
         }) as SwishEffect;
     }
 
     private showNamnskylt(name: string) {
-        const template = this.templates.getFilePath('namnskylt');
-        const effect = this.api.createEffect('namnskylt', '1:overlay', { name, template });
+        const effect = this.api.createEffect('namnskylt', '1:overlay', { name });
         effect.activate().catch(err => {
             effect.dispose();
             this.logger.error('Failed to activate namnskylt effect');
+            this.logger.error(err);
+        });
+    }
+
+    private showVideoTransition() {
+        const effect = this.api.createEffect('videotransition', '1:overlay', {});
+        effect.activate().catch(err => {
+            effect.dispose();
+            this.logger.error('Failed to activate videotransition effect');
             this.logger.error(err);
         });
     }

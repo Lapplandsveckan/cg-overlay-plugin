@@ -1,26 +1,20 @@
 import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
 
-export interface NamnskyltEffectOptions {
-    name: string;
+export interface VideoTransitionEffectOptions {
 
-    totalDuration?: number;
-    largeDuration?: number;
 }
 
-export class NamnskyltEffect extends Effect {
-    private options: NamnskyltEffectOptions;
+export class VideoTransitionEffect extends Effect {
+    private options: VideoTransitionEffectOptions;
 
-    public constructor(group: EffectGroup, options: NamnskyltEffectOptions, template: string) {
+    public constructor(group: EffectGroup, options: VideoTransitionEffectOptions, template: string) {
         super(group);
 
-        this.options = Object.assign({
-            totalDuration: 10000,
-            largeDuration: 3000,
-        }, options);
+        this.options = options;
         this.allocateLayers(1);
         this.executor.executeAllocations();
 
-        const cmd = CgCommand.add(template, false, { name: this.options.name });
+        const cmd = CgCommand.add(template, false);
         cmd.allocate(this.layer);
 
         this.executor.execute(cmd)
@@ -36,22 +30,12 @@ export class NamnskyltEffect extends Effect {
 
         setTimeout(() => {
             if (!this.active) return;
-            this.minimize();
-
-            setTimeout(() => this.deactivate(), this.options.totalDuration - this.options.largeDuration);
-        }, this.options.largeDuration);
+            this.deactivate();
+        }, 2000);
 
         return this.executor.execute(
             CgCommand
                 .play()
-                .allocate(this.layer),
-        );
-    }
-
-    private minimize() {
-        return this.executor.execute(
-            CgCommand
-                .next()
                 .allocate(this.layer),
         );
     }
@@ -73,7 +57,7 @@ export class NamnskyltEffect extends Effect {
 
     public getMetadata(): {} {
         return {
-            name: this.options.name,
+
         };
     }
 }
