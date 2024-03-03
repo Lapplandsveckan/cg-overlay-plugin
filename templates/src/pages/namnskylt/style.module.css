@@ -1,0 +1,41 @@
+.namnskylt__main {
+    position: absolute;
+    left: 0;
+    top: -100vh;
+
+    width: 100vw;
+    height: 100vh;
+
+    /* background: #D1FAE5; */
+    background-image: url(/images/banner1.png);
+    background-size: 100vw;
+    background-repeat: no-repeat;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.namnskylt__main__name {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    position: absolute;
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -50%);
+
+    width: 100vw;
+    height: 100vh;
+
+    font-size: 10vh;
+    font-weight: 900;
+
+    text-align: center;
+    text-transform: uppercase;
+
+    /* color: #1F7A4D; */
+    color: white;
+}

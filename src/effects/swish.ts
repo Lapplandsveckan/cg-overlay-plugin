@@ -25,6 +25,7 @@ export class SwishEffect extends Effect {
     public get layer() {
         return this.layers[0];
     }
+
     public activate() {
         if (!super.activate()) return;
         return this.executor.execute(
@@ -47,6 +48,15 @@ export class SwishEffect extends Effect {
         return this.executor.execute(
             CgCommand
                 .stop()
+                .allocate(this.layer),
+        );
+    }
+
+    public setNumber(number: string) {
+        this.options.number = number;
+        return this.executor.execute(
+            CgCommand
+                .update({ number: this.options.number })
                 .allocate(this.layer),
         );
     }

@@ -2,6 +2,7 @@ import path from 'path';
 import {SwishEffect, SwishEffectOptions} from './effects/swish';
 import {CasparPlugin, UI_INJECTION_ZONE} from '@lappis/cg-manager';
 import {Templates} from './templates';
+import {NamnskyltEffect, NamnskyltEffectOptions} from './effects/namnskylt';
 
 export default class VideoPlugin extends CasparPlugin {
     private effect: SwishEffect;
@@ -21,9 +22,22 @@ export default class VideoPlugin extends CasparPlugin {
             (group, options) => new SwishEffect(group, options as SwishEffectOptions),
         );
 
+        this.api.registerEffect(
+            'namnskylt',
+            (group, options) => new NamnskyltEffect(group, options as NamnskyltEffectOptions),
+        );
+
         this.templates = new Templates(() => this.initialize());
         this.api.registerRoute('swish', async req => {
             this.toggleSwish();
+        }, "ACTION");
+
+        this.api.registerRoute('namnskylt', async req => {
+            const data = req.getData();
+            if (typeof data !== 'object') return null; // throw new WebError('Invalid request data', 400);
+
+            const {name} = data as {name: string};
+            this.showNamnskylt(name);
         }, "ACTION");
 
         this.api.registerUI(UI_INJECTION_ZONE.EFFECT_CREATOR, path.join(__dirname, 'ui', 'overlay'));
@@ -45,6 +59,16 @@ export default class VideoPlugin extends CasparPlugin {
             template,
             number: '070 797 78 20',
         }) as SwishEffect;
+    }
+
+    private showNamnskylt(name: string) {
+        const template = this.templates.getFilePath('namnskylt');
+        const effect = this.api.createEffect('namnskylt', '1:overlay', { name, template });
+        effect.activate().catch(err => {
+            effect.dispose();
+            this.logger.error('Failed to activate namnskylt effect');
+            this.logger.error(err);
+        });
     }
 
     private toggleSwish() {

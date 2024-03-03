@@ -7,6 +7,10 @@ async function toggleSwish(conn: any) {
     await conn.rawRequest('/api/plugin/overlay/swish', 'ACTION', {});
 }
 
+async function showNamnskylt(conn: any, name: string) {
+    await conn.rawRequest('/api/plugin/overlay/namnskylt', 'ACTION', { name });
+}
+
 const SwishTest = () => {
     const conn = useSocket();
 
@@ -15,7 +19,12 @@ const SwishTest = () => {
             <Button
                 onClick={() => toggleSwish(conn)}
             >
-                Template
+                Swish
+            </Button>
+            <Button
+                onClick={() => showNamnskylt(conn, 'Eliyah Sundström')}
+            >
+                Namnskylt
             </Button>
         </>
     );
