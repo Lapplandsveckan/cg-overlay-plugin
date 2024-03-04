@@ -1,13 +1,13 @@
 import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
 
-export interface SwishEffectOptions {
+export interface SwishWallEffectOptions {
     number: string;
 }
 
-export class SwishEffect extends Effect {
-    private options: SwishEffectOptions;
+export class SwishWallEffect extends Effect {
+    private options: SwishWallEffectOptions;
 
-    public constructor(group: EffectGroup, options: SwishEffectOptions, template: string) {
+    public constructor(group: EffectGroup, options: SwishWallEffectOptions, template: string) {
         super(group);
 
         this.options = options;
@@ -30,14 +30,6 @@ export class SwishEffect extends Effect {
         return this.executor.execute(
             CgCommand
                 .play()
-                .allocate(this.layer),
-        );
-    }
-
-    public minimize() {
-        return this.executor.execute(
-            CgCommand
-                .next()
                 .allocate(this.layer),
         );
     }

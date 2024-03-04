@@ -1,10 +1,10 @@
 import styles from './style.module.css';
 import {useEffect, useRef, useState} from 'react';
-import {register} from '../../lib/videotransition/cg';
+import {register} from '../../../lib/wall/videotransition/cg';
 import { gsap } from 'gsap';
 import {useGSAP} from '@gsap/react';
-import {handleState} from '../../lib/videotransition/animation';
-import {getStylesProxy} from '../../lib/animation';
+import {handleState} from '../../../lib/wall/videotransition/animation';
+import {getStylesProxy} from '../../../lib/animation';
 
 export const VideoTransitionAnimation: React.FC<{ state: number }> = ({ state }) => {
     const ref = useRef<HTMLDivElement>(null);
@@ -24,6 +24,7 @@ export const VideoTransitionAnimation: React.FC<{ state: number }> = ({ state })
         });
 
         tl.addLabel('start');
+        tl.addLabel('mid');
         tl.addLabel('end');
 
         handleState(tl, state, prevState, getStylesProxy(styles));
@@ -32,7 +33,8 @@ export const VideoTransitionAnimation: React.FC<{ state: number }> = ({ state })
     return (
         <div ref={ref}>
             <main className={styles.container}>
-                <img className={styles['banner-logo']} src="/images/mod-white.png" alt="Lappis - Mod"/>
+                <img className={`${styles['banner-logo']} ${styles['banner-logo-1']}`} src="/images/mod-white.png" alt="Lappis - Mod"/>
+                <img className={`${styles['banner-logo']} ${styles['banner-logo-2']}`} src="/images/mod-white.png" alt="Lappis - Mod"/>
             </main>
         </div>
     );

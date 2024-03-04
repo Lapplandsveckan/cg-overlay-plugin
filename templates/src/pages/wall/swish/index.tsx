@@ -1,10 +1,10 @@
 import styles from './style.module.css';
 import {useEffect, useRef, useState} from 'react';
-import {register} from '../../lib/swish/cg';
+import {register} from '../../../lib/wall/swish/cg';
 import { gsap } from 'gsap';
 import {useGSAP} from '@gsap/react';
-import {handleState} from '../../lib/swish/animation';
-import {getStylesProxy} from '../../lib/animation';
+import {handleState} from '../../../lib/wall/swish/animation';
+import {getStylesProxy} from '../../../lib/animation';
 
 export const SlidingSwish: React.FC<{ count: number, className: string }> = ({ count, className }) => {
     return (
@@ -36,7 +36,6 @@ export const SwishAnimation: React.FC<{ number: string, state: number }> = ({ nu
         });
 
         tl.addLabel('start');
-        tl.addLabel('mid');
         tl.addLabel('end');
 
         handleState(tl, state, prevState, getStylesProxy(styles));
@@ -45,25 +44,12 @@ export const SwishAnimation: React.FC<{ number: string, state: number }> = ({ nu
     return (
         <div ref={ref}>
             <div className={styles.swish__main}>
-                <div className={styles.swish__wrapper}>
-                    <div className={styles.swish__sliding}>
-                        <div className={`${styles.swish__sliding__section} ${styles.swish__sliding__top}`}>
-                            <SlidingSwish className={styles.swish__sliding__top_top} count={6} />
-                            <SlidingSwish className={styles.swish__sliding__top_bottom} count={6} />
-                        </div>
-                        <div className={`${styles.swish__sliding__section} ${styles.swish__sliding__bottom}`}>
-                            <SlidingSwish className={styles.swish__sliding__bottom_top} count={6} />
-                            <SlidingSwish className={styles.swish__sliding__bottom_bottom} count={6} />
-                        </div>
-                    </div>
-
-                    <div className={styles.swish__number}>{number}</div>
-
-                    <div className={styles.swish__top}>
-                        <div className={styles.swish_top_element}>Swish</div>
-                        <div className={styles.swish_top_element}>Swish</div>
-                    </div>
+                <div className={styles.swish__sliding}>
+                    <SlidingSwish className={styles.swish__sliding__top} count={6} />
+                    <SlidingSwish className={styles.swish__sliding__bottom} count={6} />
                 </div>
+
+                <div className={styles.swish__number}>{number}</div>
             </div>
         </div>
     );

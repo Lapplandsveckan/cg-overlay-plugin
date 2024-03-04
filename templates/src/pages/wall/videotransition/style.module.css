@@ -1,0 +1,36 @@
+.container {
+    position: absolute;
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    width: 100vw;
+    height: 100vh;
+
+    margin: 0;
+    padding: 0;
+
+    overflow: hidden;
+    /* top: -100%; */
+    opacity: 0;
+
+    background-image: url(/images/banner1.png);
+    background-size: 100vw 200vh;
+    background-repeat: no-repeat;
+
+    background-position: 0% 50%;
+}
+
+.container .banner-logo {
+    position: absolute;
+    color: #FFF;
+
+    width: 50%;
+
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.banner-logo-1 {}
+.banner-logo-2 {}

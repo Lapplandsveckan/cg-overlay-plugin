@@ -1,12 +1,15 @@
 import path from 'path';
-import {SwishEffect, SwishEffectOptions} from './effects/swish';
 import {CasparPlugin, UI_INJECTION_ZONE} from '@lappis/cg-manager';
 import {Templates} from './templates';
-import {NamnskyltEffect, NamnskyltEffectOptions} from './effects/namnskylt';
-import {VideoTransitionEffect, VideoTransitionEffectOptions} from './effects/videotransition';
+import {SwishOverlayEffect, SwishOverlayEffectOptions} from './effects/overlay/swish';
+import {NamnskyltOverlayEffect, NamnskyltOverlayEffectOptions} from './effects/overlay/namnskylt';
+import {VideoTransitionOverlayEffect, VideoTransitionOverlayEffectOptions} from './effects/overlay/videotransition';
+import {SwishWallEffect, SwishWallEffectOptions} from './effects/wall/swish';
+import {NamnskyltWallEffect, NamnskyltWallEffectOptions} from './effects/wall/namnskylt';
+import {VideoTransitionWallEffect, VideoTransitionWallEffectOptions} from './effects/wall/videotransition';
 
 export default class VideoPlugin extends CasparPlugin {
-    private effect: SwishEffect;
+    private swish: { overlay: SwishOverlayEffect, wall: SwishWallEffect } = null;
     private swishState = -1;
     private templates: Templates;
 
@@ -18,32 +21,60 @@ export default class VideoPlugin extends CasparPlugin {
         this.templates = new Templates(() => this.initialize());
 
         // TODO: sanitize options input, verify that the options are valid
-        this.api.getEffectGroup('1:overlay'); // TODO: not hardcode channel
+        this.api.getEffectGroup('1:overlay'); // overlay, TODO: not hardcode channel
+        this.api.getEffectGroup('2:overlay'); // wall, TODO: not hardcode channel
 
         this.api.registerEffect(
-            'swish',
-            (group, options) => new SwishEffect(
+            'overlay-swish',
+            (group, options) => new SwishOverlayEffect(
                 group,
-                options as SwishEffectOptions,
-                this.templates.getFilePath('swish'),
+                options as SwishOverlayEffectOptions,
+                this.templates.getFilePath('overlay/swish'),
             ),
         );
 
         this.api.registerEffect(
-            'namnskylt',
-            (group, options) => new NamnskyltEffect(
+            'overlay-namnskylt',
+            (group, options) => new NamnskyltOverlayEffect(
                 group,
-                options as NamnskyltEffectOptions,
-                this.templates.getFilePath('namnskylt'),
+                options as NamnskyltOverlayEffectOptions,
+                this.templates.getFilePath('overlay/namnskylt'),
             ),
         );
 
         this.api.registerEffect(
-            'videotransition',
-            (group, options) => new VideoTransitionEffect(
+            'overlay-videotransition',
+            (group, options) => new VideoTransitionOverlayEffect(
                 group,
-                options as VideoTransitionEffectOptions,
-                this.templates.getFilePath('videotransition'),
+                options as VideoTransitionOverlayEffectOptions,
+                this.templates.getFilePath('overlay/videotransition'),
+            ),
+        );
+
+        this.api.registerEffect(
+            'wall-swish',
+            (group, options) => new SwishWallEffect(
+                group,
+                options as SwishWallEffectOptions,
+                this.templates.getFilePath('wall/swish'),
+            ),
+        );
+
+        this.api.registerEffect(
+            'wall-namnskylt',
+            (group, options) => new NamnskyltWallEffect(
+                group,
+                options as NamnskyltWallEffectOptions,
+                this.templates.getFilePath('wall/namnskylt'),
+            ),
+        );
+
+        this.api.registerEffect(
+            'wall-videotransition',
+            (group, options) => new VideoTransitionWallEffect(
+                group,
+                options as VideoTransitionWallEffectOptions,
+                this.templates.getFilePath('wall/videotransition'),
             ),
         );
 
@@ -68,9 +99,10 @@ export default class VideoPlugin extends CasparPlugin {
     }
 
     protected onDisable() {
-        if (this.effect) {
-            this.effect.dispose();
-            this.effect = null;
+        if (this.swish) {
+            this.swish.overlay.dispose();
+            this.swish.wall.dispose();
+            this.swish = null;
         }
 
         this.templates.dispose();
@@ -78,27 +110,40 @@ export default class VideoPlugin extends CasparPlugin {
     }
 
     private initialize() {
-        this.effect = this.api.createEffect('swish', '1:overlay', {
-            number: '070 797 78 20',
-        }) as SwishEffect;
+        this.swish = {
+            overlay: this.api.createEffect('overlay-swish', '1:overlay', {
+                number: '070 797 78 20',
+            }) as SwishOverlayEffect,
+            wall: this.api.createEffect('wall-swish', '2:overlay', {
+                number: '070 797 78 20',
+            }) as SwishWallEffect,
+        };
     }
 
     private showNamnskylt(name: string) {
-        const effect = this.api.createEffect('namnskylt', '1:overlay', { name });
-        effect.activate().catch(err => {
-            effect.dispose();
-            this.logger.error('Failed to activate namnskylt effect');
-            this.logger.error(err);
-        });
+        const overlay = this.api.createEffect('overlay-namnskylt', '1:overlay', { name });
+        const wall = this.api.createEffect('wall-namnskylt', '2:overlay', { name });
+
+        Promise
+            .all([wall.activate(), overlay.activate()])
+            .catch(err => {
+                this.logger.error('Failed to activate namnskylt effect');
+                this.logger.error(err);
+            });
     }
 
     private showVideoTransition() {
-        const effect = this.api.createEffect('videotransition', '1:overlay', {});
-        effect.activate().catch(err => {
-            effect.dispose();
-            this.logger.error('Failed to activate videotransition effect');
-            this.logger.error(err);
-        });
+        // TODO: do something with the wall video transition, it does not go away by itself
+
+        const overlay = this.api.createEffect('overlay-videotransition', '1:overlay', {});
+        const wall = this.api.createEffect('wall-videotransition', '2:overlay', {});
+
+        Promise
+            .all([wall.activate(), overlay.activate()])
+            .catch(err => {
+                this.logger.error('Failed to activate videotransition effect');
+                this.logger.error(err);
+            });
     }
 
     private toggleSwish() {
@@ -106,25 +151,28 @@ export default class VideoPlugin extends CasparPlugin {
 
         switch (this.swishState) {
             case 0:
-                this.effect.activate().catch(err => {
-                    this.effect = null;
-                    this.logger.error('Failed to activate swish effect');
-                    this.logger.error(err);
-                });
+                Promise
+                    .all([this.swish.overlay.activate(), this.swish.wall.activate()])
+                    .catch(err => {
+                        this.logger.error('Failed to activate swish effect');
+                        this.logger.error(err);
+                    });
                 break;
             case 1:
-                this.effect.minimize().catch(err => {
-                    this.effect = null;
-                    this.logger.error('Failed to minimize swish effect');
-                    this.logger.error(err);
-                });
+                this.swish.overlay
+                    .minimize()
+                    .catch(err => {
+                        this.logger.error('Failed to minimize swish effect');
+                        this.logger.error(err);
+                    });
                 break;
             case 2:
-                this.effect.deactivate().catch(err => {
-                    this.effect = null;
-                    this.logger.error('Failed to deactivate swish effect');
-                    this.logger.error(err);
-                });
+                Promise
+                    .all([this.swish.overlay.deactivate(), this.swish.wall.deactivate()])
+                    .catch(err => {
+                        this.logger.error('Failed to deactivate swish effect');
+                        this.logger.error(err);
+                    });
                 break;
         }
     }

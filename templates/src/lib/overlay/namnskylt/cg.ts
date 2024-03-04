@@ -1,4 +1,4 @@
-import {offCGEvent, onCGEvent} from '../cg';
+import {offCGEvent, onCGEvent} from '../../cg';
 
 // state
 // 0: hidden

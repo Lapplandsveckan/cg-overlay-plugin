@@ -1,10 +1,10 @@
 import styles from './style.module.css';
 import {useEffect, useRef, useState} from 'react';
-import {register} from '../../lib/namnskylt/cg';
+import {register} from '../../../lib/overlay/namnskylt/cg';
 import { gsap } from 'gsap';
 import {useGSAP} from '@gsap/react';
-import {handleState} from '../../lib/namnskylt/animation';
-import {getStylesProxy} from '../../lib/animation';
+import {handleState} from '../../../lib/overlay/namnskylt/animation';
+import {getStylesProxy} from '../../../lib/animation';
 
 export const NamnskyltAnimation: React.FC<{ name: string, state: number }> = ({ name, state }) => {
     const ref = useRef<HTMLDivElement>(null);
