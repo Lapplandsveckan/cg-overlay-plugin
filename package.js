@@ -75,7 +75,7 @@ async function package() {
     await packageTemplates();
 
     console.log('Packaging plugin...');
-    await fs.rm(path.join(root, 'overlay-plugin'), { recursive: true });
+    await fs.rm(path.join(root, 'overlay-plugin'), { recursive: true }).catch(() => null);
     await fs.rename(path.join(root, 'dist'), path.join(root, 'overlay-plugin'));
 }
 

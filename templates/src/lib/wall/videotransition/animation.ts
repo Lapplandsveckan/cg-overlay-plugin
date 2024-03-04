@@ -32,8 +32,6 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
 }
 
 function handleSides(tl: gsap.core.Timeline, styles: Record<string, string>) {
-    tl.clear();
-
     tl.to(styles['banner-logo-1'], {
         left: '0%',
         width: '25%',

@@ -25,7 +25,8 @@
     "build": "webpack",
     "watch": "webpack --watch",
     "dev": "next ./templates dev",
-    "package": "node package.js"
+    "package": "node package.js",
+    "serve": "node serve.js"
   },
   "dependencies": {
     "@babel/preset-react": "^7.23.3",
