@@ -1,10 +1,9 @@
 import styles from './style.module.css';
-import {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {register} from '../../../lib/overlay/swish/cg';
-import { gsap } from 'gsap';
-import {useGSAP} from '@gsap/react';
 import {handleState} from '../../../lib/overlay/swish/animation';
 import {getStylesProxy} from '../../../lib/animation';
+import {CG} from '../../../components/CG';
 
 export const SlidingSwish: React.FC<{ count: number, className: string }> = ({ count, className }) => {
     return (
@@ -19,31 +18,14 @@ export const SlidingSwish: React.FC<{ count: number, className: string }> = ({ c
 }
 
 export const SwishAnimation: React.FC<{ number: string, state: number }> = ({ number, state }) => {
-    const ref = useRef<HTMLDivElement>(null);
-    const timeline = useRef<gsap.core.Timeline>();
-    const [prevState, setPrevState] = useState<number>(state);
-
-    useGSAP(() => {
-        if (state === prevState) return;
-        setPrevState(state);
-
-        if (timeline.current) timeline.current.kill();
-        const tl = timeline.current = gsap.timeline({
-            defaults: {
-                duration: 2,
-                ease: 'power2.inOut',
-            },
-        });
-
-        tl.addLabel('start');
-        tl.addLabel('mid');
-        tl.addLabel('end');
-
-        handleState(tl, state, prevState, getStylesProxy(styles));
-    }, { scope: ref, dependencies: [state] });
-
     return (
-        <div ref={ref}>
+        <CG
+            state={state}
+            handle={handleState}
+
+            labels={['start', 'mid', 'end']}
+            styles={getStylesProxy(styles)}
+        >
             <div className={styles.swish__main}>
                 <div className={styles.swish__wrapper}>
                     <div className={styles.swish__sliding}>
@@ -65,7 +47,7 @@ export const SwishAnimation: React.FC<{ number: string, state: number }> = ({ nu
                     </div>
                 </div>
             </div>
-        </div>
+        </CG>
     );
 };
 

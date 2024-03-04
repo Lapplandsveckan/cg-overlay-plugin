@@ -36,7 +36,7 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
 }
 
 function handleMinimize(tl: gsap.core.Timeline, styles: Record<string, string>, prevState: number) {
-    tl.clear();
+    // tl.clear();
 
     let delay = 0.3;
     if (prevState === 0) {

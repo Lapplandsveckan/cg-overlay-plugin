@@ -1,40 +1,23 @@
 import styles from './style.module.css';
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {register} from '../../../lib/wall/namnskylt/cg';
-import { gsap } from 'gsap';
-import {useGSAP} from '@gsap/react';
 import {handleState} from '../../../lib/wall/namnskylt/animation';
 import {getStylesProxy} from '../../../lib/animation';
+import {CG} from '../../../components/CG';
 
 export const NamnskyltAnimation: React.FC<{ name: string, state: number }> = ({ name, state }) => {
-    const ref = useRef<HTMLDivElement>(null);
-    const timeline = useRef<gsap.core.Timeline>();
-    const [prevState, setPrevState] = useState<number>(state);
-
-    useGSAP(() => {
-        if (state === prevState) return;
-        setPrevState(state);
-
-        if (timeline.current) timeline.current.kill();
-        const tl = timeline.current = gsap.timeline({
-            defaults: {
-                duration: 2,
-                ease: 'power2.inOut',
-            },
-        });
-
-        tl.addLabel('start');
-        tl.addLabel('end');
-
-        handleState(tl, state, prevState, getStylesProxy(styles));
-    }, { scope: ref, dependencies: [state] });
-
     return (
-        <div ref={ref}>
+        <CG
+            state={state}
+            handle={handleState}
+
+            labels={['start', 'end']}
+            styles={getStylesProxy(styles)}
+        >
             <div className={styles.namnskylt__main}>
                 <div className={styles.namnskylt__main__name}>{name}</div>
             </div>
-        </div>
+        </CG>
     );
 };
 

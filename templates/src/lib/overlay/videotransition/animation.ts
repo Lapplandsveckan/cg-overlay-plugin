@@ -8,12 +8,12 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
 
     tl.set(styles['banner-logo'], {
         left: '0%',
-    }, 'end');
+    });
 
     tl.set(styles.container, {
         left: '0%',
         top: '-100%',
-    }, 'end');
+    });
 
     // Move the logo
     tl.from(styles['banner-logo'], {
@@ -31,7 +31,7 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
 }
 
 function handleHide(tl: gsap.core.Timeline, styles: Record<string, string>) {
-    tl.clear();
+    // tl.clear();
 
     // Move the logo
     tl.to(styles['banner-logo'], {
