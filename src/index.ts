@@ -7,10 +7,15 @@ import {VideoTransitionOverlayEffect, VideoTransitionOverlayEffectOptions} from 
 import {SwishWallEffect, SwishWallEffectOptions} from './effects/wall/swish';
 import {NamnskyltWallEffect, NamnskyltWallEffectOptions} from './effects/wall/namnskylt';
 import {VideoTransitionWallEffect, VideoTransitionWallEffectOptions} from './effects/wall/videotransition';
+import {BarsOverlayEffect, BarsOverlayEffectOptions} from './effects/overlay/bars';
 
 export default class VideoPlugin extends CasparPlugin {
     private swish: { overlay: SwishOverlayEffect, wall: SwishWallEffect } = null;
     private swishState = -1;
+
+    private bars: BarsOverlayEffect = null;
+    private barsState = 0;
+
     private templates: Templates;
 
     public static get pluginName() {
@@ -48,6 +53,15 @@ export default class VideoPlugin extends CasparPlugin {
                 group,
                 options as VideoTransitionOverlayEffectOptions,
                 this.templates.getFilePath('overlay/videotransition'),
+            ),
+        );
+
+        this.api.registerEffect(
+            'overlay-bars',
+            (group, options) => new BarsOverlayEffect(
+                group,
+                options as BarsOverlayEffectOptions,
+                this.templates.getFilePath('overlay/bars'),
             ),
         );
 
@@ -118,6 +132,8 @@ export default class VideoPlugin extends CasparPlugin {
                 number: '070 797 78 20',
             }) as SwishWallEffect,
         };
+
+        this.bars = this.api.createEffect('overlay-bars', '1:overlay', {}) as BarsOverlayEffect; // TODO: special group so it is underneeth all overlays
     }
 
     private showNamnskylt(name: string) {
@@ -171,6 +187,29 @@ export default class VideoPlugin extends CasparPlugin {
                     .all([this.swish.overlay.deactivate(), this.swish.wall.deactivate()])
                     .catch(err => {
                         this.logger.error('Failed to deactivate swish effect');
+                        this.logger.error(err);
+                    });
+                break;
+        }
+    }
+
+    private toggleBars() {
+        this.barsState = 1 - this.barsState;
+
+        switch (this.swishState) {
+            case 0:
+                this.bars
+                    .deactivate()
+                    .catch(err => {
+                        this.logger.error('Failed to deactivate bars effect');
+                        this.logger.error(err);
+                    });
+                break;
+            case 1:
+                this.bars
+                    .activate()
+                    .catch(err => {
+                        this.logger.error('Failed to activate bars effect');
                         this.logger.error(err);
                     });
                 break;
