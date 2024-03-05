@@ -110,7 +110,7 @@ export default class VideoPlugin extends CasparPlugin {
         // These are debug api routes, could be removed at a later date
         this.api.registerRoute('swish', async req => {
             this.toggleSwish();
-        }, "ACTION");
+        }, 'ACTION');
 
         this.api.registerRoute('namnskylt', async req => {
             const data = req.getData();
@@ -118,11 +118,11 @@ export default class VideoPlugin extends CasparPlugin {
 
             const {name} = data as {name: string};
             this.showNamnskylt(name);
-        }, "ACTION");
+        }, 'ACTION');
 
         this.api.registerRoute('videotransition', async req => {
             this.showVideoTransition();
-        }, "ACTION");
+        }, 'ACTION');
 
         this.api.registerUI(UI_INJECTION_ZONE.EFFECT_CREATOR, path.join(__dirname, 'ui', 'overlay'));
     }

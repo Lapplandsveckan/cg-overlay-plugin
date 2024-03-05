@@ -10,6 +10,9 @@
     "@babel/core": "^7.19.3",
     "@babel/preset-env": "^7.19.3",
     "@babel/preset-typescript": "^7.18.6",
+    "@typescript-eslint/eslint-plugin": "^7.1.1",
+    "@typescript-eslint/parser": "^7.1.1",
+    "eslint": "^8.57.0",
     "ts-loader": "^9.2.6",
     "typescript": "^4.5.5",
     "webpack": "^5.69.0",
@@ -26,7 +29,9 @@
     "watch": "webpack --watch",
     "dev": "next ./templates dev",
     "package": "node package.js",
-    "serve": "node serve.js"
+    "serve": "node serve.js",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
   },
   "dependencies": {
     "@babel/preset-react": "^7.23.3",

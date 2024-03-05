@@ -17,8 +17,8 @@ export class BarsOverlayEffect extends Effect {
         const cmd = CgCommand.add(template, false);
         cmd.allocate(this.layer);
 
-        this.executor.execute(cmd)
-            // .catch(err => Logger.error(`Failed to add videotransition effect: ${JSON.stringify(err)}`));
+        this.executor.execute(cmd);
+        // .catch(err => Logger.error(`Failed to add videotransition effect: ${JSON.stringify(err)}`));
     }
 
     public get layer() {

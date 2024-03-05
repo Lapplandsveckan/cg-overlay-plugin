@@ -21,8 +21,8 @@ export class NamnskyltWallEffect extends Effect {
         const cmd = CgCommand.add(template, false, { name: this.options.name });
         cmd.allocate(this.layer);
 
-        this.executor.execute(cmd)
-            // .catch(err => Logger.error(`Failed to add namnskylt effect: ${JSON.stringify(err)}`));
+        this.executor.execute(cmd);
+        // .catch(err => Logger.error(`Failed to add namnskylt effect: ${JSON.stringify(err)}`));
     }
 
     public get layer() {

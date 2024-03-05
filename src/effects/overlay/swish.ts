@@ -17,8 +17,8 @@ export class SwishOverlayEffect extends Effect {
         const cmd = CgCommand.add(template, false, { number: this.options.number });
         cmd.allocate(this.layer);
 
-        this.executor.execute(cmd)
-            // .catch(err => Logger.error(`Failed to add swish effect: ${JSON.stringify(err)}`));
+        this.executor.execute(cmd);
+        // .catch(err => Logger.error(`Failed to add swish effect: ${JSON.stringify(err)}`));
     }
 
     public get layer() {
