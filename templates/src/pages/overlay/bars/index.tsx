@@ -5,7 +5,7 @@ import {handleState} from '../../../lib/overlay/bars/animation';
 import {getStylesProxy} from '../../../lib/animation';
 import {CG} from '../../../components/CG';
 
-export const VideoTransitionAnimation: React.FC<{ state: number }> = ({ state }) => {
+export const BarsAnimation: React.FC<{ state: number }> = ({ state }) => {
     return (
         <CG
             state={state}
@@ -24,7 +24,7 @@ const Page = () => {
     const [state, setState] = useState(0);
     useEffect(() => register(setState), []);
 
-    return <VideoTransitionAnimation state={state} />;
+    return <BarsAnimation state={state} />;
 };
 
 export default Page;

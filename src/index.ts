@@ -8,6 +8,7 @@ import {SwishWallEffect, SwishWallEffectOptions} from './effects/wall/swish';
 import {NamnskyltWallEffect, NamnskyltWallEffectOptions} from './effects/wall/namnskylt';
 import {VideoTransitionWallEffect, VideoTransitionWallEffectOptions} from './effects/wall/videotransition';
 import {BarsOverlayEffect, BarsOverlayEffectOptions} from './effects/overlay/bars';
+import {InsamlingOverlayEffect, InsamlingOverlayEffectOptions} from './effects/overlay/insamling';
 
 export default class VideoPlugin extends CasparPlugin {
     private swish: { overlay: SwishOverlayEffect, wall: SwishWallEffect } = null;
@@ -15,6 +16,9 @@ export default class VideoPlugin extends CasparPlugin {
 
     private bars: BarsOverlayEffect = null;
     private barsState = 0;
+
+    private insamling: InsamlingOverlayEffect = null;
+    private insamlingState = 0;
 
     private templates: Templates;
 
@@ -26,8 +30,10 @@ export default class VideoPlugin extends CasparPlugin {
         this.templates = new Templates(() => this.initialize());
 
         // TODO: sanitize options input, verify that the options are valid
-        this.api.getEffectGroup('1:overlay'); // overlay, TODO: not hardcode channel
-        this.api.getEffectGroup('2:overlay'); // wall, TODO: not hardcode channel
+        // TODO: not hardcode channel
+        this.api.getEffectGroup('1:overlay'); // overlay
+        this.api.getEffectGroup('2:overlay'); // wall
+        this.api.getEffectGroup('3:overlay'); // video-out
 
         this.api.registerEffect(
             'overlay-swish',
@@ -62,6 +68,15 @@ export default class VideoPlugin extends CasparPlugin {
                 group,
                 options as BarsOverlayEffectOptions,
                 this.templates.getFilePath('overlay/bars'),
+            ),
+        );
+
+        this.api.registerEffect(
+            'overlay-insamling',
+            (group, options) => new InsamlingOverlayEffect(
+                group,
+                options as InsamlingOverlayEffectOptions,
+                this.templates.getFilePath('overlay/insamling'),
             ),
         );
 
@@ -119,6 +134,16 @@ export default class VideoPlugin extends CasparPlugin {
             this.swish = null;
         }
 
+        if (this.bars) {
+            this.bars.dispose();
+            this.bars = null;
+        }
+
+        if (this.insamling) {
+            this.insamling.dispose();
+            this.insamling = null;
+        }
+
         this.templates.dispose();
         this.templates = null;
     }
@@ -134,6 +159,7 @@ export default class VideoPlugin extends CasparPlugin {
         };
 
         this.bars = this.api.createEffect('overlay-bars', '1:overlay', {}) as BarsOverlayEffect; // TODO: special group so it is underneeth all overlays
+        this.insamling = this.api.createEffect('overlay-insamling', '3:overlay', {}) as InsamlingOverlayEffect; // TODO: special group so it is underneeth all overlays
     }
 
     private showNamnskylt(name: string) {
@@ -210,6 +236,29 @@ export default class VideoPlugin extends CasparPlugin {
                     .activate()
                     .catch(err => {
                         this.logger.error('Failed to activate bars effect');
+                        this.logger.error(err);
+                    });
+                break;
+        }
+    }
+
+    private toggleInsamling() {
+        this.insamlingState = 1 - this.insamlingState;
+
+        switch (this.swishState) {
+            case 0:
+                this.insamling
+                    .deactivate()
+                    .catch(err => {
+                        this.logger.error('Failed to deactivate insamling effect');
+                        this.logger.error(err);
+                    });
+                break;
+            case 1:
+                this.insamling
+                    .activate()
+                    .catch(err => {
+                        this.logger.error('Failed to activate insamling effect');
                         this.logger.error(err);
                     });
                 break;
