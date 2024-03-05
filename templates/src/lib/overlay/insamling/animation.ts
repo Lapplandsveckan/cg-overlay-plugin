@@ -11,6 +11,7 @@ export function handleState(tl: gsap.core.Timeline, state: number, styles: Recor
 }
 
 function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>, goal: number, now: number) {
+    const proportion = now / goal;
     insamlingCanvas.fillCoins();
     tl.clear();
 
@@ -25,11 +26,9 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>, goal
     }, 'start');
 
     tl.set('#goal', {
-        height: 700,
+        height: Math.min(800 / proportion, 700),
         duration: 3,
     }, 'start');
-
-    const proportion = now / goal;
 
     tl.to('#now', {
         height: Math.min(800 * proportion, 700),
