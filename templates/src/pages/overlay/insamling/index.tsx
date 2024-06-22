@@ -2,7 +2,7 @@ import styles from './style.module.css';
 import {useEffect, useRef, useState} from 'react';
 import {register} from '../../../lib/overlay/insamling/cg';
 import {handleState, setCanvas} from '../../../lib/overlay/insamling/animation';
-import {getStylesProxy} from '../../../lib/animation';
+import {getStylesProxy, Styles} from '../../../lib/animation';
 import {CG} from '../../../components/CG';
 import {formatNumber, useAnimatedNumbers} from '../../../lib/overlay/insamling/numbers';
 
@@ -18,7 +18,7 @@ export const InsamlingAnimation: React.FC<{ state: number, goal: number, now: nu
     return (
         <CG
             state={state}
-            handle={(tl: gsap.core.Timeline, state: number, _: number, styles: Record<string, string>) => handleState(tl, state, styles, goal, now)}
+            handle={(tl, state, _, styles) => handleState(tl, state, styles, goal, now)}
 
             labels={['start', 'end']}
             styles={getStylesProxy(styles)}

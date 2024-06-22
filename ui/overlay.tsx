@@ -1,33 +1,165 @@
-import {Button} from '@mui/material';
+import {Button, Stack, TextField} from '@mui/material';
 // @ts-ignore
 import {useSocket} from '@web-lib';
 import React from 'react';
 
-async function toggleSwish(conn: any) {
-    await conn.rawRequest('/api/plugin/overlay/swish', 'ACTION', {});
+// Actions
+
+async function toggleSwish(conn: any, number?: string) {
+    await conn.rawRequest('/api/plugin/overlay/swish', 'ACTION', { number });
 }
 
 async function showNamnskylt(conn: any, name: string) {
     await conn.rawRequest('/api/plugin/overlay/namnskylt', 'ACTION', { name });
 }
 
+async function toggleVideotransition(conn: any) {
+    await conn.rawRequest('/api/plugin/overlay/videotransition', 'ACTION', {});
+}
+
+async function toggleBars(conn: any) {
+    await conn.rawRequest('/api/plugin/overlay/bars', 'ACTION', {});
+}
+
+async function toggleInsamling(conn: any, options?: { goal?: number, now?: number }) {
+    await conn.rawRequest('/api/plugin/overlay/insamling', 'ACTION', options);
+}
+
+
+// Components
+
 const SwishTest = () => {
+    const conn = useSocket();
+    const [number, setNumber] = React.useState('');
+
+    return (
+        <Stack>
+            <TextField
+                label={'Number'}
+                value={number}
+                InputLabelProps={{
+                    shrink: true,
+                }}
+                placeholder={'070 797 78 20'}
+                onChange={e => setNumber(e.target['value'])}
+                sx={{
+                    flexGrow: 1,
+                }}
+            />
+            <Button
+                onClick={() => toggleSwish(conn, number)}
+            >
+                Swish
+            </Button>
+        </Stack>
+    );
+};
+
+const NamnskyltTest = () => {
+    const conn = useSocket();
+    const [name, setName] = React.useState('Eliyah Sundström');
+
+    return (
+        <Stack>
+            <TextField
+                label={'Name'}
+                value={name}
+                InputLabelProps={{
+                    shrink: true,
+                }}
+                onChange={e => setName(e.target['value'])}
+                sx={{
+                    flexGrow: 1,
+                }}
+                required={true}
+                error={name === ''}
+            />
+            <Button
+                onClick={() => name && showNamnskylt(conn, name)}
+            >
+                Namnskylt
+            </Button>
+        </Stack>
+    );
+};
+
+const VideotransitionTest = () => {
+    const conn = useSocket();
+
+    return (
+        <Button
+            onClick={() => toggleVideotransition(conn)}
+        >
+            Videotransition
+        </Button>
+    );
+};
+
+const BarsTest = () => {
+    const conn = useSocket();
+
+    return (
+        <Button
+            onClick={() => toggleBars(conn)}
+        >
+            Bars
+        </Button>
+    );
+};
+
+const InsamlingTest = () => {
+    const conn = useSocket();
+    const [goal, setGoal] = React.useState(1000);
+    const [now, setNow] = React.useState(500);
+
+    return (
+        <Stack>
+            <TextField
+                label={'Goal'}
+                type={'number'}
+                value={goal}
+                InputLabelProps={{
+                    shrink: true,
+                }}
+                onChange={e => setGoal(parseInt(e.target['value']))}
+                sx={{
+                    flexGrow: 1,
+                }}
+            />
+            <TextField
+                label={'Now'}
+                type={'number'}
+                value={now}
+                InputLabelProps={{
+                    shrink: true,
+                }}
+                onChange={e => setNow(parseInt(e.target['value']))}
+                sx={{
+                    flexGrow: 1,
+                }}
+            />
+            <Button
+                onClick={() => toggleInsamling(conn, { goal, now })}
+            >
+                Insamling
+            </Button>
+        </Stack>
+    );
+};
+
+// Main component
+const OverlayTest = () => {
     const conn = useSocket();
 
     return (
         <>
-            <Button
-                onClick={() => toggleSwish(conn)}
-            >
-                Swish
-            </Button>
-            <Button
-                onClick={() => showNamnskylt(conn, 'Eliyah Sundström')}
-            >
-                Namnskylt
-            </Button>
+            <SwishTest />
+            <NamnskyltTest />
+            <VideotransitionTest />
+            <BarsTest />
+            <InsamlingTest />
         </>
     );
 };
 
-export default SwishTest;
+export default OverlayTest;

@@ -1,16 +1,17 @@
 import {InsamlingCanvas} from './canvas';
+import {Styles} from '../../animation';
 
 const insamlingCanvas = new InsamlingCanvas();
 export function setCanvas(canvas: HTMLCanvasElement) {
     insamlingCanvas.setCanvas(canvas);
 }
 
-export function handleState(tl: gsap.core.Timeline, state: number, styles: Record<string, string>, goal: number, now: number) {
+export function handleState(tl: gsap.core.Timeline, state: number, styles: Styles, goal: number, now: number) {
     if (state === 0) handleHide(tl, styles);
     if (state === 1) handleShow(tl, styles, goal, now);
 }
 
-function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>, goal: number, now: number) {
+function handleShow(tl: gsap.core.Timeline, styles: Styles, goal: number, now: number) {
     const proportion = now / goal;
     insamlingCanvas.fillCoins();
     tl.clear();

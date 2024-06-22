@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 
 export function formatNumber(value: number) {
-    return Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    return Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
 export function useAnimatedNumbers(value: number, duration: number, dependencies: any[]) {

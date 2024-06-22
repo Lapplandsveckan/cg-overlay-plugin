@@ -4,7 +4,8 @@ import {offCGEvent, onCGEvent} from '../../cg';
 // 0: hidden
 // 1: shown
 
-export function register(setState: (state: number) => void, setGoal: (goal: number) => void, setNow: (now: number) => void) {
+type Handler = (value: number) => void
+export function register(setState: Handler, setGoal: Handler, setNow: Handler) {
     const states = [
         () => setState(0),
         () => setState(1),

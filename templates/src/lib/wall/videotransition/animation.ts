@@ -18,11 +18,10 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
     });
 
     tl.set(styles.container, {
-       // top: '-100%',
+        // top: '-100%',
         opacity: 0,
     });
 
-    // Move entire container
     tl.to(styles.container, {
         // top: '0%',
         opacity: 1,
@@ -50,13 +49,11 @@ function handleSides(tl: gsap.core.Timeline, styles: Record<string, string>) {
 function handleHide(tl: gsap.core.Timeline, styles: Record<string, string>) {
     tl.clear();
 
-    // Move the logo
     tl.to(styles['banner-logo'], {
         ease: 'power1.inOut',
         duration: 0.5,
     }, 'end');
 
-    // Move the entire container
     tl.to(styles.container, {
         // top: '-100%',
         opacity: 0,

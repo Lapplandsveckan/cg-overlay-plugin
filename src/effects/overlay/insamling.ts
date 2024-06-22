@@ -1,7 +1,8 @@
 import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
 
 export interface InsamlingOverlayEffectOptions {
-
+    goal: number;
+    now: number;
 }
 
 export class InsamlingOverlayEffect extends Effect {
@@ -14,11 +15,19 @@ export class InsamlingOverlayEffect extends Effect {
         this.allocateLayers(1);
         this.executor.executeAllocations();
 
-        const cmd = CgCommand.add(template, false);
+        const cmd = CgCommand.add(template, false, options);
         cmd.allocate(this.layer);
 
         this.executor.execute(cmd);
-        // .catch(err => Logger.error(`Failed to add videotransition effect: ${JSON.stringify(err)}`));
+    }
+
+    public update(options: InsamlingOverlayEffectOptions) {
+        this.options = options;
+        this.executor.execute(
+            CgCommand
+                .update(options)
+                .allocate(this.layer),
+        );
     }
 
     public get layer() {

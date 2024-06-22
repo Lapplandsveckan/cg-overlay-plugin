@@ -31,7 +31,7 @@ export class VideoTransitionOverlayEffect extends Effect {
         setTimeout(() => {
             if (!this.active) return;
             this.deactivate();
-        }, 2000);
+        }, 3000);
 
         return this.executor.execute(
             CgCommand
@@ -46,7 +46,7 @@ export class VideoTransitionOverlayEffect extends Effect {
         setTimeout(() => {
             if (this.active) return;
             this.dispose();
-        }, 1000);
+        }, 500);
 
         return this.executor.execute(
             CgCommand

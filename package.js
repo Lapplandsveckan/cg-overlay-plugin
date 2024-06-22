@@ -11,7 +11,8 @@ function cmd(command, ...args) {
     return new Promise((resolve, reject) => {
         exec(`node ${cmdPath}`, (error, stdout, stderr) => {
             if (error) {
-                console.error(error);
+                console.error(stdout);
+                console.error(stderr);
                 reject(error);
                 return;
             }
@@ -88,7 +89,7 @@ async function movePlugin() {
     if (dest.endsWith('/') || dest.endsWith('\\')) dest += 'overlay-plugin';
 
     const src = path.join(root, 'overlay-plugin');
-    await fs.rm(dest, { recursive: true });
+    await fs.rm(dest, { recursive: true }).catch(() => null);
     await fs.cp(src, dest, { recursive: true });
 
     console.log(`Plugin moved to ${dest}`);

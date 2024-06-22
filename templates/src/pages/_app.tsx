@@ -13,8 +13,8 @@ function App({ Component, pageProps }: AppProps) {
             </Head>
             {
                 process.env.NODE_ENV !== 'production'
-                ? <DeveloperPane />
-                : null
+                    ? <DeveloperPane />
+                    : null
             }
             <Component {...pageProps} />
         </>

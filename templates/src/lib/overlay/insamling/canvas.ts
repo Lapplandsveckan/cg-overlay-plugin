@@ -62,7 +62,7 @@ export class Coin {
     private static getCoin() {
         if (this.coin) return;
         this.coin = new Image();
-        this.coin.src = "/images/coin.png";
+        this.coin.src = '/images/coin.png';
     }
 
     public render(ctx: CanvasRenderingContext2D) {
@@ -88,7 +88,7 @@ export class InsamlingCanvas {
         if (this.canvas === canvas) return;
 
         this.canvas = canvas;
-        this.ctx = canvas.getContext("2d");
+        this.ctx = canvas.getContext('2d');
 
         this.canvas.width = 1920;
         this.canvas.height = 1080;
@@ -121,7 +121,7 @@ export class InsamlingCanvas {
     private renderPadding() {
         const PADDING = 150;
 
-        this.ctx.strokeStyle = "white";
+        this.ctx.strokeStyle = 'white';
         this.ctx.beginPath();
         this.ctx.moveTo(PADDING, HEIGHT - PADDING);
         this.ctx.lineTo(WIDTH - PADDING, HEIGHT - PADDING);

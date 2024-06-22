@@ -31,6 +31,7 @@ export class VideoTransitionWallEffect extends Effect {
         setTimeout(() => {
             if (!this.active) return;
 
+            this.emit('transition:ready');
             this.executor.execute(
                 CgCommand
                     .next()

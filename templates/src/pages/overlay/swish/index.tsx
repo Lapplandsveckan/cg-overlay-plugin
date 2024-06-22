@@ -15,7 +15,7 @@ export const SlidingSwish: React.FC<{ count: number, className: string }> = ({ c
             }
         </div>
     );
-}
+};
 
 export const SwishAnimation: React.FC<{ number: string, state: number }> = ({ number, state }) => {
     return (

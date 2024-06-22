@@ -46,4 +46,4 @@ export const CG: React.FC<CGProps> = ({ state, handle, labels, styles, children 
             {children}
         </div>
     );
-}
+};

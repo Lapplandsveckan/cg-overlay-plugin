@@ -21,6 +21,15 @@ export class SwishWallEffect extends Effect {
         // .catch(err => Logger.error(`Failed to add swish effect: ${JSON.stringify(err)}`));
     }
 
+    public update(options: SwishWallEffectOptions) {
+        this.options = options;
+        this.executor.execute(
+            CgCommand
+                .update(options)
+                .allocate(this.layer),
+        );
+    }
+
     public get layer() {
         return this.layers[0];
     }
