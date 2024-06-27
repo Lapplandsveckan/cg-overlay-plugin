@@ -86,7 +86,13 @@ export default class OverlayManager {
         stop: () => void,
     } = null;
     public startVideoSession() {
-        if (this.videoSession) return Promise.reject(new Error('Video session already active'));
+        if (this.videoSession) {
+            this.logger.warn('Video session already running');
+            return Promise.resolve();
+        }
+
+        const width = 0.54;
+
         const mainEffect = this.api.createEffect('lappis-route', `${CHANNELS.MAIN}:video`, {
             source: new BasicChannel(CHANNELS.VIDEO),
             disposeOnStop: true,
@@ -95,7 +101,7 @@ export default class OverlayManager {
         const wallEffect = this.api.createEffect('lappis-route', `${CHANNELS.WALL}:video`, {
             source: new BasicChannel(CHANNELS.VIDEO),
             disposeOnStop: true,
-            transform: [0, 0, 1, 1, 0.25, 0, 0.75, 1],
+            transform: [0, 0, 1, 1, 0.5 - (width / 2), 0, 0.5 + (width / 2), 1],
         }) as RouteEffect;
 
         this.videoSession = {main: mainEffect, wall: wallEffect, stop: () => null};
