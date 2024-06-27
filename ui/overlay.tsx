@@ -2,6 +2,7 @@ import {Button, Stack, TextField} from '@mui/material';
 // @ts-ignore
 import {useSocket} from '@web-lib';
 import React from 'react';
+import {MotionControl} from './motion';
 
 // Actions
 
@@ -148,8 +149,8 @@ const InsamlingTest = () => {
 };
 
 // Main component
-const OverlayTest = () => {
-    const conn = useSocket();
+const OverlayTest = ({ path }) => {
+    if (path && path[0] === 'motion') return <MotionControl />;
 
     return (
         <>
@@ -158,6 +159,10 @@ const OverlayTest = () => {
             <VideotransitionTest />
             <BarsTest />
             <InsamlingTest />
+
+            <a href={'overlay/motion'}>
+                Motion
+            </a>
         </>
     );
 };

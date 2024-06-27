@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {Grid, Stack, Typography} from '@mui/material';
+import {Stack, Typography} from '@mui/material';
 
 // @ts-ignore
 import {useSocket, MediaCard} from '@web-lib';
@@ -12,11 +12,11 @@ interface RundownEntry {
     type?: string;
 }
 
-interface QueueVideoRundownItemProps {
+interface PlayVideoRundownItemProps {
     entry: RundownEntry;
 }
 
-export const QueueVideoRundownItem: React.FC<QueueVideoRundownItemProps> = ({entry}) => {
+export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({entry}) => {
     const socket = useSocket();
     const [clip, setClip] = useState<any | null>();
     const data = useMemo(() => {
@@ -44,7 +44,7 @@ export const QueueVideoRundownItem: React.FC<QueueVideoRundownItemProps> = ({ent
             direction="column"
         >
             <Typography variant="body1">
-                Queue Video
+                Play Video
             </Typography>
             {
                 data ? (
@@ -62,4 +62,4 @@ export const QueueVideoRundownItem: React.FC<QueueVideoRundownItemProps> = ({ent
     );
 }
 
-export default QueueVideoRundownItem;
+export default PlayVideoRundownItem;

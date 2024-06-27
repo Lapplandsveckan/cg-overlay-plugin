@@ -4,14 +4,14 @@ import {
     PlayCommand,
     StopCommand,
     Transform,
-    BasicLayer, Command,
+    BasicLayer, Command, BasicChannel,
 } from '@lappis/cg-manager';
 
 type Tuple<T, N extends number> = N extends N ? number extends N ? T[] : _TupleOf<T, N, []> : never;
 type _TupleOf<T, N extends number, R extends unknown[]> = R['length'] extends N ? R : _TupleOf<T, N, [T, ...R]>;
 
 export interface RouteEffectOptions {
-    source: BasicLayer;
+    source: BasicChannel | BasicLayer;
     transform?: Tuple<number, 8>;
     disposeOnStop?: boolean;
 }
@@ -57,6 +57,7 @@ export class RouteEffect extends Effect {
 
     public updatePositions(): Command[] {
         if (!this.active) return [];
+        if (this.options.source instanceof BasicChannel) return [];
         return [
             PlayCommand
                 .route(this.options.source)

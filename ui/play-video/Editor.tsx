@@ -12,7 +12,7 @@ interface RundownEntry {
     type?: string;
 }
 
-interface QueueVideoEditorProps {
+interface PlayVideoEditorProps {
     creating?: boolean;
 
     entry: RundownEntry;
@@ -20,7 +20,7 @@ interface QueueVideoEditorProps {
     deleteEntry: (entry: RundownEntry) => void;
 }
 
-export const QueueVideoEditor: React.FC<QueueVideoEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
+export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
     const socket = useSocket();
 
     const [media, setMedia] = useState<any | null>(entry.data);
@@ -33,7 +33,7 @@ export const QueueVideoEditor: React.FC<QueueVideoEditorProps> = ({entry, update
 
     return (
         <>
-            <Typography variant="h6">Queue Video</Typography>
+            <Typography variant="h6">Play Video</Typography>
             <TextField
                 label="Title"
                 value={title}
@@ -67,4 +67,4 @@ export const QueueVideoEditor: React.FC<QueueVideoEditorProps> = ({entry, update
     );
 };
 
-export default QueueVideoEditor;
+export default PlayVideoEditor;

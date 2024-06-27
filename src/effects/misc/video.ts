@@ -63,6 +63,7 @@ export class VideoEffect extends Effect {
     public play() {
         if (!this.active) return this.activate(true);
         if (this.playing) return;
+        if (this.canceled) return;
 
         const cmd = PlayCommand.video(this.options.media.id);
         cmd.allocate(this.layer);
@@ -72,10 +73,19 @@ export class VideoEffect extends Effect {
     }
 
     public waitForFinish() {
+        if (this.canceled) return Promise.resolve();
         return new Promise<void>(resolve => {
             if (!this.active) return resolve();
             this.once('video:finish', resolve);
         });
+    }
+
+    private canceled: boolean = false;
+    public cancel() {
+        if (!this.active) return;
+        this.canceled = true;
+        this.emit('video:finish');
+        this.deactivate();
     }
 
     private playTimeout: any;

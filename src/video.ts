@@ -21,17 +21,15 @@ export default class VideoManager {
     private queue: VideoInfo[] = [];
     private playing: PlayingVideo | null = null;
 
-    private videoDestination = '1:video';
-
     public constructor(plugin: LappisOverlayPlugin) {
         this.plugin = plugin;
     }
 
-    public stopVideo() {
+    public stopVideo(clearQueue = false) {
         if (!this.playing) return;
+        if (clearQueue) this.queue = [];
 
-        this.playing.effect.deactivate();
-        this.playing = null;
+        this.playing.effect.cancel();
     }
 
     public queueVideo(video: VideoInfo) {
@@ -42,8 +40,8 @@ export default class VideoManager {
     }
 
     public playVideo(video: VideoInfo) {
-        this.queue.unshift(video);
-        if (this.playing) this.stopVideo();
+        this.queue = [video];
+        if (this.playing) return this.stopVideo();
 
         this.playNext();
     }
@@ -53,14 +51,14 @@ export default class VideoManager {
         if (!video) {
             if (this.playing) {
                 this.playing.effect.deactivate();
-                this.plugin.stopVideoSession();
+                this.plugin.getOverlayManager().stopVideoSession();
             }
 
             this.playing = null;
             return;
         }
 
-        const [err, effect] = noTry(() => this.plugin.playVideo(video.id));
+        const [err, effect] = noTry(() => this.plugin.getOverlayManager().playVideo(video.id));
         if (err) {
             this.plugin.getLogger().error(`Failed to play video: ${err}`);
             return;
@@ -69,15 +67,19 @@ export default class VideoManager {
         const shouldStartSession = !this.playing;
         this.playing = {video, effect};
         if (shouldStartSession) {
-            const [error] = await noTryAsync(() => this.plugin.startVideoSession());
+            const [error] = await noTryAsync(() => this.plugin.getOverlayManager().startVideoSession());
             if (error) {
                 this.plugin.getLogger().error(`Failed to start video session: ${error}`);
                 return;
             }
         }
 
+        this.plugin.getLogger().info(`Playing video: ${video.id}`);
+
         await effect.play();
         await effect.waitForFinish();
+
+        this.plugin.getLogger().info(`Finished playing video: ${video.id}`);
 
         if (this.queue.length) setTimeout(() => effect.deactivate(), 250);
         this.playNext();
