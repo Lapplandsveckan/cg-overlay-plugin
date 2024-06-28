@@ -6,6 +6,7 @@ import {BarsOverlayEffect} from './effects/overlay/bars';
 import {InsamlingOverlayEffect, InsamlingOverlayEffectOptions} from './effects/overlay/insamling';
 import {VideoEffect} from './effects/misc/video';
 import {RouteEffect} from './effects/misc/route';
+import LappisOverlayPlugin from './index';
 
 export const CHANNELS = {
     MAIN: 1,
@@ -25,8 +26,10 @@ export const getGroup = (channel: number, group: string) => `${channel}:${group}
 export default class OverlayManager {
     private api: PluginAPI;
     private logger: Logger;
+    private plugin: LappisOverlayPlugin;
 
-    constructor(instance: CasparPlugin) {
+    constructor(instance: LappisOverlayPlugin) {
+        this.plugin = instance;
         this.api = instance['api'];
         this.logger = instance['logger'];
     }
@@ -85,6 +88,18 @@ export default class OverlayManager {
         wall: RouteEffect,
         stop: () => void,
     } = null;
+
+    private externalEnabledVideoSession: boolean = false;
+    public togglePresentationMode() {
+        this.externalEnabledVideoSession = !this.externalEnabledVideoSession;
+
+        if (this.externalEnabledVideoSession) return this.startVideoSession();
+        if (this.plugin.video.playing) return Promise.resolve();
+
+        this.stopVideoSession();
+        return Promise.resolve();
+    }
+
     public startVideoSession() {
         if (this.videoSession) {
             this.logger.warn('Video session already running');
@@ -124,6 +139,7 @@ export default class OverlayManager {
     }
 
     public stopVideoSession() {
+        if (this.externalEnabledVideoSession) return;
         if (!this.videoSession) return this.logger.warn('No video session to stop');
         if (this.videoTransitionState !== 0) this.toggleVideoTransition();
 
@@ -245,7 +261,7 @@ export default class OverlayManager {
         }
     }
 
-    public toggleInsamling(options?: InsamlingOverlayEffectOptions) {
+    public async toggleInsamling(options?: InsamlingOverlayEffectOptions) {
         this.insamlingState = 1 - this.insamlingState;
 
         if (options)
@@ -253,6 +269,7 @@ export default class OverlayManager {
 
         switch (this.insamlingState) {
             case 0:
+                if (this.externalEnabledVideoSession) await this.togglePresentationMode();
                 this.insamling
                     .deactivate()
                     .catch(err => {
@@ -261,6 +278,7 @@ export default class OverlayManager {
                     });
                 break;
             case 1:
+                if (!this.externalEnabledVideoSession) await this.togglePresentationMode();
                 this.insamling
                     .activate()
                     .catch(err => {

@@ -18,10 +18,10 @@ import {MotionEffect, MotionEffectOptions} from './effects/misc/motion';
 import MotionManager from './motion';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
-    private templates: Templates;
-    private video: VideoManager;
-    private motion: MotionManager;
-    private overlay: OverlayManager;
+    public templates: Templates;
+    public video: VideoManager;
+    public motion: MotionManager;
+    public overlay: OverlayManager;
 
     public getLogger() {
         return this.logger;
@@ -58,39 +58,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY)); // video-out
 
         this.registerEffects();
-
-        // These are debug api routes, could be removed at a later date
-        this.api.registerRoute('swish', async req => {
-            const data = req.getData();
-
-            let number: string;
-            if (typeof data === 'object') number = (data as {number: string}).number;
-
-            this.overlay.toggleSwish();
-        }, 'ACTION');
-
-        this.api.registerRoute('namnskylt', async req => {
-            const data = req.getData();
-            if (typeof data !== 'object') return null; // throw new WebError('Invalid request data', 400);
-
-            const {name} = data as {name: string};
-            this.overlay.showNamnskylt(name);
-        }, 'ACTION');
-
-        this.api.registerRoute('bars', async req => {
-            this.overlay.toggleBars();
-        }, 'ACTION');
-
-        this.api.registerRoute('insamling', async req => {
-            const data = req.getData();
-            let options : InsamlingOverlayEffectOptions;
-            if (typeof data === 'object') {
-                const {goal, now} = data as {goal: number, now: number};
-                options = {goal, now};
-            }
-
-            this.overlay.toggleInsamling(options);
-        }, 'ACTION');
 
         this.api.registerRoute('motion/clip', async req => {
             if (!req.data) return null; // throw new WebError('Invalid request', 400);
@@ -134,6 +101,23 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             if (!name) return null; // throw new WebError('No name provided', 400);
 
             this.overlay.showNamnskylt(name);
+        });
+
+        registerRundownAction('swish', async (rundown) => {
+            const number = rundown.data.number;
+            this.overlay.toggleSwish(number);
+        });
+
+        registerRundownAction('bars', async (rundown) => {
+            this.overlay.toggleBars();
+        });
+
+        registerRundownAction('presentation', async (rundown) => {
+            this.overlay.togglePresentationMode();
+        });
+
+        registerRundownAction('insamling', async (rundown) => {
+            this.overlay.toggleInsamling(rundown.data);
         });
     }
 

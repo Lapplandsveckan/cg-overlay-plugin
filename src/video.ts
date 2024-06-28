@@ -19,7 +19,7 @@ interface PlayingVideo {
 export default class VideoManager {
     private plugin: LappisOverlayPlugin;
     private queue: VideoInfo[] = [];
-    private playing: PlayingVideo | null = null;
+    public playing: PlayingVideo | null = null;
 
     public constructor(plugin: LappisOverlayPlugin) {
         this.plugin = plugin;
