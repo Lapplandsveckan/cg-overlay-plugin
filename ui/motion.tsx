@@ -24,19 +24,19 @@ export const MotionControl = () => {
                             const color = event.target['value'] as string;
 
                             setColor(color);
-                            await conn.rawRequest('/api/plugin/overlay/motion/color', 'ACTION', { color })
+                            await conn.rawRequest('/api/plugin/lappis/motion/color', 'ACTION', { color })
                         }}
                         value={color}
                     />
                     <Button onClick={async () => {
                         setColor(undefined);
-                        await conn.rawRequest('/api/plugin/overlay/motion/color', 'ACTION', {})
+                        await conn.rawRequest('/api/plugin/lappis/motion/color', 'ACTION', {})
                     }}>
                         Clear
                     </Button>
                 </Stack>
             </Card>
-            <MediaView prefix="MOTIONS/" onClipSelect={(clip) => conn.rawRequest('/api/plugin/overlay/motion/clip', 'ACTION', { clip: clip.id })} />
+            <MediaView prefix="MOTIONS/" onClipSelect={(clip) => conn.rawRequest('/api/plugin/lappis/motion/clip', 'ACTION', { clip: clip.id })} />
         </>
     );
 };

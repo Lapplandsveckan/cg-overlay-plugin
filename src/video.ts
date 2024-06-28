@@ -6,9 +6,10 @@ import {noTry, noTryAsync} from 'no-try';
 
 interface VideoInfo {
     id: string;
-    // metadata: {
-    //     destination: string;
-    // };
+
+    metadata: {
+        queueId: string;
+    };
 }
 
 interface PlayingVideo {
@@ -32,21 +33,23 @@ export default class VideoManager {
         this.playing.effect.cancel();
     }
 
-    public queueVideo(video: VideoInfo) {
-        this.queue.push(video);
-        if (this.playing) return;
+    public queueVideo(video: string) {
+        this.queue.push({id: video, metadata: {queueId: Math.random().toString(36).substring(7)}});
+        if (this.playing) return this.plugin.sendVideoInformation();
 
         this.playNext();
     }
 
-    public playVideo(video: VideoInfo) {
-        this.queue = [video];
+    public playVideo(video: string) {
+        this.queue = [{id: video, metadata: {queueId: Math.random().toString(36).substring(7)}}];
         if (this.playing) return this.stopVideo();
 
         this.playNext();
     }
 
     private async playNext() {
+        this.plugin.sendVideoInformation();
+
         const video = this.queue.shift();
         if (!video) {
             if (this.playing) {
@@ -55,6 +58,7 @@ export default class VideoManager {
             }
 
             this.playing = null;
+            this.plugin.sendVideoInformation();
             return;
         }
 
@@ -74,14 +78,45 @@ export default class VideoManager {
             }
         }
 
-        this.plugin.getLogger().info(`Playing video: ${video.id}`);
+        this.plugin.sendVideoInformation();
 
         await effect.play();
         await effect.waitForFinish();
 
-        this.plugin.getLogger().info(`Finished playing video: ${video.id}`);
-
         if (this.queue.length) setTimeout(() => effect.deactivate(), 250);
         this.playNext();
+    }
+
+    public getInformation() {
+        const videos = this.queue.slice();
+        if (this.playing) videos.unshift(this.playing.video);
+
+        const media = videos.map(video => ({
+            id: video.metadata.queueId,
+            data: this.plugin['api'].getFileDatabase().get(video.id),
+        }));
+
+        const data = {
+            current: null,
+            queue: media,
+        }
+
+        if (this.playing) {
+            const video = media.shift();
+
+            data.current = {
+                ...video,
+                metadata: this.playing.effect.getMetadata(),
+            }
+        }
+
+        return data;
+    }
+
+    public removeItem(id: string) {
+        this.queue = this.queue.filter(video => video.metadata.queueId !== id);
+        if (this.playing && this.playing.video.metadata.queueId === id) this.stopVideo();
+
+        this.plugin.sendVideoInformation();
     }
 }

@@ -32,11 +32,16 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     public static get pluginName() {
-        return 'overlay';
+        return 'lappis';
     }
 
     public getInjectionZone(zone: UI_INJECTION_ZONE, key: string) {
         return `${zone}.${key}` as UI_INJECTION_ZONE;
+    }
+
+    public sendVideoInformation() {
+        const data = this.video.getInformation();
+        this.api.broadcast('videos', 'UPDATE', data);
     }
 
     protected onEnable() {
@@ -73,7 +78,12 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             this.motion.setColor(color);
         }, 'ACTION');
 
+        this.api.registerRoute('videos', async req => this.video.getInformation(), 'GET');
+        this.api.registerRoute('videos/:id', async req => this.video.removeItem(req.params.id), 'DELETE');
+
+
         this.api.registerUI(UI_INJECTION_ZONE.PLUGIN_PAGE, path.join(__dirname, 'ui', 'overlay'));
+        this.api.registerUI(UI_INJECTION_ZONE.RUNDOWN_SIDE, path.join(__dirname, 'ui', 'video'));
 
         const registerRundownAction = (key: string, action: (rundown: RundownItem) => void) => {
             this.api.registerUI(this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_ITEM, key), path.join(__dirname, 'ui', key, 'Item'))
@@ -86,14 +96,14 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             const video = this.api.getFileDatabase().get(rundown.data.clip);
             if (!video) return null; // throw new WebError('Clip not found', 404);
 
-            this.video.queueVideo({id: video.id});
+            this.video.queueVideo(video.id);
         });
 
         registerRundownAction('play-video', async (rundown) => {
             const video = this.api.getFileDatabase().get(rundown.data.clip);
             if (!video) return null; // throw new WebError('Clip not found', 404);
 
-            this.video.playVideo({id: video.id});
+            this.video.playVideo(video.id);
         });
 
         registerRundownAction('namnskylt', async (rundown) => {

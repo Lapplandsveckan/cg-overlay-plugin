@@ -7,23 +7,23 @@ import {MotionControl} from './motion';
 // Actions
 
 async function toggleSwish(conn: any, number?: string) {
-    await conn.rawRequest('/api/plugin/overlay/swish', 'ACTION', { number });
+    await conn.rawRequest('/api/plugin/lappis/swish', 'ACTION', { number });
 }
 
 async function showNamnskylt(conn: any, name: string) {
-    await conn.rawRequest('/api/plugin/overlay/namnskylt', 'ACTION', { name });
+    await conn.rawRequest('/api/plugin/lappis/namnskylt', 'ACTION', { name });
 }
 
 async function toggleVideotransition(conn: any) {
-    await conn.rawRequest('/api/plugin/overlay/videotransition', 'ACTION', {});
+    await conn.rawRequest('/api/plugin/lappis/videotransition', 'ACTION', {});
 }
 
 async function toggleBars(conn: any) {
-    await conn.rawRequest('/api/plugin/overlay/bars', 'ACTION', {});
+    await conn.rawRequest('/api/plugin/lappis/bars', 'ACTION', {});
 }
 
 async function toggleInsamling(conn: any, options?: { goal?: number, now?: number }) {
-    await conn.rawRequest('/api/plugin/overlay/insamling', 'ACTION', options);
+    await conn.rawRequest('/api/plugin/lappis/insamling', 'ACTION', options);
 }
 
 
@@ -160,7 +160,7 @@ const OverlayTest = ({ path }) => {
             <BarsTest />
             <InsamlingTest />
 
-            <a href={'overlay/motion'}>
+            <a href={'lappis/motion'}>
                 Motion
             </a>
         </>
