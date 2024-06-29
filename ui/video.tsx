@@ -61,7 +61,7 @@ const VideoItem: React.FC<VideoItemProps> = ({title, clip, onRemove, timeLeft}) 
                     {typeof timeLeft === 'number' && -timeLeft}
                 </Typography>
                 <Typography>
-                    {Math.round(media.duration)}
+                    {Math.round(media.duration || 0)}
                 </Typography>
             </Stack>
         </Stack>
@@ -84,8 +84,8 @@ const VideoQueue = () => {
     const [current, setCurrent] = useState<any>(null);
     const [playTime, setPlayTime] = useState<number>(0);
 
-    const totalTime = queue.reduce((acc, item) => acc + (item?.clip.mediainfo.format.duration ?? 0), 0);
-    const timeLeft = Math.max(0, Math.round((current?.clip.mediainfo.format.duration ?? 0) - playTime / 1000));
+    const totalTime = queue.reduce((acc, item) => acc + (item?.clip.mediainfo.format.duration || 0), 0);
+    const timeLeft = Math.max(0, Math.round((current?.clip.mediainfo.format.duration || 0) - playTime / 1000));
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -136,7 +136,7 @@ const VideoQueue = () => {
                 direction="column"
                 spacing={2}
             >
-                <h1 style={{ margin: '20px 0' }}>Video Queue {-(totalTime + timeLeft)}</h1>
+                <h1 style={{ margin: '20px 0' }}>Video Queue {totalTime + timeLeft > 0 && -Math.round(totalTime + timeLeft)}</h1>
 
                 <Stack
                     direction="column"
