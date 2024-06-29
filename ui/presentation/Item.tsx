@@ -1,4 +1,5 @@
 import React from 'react';
+import {Typography} from '@mui/material';
 
 interface RundownEntry {
     id: string;
@@ -13,7 +14,11 @@ interface PresentationRundownItemProps {
 }
 
 export const PresentationRundownItem: React.FC<PresentationRundownItemProps> = ({entry}) => {
-    return null;
+    return (
+        <Typography variant="h6">
+            ATEM: {entry.data.atem}
+        </Typography>
+    )
 }
 
 export default PresentationRundownItem;

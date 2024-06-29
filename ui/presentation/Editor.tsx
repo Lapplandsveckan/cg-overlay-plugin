@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {TextField, Typography} from '@mui/material';
+import {Checkbox, FormControlLabel, TextField, Typography} from '@mui/material';
 
 // @ts-ignore
 import {RundownEditorActionBar} from '@web-lib';
@@ -22,6 +22,7 @@ interface PresentationEditorProps {
 
 export const PresentationEditor: React.FC<PresentationEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
     const [title, setTitle] = useState(entry?.title ?? '');
+    const [atem, setAtem] = useState(entry?.data.atem ?? false);
 
     return (
         <>
@@ -32,6 +33,15 @@ export const PresentationEditor: React.FC<PresentationEditorProps> = ({entry, up
                 onChange={e => setTitle(e.target['value'])}
             />
 
+            <FormControlLabel
+                label="ATEM"
+
+                control={<Checkbox />}
+
+                checked={atem}
+                onChange={e => setAtem(e.target['checked'])}
+            />
+
             <RundownEditorActionBar
                 exists={!creating}
 
@@ -39,7 +49,9 @@ export const PresentationEditor: React.FC<PresentationEditorProps> = ({entry, up
                 onSave={() => {
                     updateEntry({
                         ...entry,
-                        data: {},
+                        data: {
+                            atem,
+                        },
                         title,
                     });
                 }}

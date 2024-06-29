@@ -1,6 +1,4 @@
 import {VideoEffect} from './effects/misc/video';
-import {WebError} from 'rest-exchange-protocol';
-import {CasparPlugin} from '@lappis/cg-manager';
 import LappisOverlayPlugin from './index';
 import {noTry, noTryAsync} from 'no-try';
 
@@ -54,7 +52,7 @@ export default class VideoManager {
         if (!video) {
             if (this.playing) {
                 this.playing.effect.deactivate();
-                this.plugin.getOverlayManager().stopVideoSession();
+                this.plugin.getOverlayManager().stopVideoSession(true);
             }
 
             this.playing = null;
@@ -71,7 +69,7 @@ export default class VideoManager {
         const shouldStartSession = !this.playing;
         this.playing = {video, effect};
         if (shouldStartSession) {
-            const [error] = await noTryAsync(() => this.plugin.getOverlayManager().startVideoSession());
+            const [error] = await noTryAsync(() => this.plugin.getOverlayManager().startVideoSession(true));
             if (error) {
                 this.plugin.getLogger().error(`Failed to start video session: ${error}`);
                 return;

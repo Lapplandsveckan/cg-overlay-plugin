@@ -16,12 +16,15 @@ import OverlayManager, {CHANNELS, getGroup, GROUPS} from './overlay';
 import {RundownItem} from '@lappis/cg-manager/dist/types/rundown';
 import {MotionEffect, MotionEffectOptions} from './effects/misc/motion';
 import MotionManager from './motion';
+import {AtemManager} from './atem';
+import {config} from './config';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
     public video: VideoManager;
     public motion: MotionManager;
     public overlay: OverlayManager;
+    public atem: AtemManager;
 
     public getLogger() {
         return this.logger;
@@ -49,6 +52,9 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.video = new VideoManager(this);
         this.overlay = new OverlayManager(this);
         this.motion = new MotionManager(this);
+        this.atem = new AtemManager();
+
+        this.atem.connect(config.atem.ip);
 
         this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.VIDEO)); // main video
         this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.OVERLAY)); // main overlay
@@ -123,7 +129,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         });
 
         registerRundownAction('presentation', async (rundown) => {
-            this.overlay.togglePresentationMode();
+            this.overlay.togglePresentationMode(rundown.data.atem ?? false);
         });
 
         registerRundownAction('insamling', async (rundown) => {

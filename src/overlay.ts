@@ -90,17 +90,17 @@ export default class OverlayManager {
     } = null;
 
     private externalEnabledVideoSession: boolean = false;
-    public togglePresentationMode() {
+    public togglePresentationMode(atem = false) {
         this.externalEnabledVideoSession = !this.externalEnabledVideoSession;
 
-        if (this.externalEnabledVideoSession) return this.startVideoSession();
+        if (this.externalEnabledVideoSession) return this.startVideoSession(atem);
         if (this.plugin.video.playing) return Promise.resolve();
 
-        this.stopVideoSession();
+        this.stopVideoSession(atem);
         return Promise.resolve();
     }
 
-    public startVideoSession() {
+    public startVideoSession(atem = false) {
         if (this.videoSession) {
             this.logger.warn('Video session already running');
             return Promise.resolve();
@@ -129,6 +129,8 @@ export default class OverlayManager {
 
                 mainEffect.activate();
                 wallEffect.activate();
+
+                if (atem) this.plugin.atem.setVideoProgram();
             }, 3000);
 
             this.videoSession.stop = () => {
@@ -138,10 +140,12 @@ export default class OverlayManager {
         });
     }
 
-    public stopVideoSession() {
+    public stopVideoSession(atem = false) {
         if (this.externalEnabledVideoSession) return;
         if (!this.videoSession) return this.logger.warn('No video session to stop');
         if (this.videoTransitionState !== 0) this.toggleVideoTransition();
+
+        if (atem) this.plugin.atem.returnToPreview();
 
         this.videoSession.main.deactivate();
         this.videoSession.wall.deactivate();

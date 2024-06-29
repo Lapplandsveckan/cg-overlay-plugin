@@ -59,12 +59,9 @@ function handleMinimize(tl: gsap.core.Timeline, styles: Record<string, string>, 
 function handleHide(tl: gsap.core.Timeline, styles: Record<string, string>, prevState: number) {
     tl.clear();
 
-    let duration = 0.2;
-    if (prevState === 1) duration = 1;
-
     // Move the entire container
     tl.to(styles.namnskylt__main, {
         top: '100%',
-        duration,
+        duration: 1,
     }, 'end');
 }
