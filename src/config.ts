@@ -7,7 +7,7 @@ export const config = {
     },
 
     atem: {
-        ip: '',
-        videoInput: 0,
+        ip: '192.168.177.63',
+        videoInput: 18,
     },
 };

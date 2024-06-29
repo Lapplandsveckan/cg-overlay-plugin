@@ -62,7 +62,12 @@ export default class MotionManager {
             this.artnetColor = this.channelsToColorString(channels);
         });
 
-        setInterval(() => this.acceptIncoming && this.setColor(this.artnetColor), 50);
+        // Buffer the color changes from dmx to avoid flickering
+        setInterval(() => {
+            if (!this.acceptIncoming || !this.artnetColor) return;
+            this.setColor(this.artnetColor)
+            this.artnetColor = null;
+        }, 50);
     }
 
     public enableDMX() {

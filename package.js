@@ -41,7 +41,7 @@ async function packageSource() {
     console.log('Compiling plugin source...');
     await cmd(path.join('webpack-cli', 'bin', 'cli'));
     await fs.rm(path.join(root, 'dist', 'index.js.LICENSE.txt'));
-    await fs.cp(path.join(root, 'node_modules'), path.join(root, 'dist', 'node_modules'));
+    await fs.cp(path.join(root, 'node_modules'), path.join(root, 'dist', 'node_modules'), { recursive: true });
 }
 
 async function packageUI() {
@@ -78,7 +78,7 @@ async function package() {
 
     console.log('Packaging plugin...');
     await fs.rm(path.join(root, 'overlay-plugin'), { recursive: true }).catch(() => null);
-    await fs.rename(path.join(root, 'dist'), path.join(root, 'overlay-plugin'));
+    await fs.rename(path.join(root, 'dist'), path.join(root, 'lappis-plugin'));
 }
 
 async function movePlugin() {
