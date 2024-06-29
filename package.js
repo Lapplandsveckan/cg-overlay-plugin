@@ -2,14 +2,12 @@ const { exec } = require('child_process');
 const fss = require('fs');
 const fs = fss.promises;
 const path = require('path');
+const os = require('os');
 const root = __dirname;
 
-function cmd(command, ...args) {
-    let cmdPath = JSON.stringify(path.join(root, 'node_modules', command));
-    cmdPath += args.map(arg => ` ${arg}`).join('');
-
+function rawcmd(...args) {
     return new Promise((resolve, reject) => {
-        exec(`node ${cmdPath}`, (error, stdout, stderr) => {
+        exec(args.join(' '), (error, stdout, stderr) => {
             if (error) {
                 console.error(stdout);
                 console.error(stderr);
@@ -20,6 +18,13 @@ function cmd(command, ...args) {
             resolve(stdout ? stdout : stderr);
         });
     });
+}
+
+function cmd(command, ...args) {
+    let cmdPath = JSON.stringify(path.join(root, 'node_modules', command));
+    cmdPath += args.map(arg => ` ${arg}`).join('');
+
+    return rawcmd(`node ${cmdPath}`);
 }
 
 async function readDirRecursive(dir) {
@@ -41,6 +46,12 @@ async function packageSource() {
     console.log('Compiling plugin source...');
     await cmd(path.join('webpack-cli', 'bin', 'cli'));
     await fs.rm(path.join(root, 'dist', 'index.js.LICENSE.txt'));
+
+    if (os.platform() !== 'win32') {
+        // This is cursed, but works better than using fs
+        await rawcmd(`cp -r "${path.join(root, 'node_modules')}" "${path.join(root, 'dist', 'node_modules')}"`).catch(() => null);
+    }
+
     await fs.cp(path.join(root, 'node_modules'), path.join(root, 'dist', 'node_modules'), { recursive: true });
 }
 
