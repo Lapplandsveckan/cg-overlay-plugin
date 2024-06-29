@@ -8,11 +8,11 @@ interface VideoItemProps {
     title: string;
     clip: any;
 
-    playTime?: number;
+    timeLeft?: number;
     onRemove: () => void;
 }
 
-const VideoItem: React.FC<VideoItemProps> = ({title, clip, onRemove, playTime}) => {
+const VideoItem: React.FC<VideoItemProps> = ({title, clip, onRemove, timeLeft}) => {
     const media = useMemo(() => {
         if (!clip) return null;
 
@@ -57,18 +57,11 @@ const VideoItem: React.FC<VideoItemProps> = ({title, clip, onRemove, playTime}) 
                 direction="row"
                 justifyContent="space-between"
             >
-                {
-                    typeof playTime === 'number' &&
-                    (
-                        <Typography>
-                            {-Math.round(media.duration - playTime / 1000)}
-                        </Typography>
-                    )
-                }
                 <Typography>
-                    {
-                        Math.round(media.duration)
-                    }
+                    {typeof timeLeft === 'number' && -timeLeft}
+                </Typography>
+                <Typography>
+                    {Math.round(media.duration)}
                 </Typography>
             </Stack>
         </Stack>
@@ -90,6 +83,9 @@ const VideoQueue = () => {
     const [queue, setQueue] = useState<any[]>([]);
     const [current, setCurrent] = useState<any>(null);
     const [playTime, setPlayTime] = useState<number>(0);
+
+    const totalTime = queue.reduce((acc, item) => acc + (item?.clip.mediainfo.format.duration ?? 0), 0);
+    const timeLeft = Math.max(0, Math.round((current?.clip.mediainfo.format.duration ?? 0) - playTime / 1000));
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -140,7 +136,7 @@ const VideoQueue = () => {
                 direction="column"
                 spacing={2}
             >
-                <h1 style={{ margin: '20px 0' }}>Video Queue</h1>
+                <h1 style={{ margin: '20px 0' }}>Video Queue {-(totalTime + timeLeft)}</h1>
 
                 <Stack
                     direction="column"
@@ -152,7 +148,7 @@ const VideoQueue = () => {
                                 title={current.title}
                                 clip={current.clip}
                                 onRemove={() => conn.rawRequest(`/api/plugin/lappis/videos/${current.id}`, 'DELETE', null)}
-                                playTime={playTime}
+                                timeLeft={timeLeft}
                             />
                         )
                     }
