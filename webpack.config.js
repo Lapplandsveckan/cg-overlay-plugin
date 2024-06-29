@@ -27,6 +27,10 @@ module.exports = {
         path: path.resolve(__dirname, 'dist'),
         libraryTarget: 'commonjs2'
     },
+    externals: {
+        'dmxnet': 'commonjs dmxnet',
+        'atem-connection': 'commonjs atem-connection',
+    },
     mode: 'production',
     target: 'node',
 };

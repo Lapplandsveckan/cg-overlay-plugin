@@ -41,6 +41,7 @@ async function packageSource() {
     console.log('Compiling plugin source...');
     await cmd(path.join('webpack-cli', 'bin', 'cli'));
     await fs.rm(path.join(root, 'dist', 'index.js.LICENSE.txt'));
+    await fs.cp(path.join(root, 'node_modules'), path.join(root, 'dist', 'node_modules'));
 }
 
 async function packageUI() {
