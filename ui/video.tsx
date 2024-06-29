@@ -22,7 +22,7 @@ const VideoItem: React.FC<VideoItemProps> = ({title, clip, onRemove, timeLeft}) 
 
         return {
             name: clip.id as string,
-            duration: clip.mediainfo.format.duration as number,
+            duration: Number(clip.mediainfo.format.duration),
             backgroundUrl: url as string,
         };
     }, [clip]);
@@ -84,8 +84,8 @@ const VideoQueue = () => {
     const [current, setCurrent] = useState<any>(null);
     const [playTime, setPlayTime] = useState<number>(0);
 
-    const totalTime = queue.reduce((acc, item) => acc + (item?.clip.mediainfo.format.duration || 0), 0);
-    const timeLeft = Math.max(0, Math.round((current?.clip.mediainfo.format.duration || 0) - playTime / 1000));
+    const totalTime = queue.reduce((acc, item) => acc + (Number(item?.clip.mediainfo.format.duration) || 0), 0);
+    const timeLeft = Math.max(0, Math.round((Number(current?.clip.mediainfo.format.duration) || 0) - playTime / 1000));
 
     useEffect(() => {
         const interval = setInterval(() => {
