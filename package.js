@@ -77,7 +77,7 @@ async function package() {
     await packageTemplates();
 
     console.log('Packaging plugin...');
-    await fs.rm(path.join(root, 'overlay-plugin'), { recursive: true }).catch(() => null);
+    await fs.rm(path.join(root, 'lappis-plugin'), { recursive: true }).catch(() => null);
     await fs.rename(path.join(root, 'dist'), path.join(root, 'lappis-plugin'));
 }
 
@@ -87,9 +87,9 @@ async function movePlugin() {
 
     console.log('Moving plugin...');
 
-    if (dest.endsWith('/') || dest.endsWith('\\')) dest += 'overlay-plugin';
+    if (dest.endsWith('/') || dest.endsWith('\\')) dest += 'lappis-plugin';
 
-    const src = path.join(root, 'overlay-plugin');
+    const src = path.join(root, 'lappis-plugin');
     await fs.rm(dest, { recursive: true }).catch(() => null);
     await fs.cp(src, dest, { recursive: true });
 
