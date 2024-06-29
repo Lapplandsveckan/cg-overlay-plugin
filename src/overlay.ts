@@ -84,7 +84,6 @@ export default class OverlayManager {
     }
 
     private videoSession: null | {
-        main: RouteEffect,
         wall: RouteEffect,
         stop: () => void,
     } = null;
@@ -107,19 +106,13 @@ export default class OverlayManager {
         }
 
         const width = 0.54;
-
-        const mainEffect = this.api.createEffect('lappis-route', `${CHANNELS.MAIN}:video`, {
-            source: new BasicChannel(CHANNELS.VIDEO),
-            disposeOnStop: true,
-        }) as RouteEffect;
-
         const wallEffect = this.api.createEffect('lappis-route', `${CHANNELS.WALL}:video`, {
             source: new BasicChannel(CHANNELS.VIDEO),
             disposeOnStop: true,
             transform: [0, 0, 1, 1, 0.5 - (width / 2), 0, 0.5 + (width / 2), 1],
         }) as RouteEffect;
 
-        this.videoSession = {main: mainEffect, wall: wallEffect, stop: () => null};
+        this.videoSession = {wall: wallEffect, stop: () => null};
         if (this.videoTransitionState !== 1) this.toggleVideoTransition();
 
         return new Promise<void>((resolve, reject) => {
@@ -127,9 +120,7 @@ export default class OverlayManager {
                 this.videoSession.stop = () => null;
                 resolve();
 
-                mainEffect.activate();
                 wallEffect.activate();
-
                 if (atem) this.plugin.atem.setVideoProgram();
             }, 3000);
 
@@ -146,8 +137,6 @@ export default class OverlayManager {
         if (this.videoTransitionState !== 0) this.toggleVideoTransition();
 
         if (atem) this.plugin.atem.returnToPreview();
-
-        this.videoSession.main.deactivate();
         this.videoSession.wall.deactivate();
 
         this.videoSession.stop();
