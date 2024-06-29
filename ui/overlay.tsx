@@ -3,6 +3,7 @@ import {Button, Stack, TextField} from '@mui/material';
 import {useSocket} from '@web-lib';
 import React from 'react';
 import {MotionControl} from './motion';
+import VideoQueue from './video';
 
 // Actions
 
@@ -151,17 +152,22 @@ const InsamlingTest = () => {
 // Main component
 const OverlayTest = ({ path }) => {
     if (path && path[0] === 'motion') return <MotionControl />;
+    if (path && path[0] === 'video') return <VideoQueue />;
 
     return (
         <>
-            <SwishTest />
-            <NamnskyltTest />
-            <VideotransitionTest />
-            <BarsTest />
-            <InsamlingTest />
+            <SwishTest/>
+            <NamnskyltTest/>
+            <VideotransitionTest/>
+            <BarsTest/>
+            <InsamlingTest/>
 
             <a href={'lappis/motion'}>
                 Motion
+            </a>
+
+            <a href={'lappis/video'}>
+                Video
             </a>
         </>
     );

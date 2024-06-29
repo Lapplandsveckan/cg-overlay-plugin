@@ -1,8 +1,8 @@
-import {Button, Card, Stack, Typography} from '@mui/material';
+import {Button, Stack, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 
 // @ts-ignore
-import {MediaCard, useSocket} from '@web-lib';
+import {useSocket} from '@web-lib';
 
 interface VideoItemProps {
     title: string;
@@ -34,12 +34,12 @@ const VideoItem: React.FC<VideoItemProps> = ({title, clip, onRemove, playTime}) 
             sx={{
                 backgroundColor: '#272930',
                 borderRadius: 4,
-                width: '500px',
+                width: '250px',
             }}
         >
             <Stack
                 direction="row"
-                justifyContent={'space-between'}
+                justifyContent="space-between"
             >
                 <Typography variant="h6">
                     {title}
@@ -54,19 +54,22 @@ const VideoItem: React.FC<VideoItemProps> = ({title, clip, onRemove, playTime}) 
                 </Button>
             </Stack>
             <Stack
-                spacing={2}
-                direction="column"
+                direction="row"
+                justifyContent="space-between"
             >
                 {
-                    Math.round(media.duration)
+                    typeof playTime === 'number' &&
+                    (
+                        <Typography>
+                            {-Math.round(media.duration - playTime / 1000)}
+                        </Typography>
+                    )
                 }
-                {
-                    typeof playTime === 'number' && (-Math.round(media.duration - playTime / 1000))
-                }
-                <MediaCard
-                    {...media}
-                    columns={1}
-                />
+                <Typography>
+                    {
+                        Math.round(media.duration)
+                    }
+                </Typography>
             </Stack>
         </Stack>
     );
@@ -137,7 +140,7 @@ const VideoQueue = () => {
                 direction="column"
                 spacing={2}
             >
-                <h1>Video Queue</h1>
+                <h1 style={{ margin: '20px 0' }}>Video Queue</h1>
 
                 <Stack
                     direction="column"
