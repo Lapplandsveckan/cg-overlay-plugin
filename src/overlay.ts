@@ -228,7 +228,7 @@ export default class OverlayManager {
                         this.logger.error(err);
                     });
                 break;
-            case 2:
+            case 3:
                 this.swish.overlay
                     .deactivate()
                     .catch(err => {
