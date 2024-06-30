@@ -196,7 +196,7 @@ export default class OverlayManager {
     }
 
     public toggleSwish(number?: string) {
-        this.swishState = (this.swishState + 1) % 3;
+        this.swishState = (this.swishState + 1) % 4;
 
         if (number) {
             this.swish.overlay.update({ number });
@@ -221,8 +221,16 @@ export default class OverlayManager {
                     });
                 break;
             case 2:
-                Promise
-                    .all([this.swish.overlay.deactivate(), this.swish.wall.deactivate()])
+                this.swish.wall
+                    .deactivate()
+                    .catch(err => {
+                        this.logger.error('Failed to deactivate swish effect');
+                        this.logger.error(err);
+                    });
+                break;
+            case 2:
+                this.swish.overlay
+                    .deactivate()
                     .catch(err => {
                         this.logger.error('Failed to deactivate swish effect');
                         this.logger.error(err);
