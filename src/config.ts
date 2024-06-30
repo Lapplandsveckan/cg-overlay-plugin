@@ -2,8 +2,8 @@ export const config = {
     artnet: {
         universe: 0,
         channel: 1,
-        net: 100,
-        subnet: 253,
+        net: (253 >> 4) & 0xF, // 0-127
+        subnet: 253 & 0xF,
     },
 
     atem: {
