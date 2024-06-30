@@ -87,10 +87,6 @@ export class MotionEffect extends Effect {
             PlayCommand
                 .video(this.options.clip, { loop: true })
                 .allocate(this.videoLayer),
-            Transform
-                .fromArray([0, 0, 1, 0.5, 0, 0, 1, 2])
-                .getCommand()
-                .allocate(this.videoLayer),
         ];
 
         if (this.color) {
