@@ -56,85 +56,14 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.atem.connect(config.atem.ip);
 
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.VIDEO)); // main video
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.OVERLAY)); // main overlay
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION)); // main presentation
-
-        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.MOTION)); // wall motion
-        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.PRESENTATION)); // wall presentation
-        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.VIDEO)); // wall video
-        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.OVERLAY)); // wall overlay
-
-        this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.VIDEO)); // video-out
-        this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY)); // video-out
-
+        this.registerEffectGroups();
         this.registerEffects();
-
-        this.api.registerRoute('motion/clip', async req => {
-            if (!req.data) return null; // throw new WebError('Invalid request', 400);
-
-            const { clip } = req.data as {clip: string};
-            this.motion.setMotion(clip);
-        }, 'ACTION');
-
-        this.api.registerRoute('motion/color', async req => {
-            if (!req.data) return null; // throw new WebError('Invalid request', 400);
-
-            const { color } = req.data as {color: string};
-            this.motion.setColor(color);
-        }, 'ACTION');
-
-        this.api.registerRoute('videos', async req => this.video.getInformation(), 'GET');
-        this.api.registerRoute('videos/:id', async req => this.video.removeItem(req.params.id), 'DELETE');
-
+        this.registerRoutes();
 
         this.api.registerUI(UI_INJECTION_ZONE.PLUGIN_PAGE, path.join(__dirname, 'ui', 'overlay'));
         this.api.registerUI(UI_INJECTION_ZONE.RUNDOWN_SIDE, path.join(__dirname, 'ui', 'video'));
 
-        const registerRundownAction = (key: string, action: (rundown: RundownItem) => void) => {
-            this.api.registerUI(this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_ITEM, key), path.join(__dirname, 'ui', key, 'Item'))
-            this.api.registerUI(this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_EDITOR, key), path.join(__dirname, 'ui', key, 'Editor'))
-
-            this.api.registerRundownAction(key, action);
-        };
-
-        registerRundownAction('queue-video', async (rundown) => {
-            const video = this.api.getFileDatabase().get(rundown.data.clip);
-            if (!video) return null; // throw new WebError('Clip not found', 404);
-
-            this.video.queueVideo(video.id);
-        });
-
-        registerRundownAction('play-video', async (rundown) => {
-            const video = this.api.getFileDatabase().get(rundown.data.clip);
-            if (!video) return null; // throw new WebError('Clip not found', 404);
-
-            this.video.playVideo(video.id);
-        });
-
-        registerRundownAction('namnskylt', async (rundown) => {
-            const name = rundown.data.name;
-            if (!name) return null; // throw new WebError('No name provided', 400);
-
-            this.overlay.showNamnskylt(name);
-        });
-
-        registerRundownAction('swish', async (rundown) => {
-            const number = rundown.data.number;
-            this.overlay.toggleSwish(number);
-        });
-
-        registerRundownAction('bars', async (rundown) => {
-            this.overlay.toggleBars();
-        });
-
-        registerRundownAction('presentation', async (rundown) => {
-            this.overlay.togglePresentationMode(rundown.data.atem ?? false);
-        });
-
-        registerRundownAction('insamling', async (rundown) => {
-            this.overlay.toggleInsamling(rundown.data);
-        });
+        this.registerRundownActions();
     }
 
     protected onDisable() {
@@ -233,5 +162,107 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             'motion',
             (group, options) => new MotionEffect(group, options as MotionEffectOptions),
         );
+    }
+
+    protected registerRundownActions() {
+        const registerRundownAction = (key: string, action: (rundown: RundownItem) => void) => {
+            this.api.registerUI(this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_ITEM, key), path.join(__dirname, 'ui', key, 'Item'))
+            this.api.registerUI(this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_EDITOR, key), path.join(__dirname, 'ui', key, 'Editor'))
+
+            this.api.registerRundownAction(key, action);
+        };
+
+        registerRundownAction('queue-video', async (rundown) => {
+            const video = this.api.getFileDatabase().get(rundown.data.clip);
+            if (!video) return null; // throw new WebError('Clip not found', 404);
+
+            this.video.queueVideo(video.id);
+        });
+
+        registerRundownAction('play-video', async (rundown) => {
+            const video = this.api.getFileDatabase().get(rundown.data.clip);
+            if (!video) return null; // throw new WebError('Clip not found', 404);
+
+            this.video.playVideo(video.id);
+        });
+
+        registerRundownAction('namnskylt', async (rundown) => {
+            const name = rundown.data.name;
+            if (!name) return null; // throw new WebError('No name provided', 400);
+
+            this.overlay.showNamnskylt(name);
+        });
+
+        registerRundownAction('swish', async (rundown) => {
+            const number = rundown.data.number;
+            this.overlay.toggleSwish(number);
+        });
+
+        registerRundownAction('bars', async (rundown) => {
+            this.overlay.toggleBars();
+        });
+
+        registerRundownAction('presentation', async (rundown) => {
+            this.overlay.togglePresentationMode(rundown.data.atem ?? false);
+        });
+
+        registerRundownAction('insamling', async (rundown) => {
+            this.overlay.toggleInsamling(rundown.data);
+        });
+    }
+
+    public registerEffectGroups() {
+        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.VIDEO)); // main video
+        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.OVERLAY)); // main overlay
+        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION)); // main presentation
+
+        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.MOTION)); // wall motion
+        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.PRESENTATION)); // wall presentation
+        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.VIDEO)); // wall video
+        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.OVERLAY)); // wall overlay
+
+        this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.VIDEO)); // video-out
+        this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY)); // video-out
+    }
+
+    public registerRoutes() {
+        this.api.registerRoute('bars', async req => {
+            this.overlay.toggleBars();
+        }, 'ACTION');
+
+        this.api.registerRoute('presentation', async req => {
+            this.overlay.togglePresentationMode(typeof req.data === 'object' ? req.data['atem'] : false);
+        }, 'ACTION');
+
+        this.api.registerRoute('swish', async req => {
+            this.overlay.toggleSwish(typeof req.data === 'object' && req.data['number']);
+        }, 'ACTION');
+
+        this.api.registerRoute('insamling', async req => {
+            if (!req.data || typeof req.data !== 'object') return null; // throw new WebError('Invalid request', 400);
+
+            const { now, goal } = req.data as any;
+            this.overlay.toggleInsamling({ now, goal });
+        }, 'ACTION');
+
+        this.api.registerRoute('motion/clip', async req => {
+            if (!req.data) return null; // throw new WebError('Invalid request', 400);
+
+            const { clip } = req.data as {clip: string};
+            this.motion.setMotion(clip);
+        }, 'ACTION');
+
+        this.api.registerRoute('motion/color', async req => {
+            if (!req.data) return null; // throw new WebError('Invalid request', 400);
+
+            const { color } = req.data as {color: string};
+            this.motion.setColor(color);
+        }, 'ACTION');
+
+        this.api.registerRoute('videos', async req => this.video.getInformation(), 'GET');
+        this.api.registerRoute('videos/:id', async req => this.video.removeItem(req.params.id), 'DELETE');
+
+        this.api.registerRoute('videos', async req => this.video.clearQueue(), 'DELETE');
+        this.api.registerRoute('video', async req => this.video.stopVideo(typeof req.data === 'object' && req.data['clear']), 'DELETE');
     }
 }

@@ -25,10 +25,8 @@ export default class VideoManager {
     }
 
     public stopVideo(clearQueue = false) {
-        if (!this.playing) return;
         if (clearQueue) this.queue = [];
-
-        this.playing.effect.cancel();
+        if (this.playing) this.playing.effect.cancel();
     }
 
     public queueVideo(video: string) {
@@ -109,6 +107,11 @@ export default class VideoManager {
         }
 
         return data;
+    }
+
+    public clearQueue() {
+        this.queue = [];
+        this.plugin.sendVideoInformation();
     }
 
     public removeItem(id: string) {
