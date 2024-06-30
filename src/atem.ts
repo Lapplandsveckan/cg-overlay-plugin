@@ -35,6 +35,7 @@ export class AtemManager {
     public returnToPreview() {
         if (!this.connected) return console.error('ATEM not connected');
         const {programInput, previewInput} = this.state;
+        if (programInput !== config.atem.videoInput) return;
 
         this.connection.changePreviewInput(programInput);
         this.connection.changeProgramInput(previewInput);
