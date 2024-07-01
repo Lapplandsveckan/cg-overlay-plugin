@@ -42,7 +42,7 @@ const SwishTest = () => {
                 InputLabelProps={{
                     shrink: true,
                 }}
-                placeholder={'070 797 78 20'}
+                placeholder={'123 607 27 97'}
                 onChange={e => setNumber(e.target['value'])}
                 sx={{
                     flexGrow: 1,
