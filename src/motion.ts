@@ -74,7 +74,7 @@ export default class MotionManager {
 
         for (let i = 0; i < config.artnet_send.count; i++)
             this.senders.push(dmxnet.newSender({
-                universe: config.artnet_send.universe_start + i,
+                subuni: config.artnet_send.universe_start + i,
                 ip: config.artnet_send.ip.replace(
                     'x',
                     (config.artnet_send.subnet_start + i).toString().padStart(3, '0')
