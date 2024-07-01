@@ -8,7 +8,7 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
 
     // which height? 60, 100, 108, 120?
     tl.to(styles.bar, {
-        height: 140,
+        height: 108,
         duration: 4,
     }, 'start');
 }
