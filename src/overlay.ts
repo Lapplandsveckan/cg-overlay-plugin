@@ -15,6 +15,7 @@ export const CHANNELS = {
 };
 
 export const GROUPS = {
+    BARS: 'bars',
     OVERLAY: 'overlay',
     VIDEO: 'video',
     PRESENTATION: 'presentation',
@@ -56,7 +57,7 @@ export default class OverlayManager {
             }) as SwishWallEffect,
         };
 
-        this.bars = this.api.createEffect('overlay-bars', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {}) as BarsOverlayEffect; // TODO: special group so it is underneeth all overlays
+        this.bars = this.api.createEffect('overlay-bars', getGroup(CHANNELS.MAIN, GROUPS.BARS), {}) as BarsOverlayEffect; // TODO: special group so it is underneeth all overlays
         this.insamling = this.api.createEffect('overlay-insamling', getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY), {}) as InsamlingOverlayEffect; // TODO: special group so it is underneeth all overlays
     }
 

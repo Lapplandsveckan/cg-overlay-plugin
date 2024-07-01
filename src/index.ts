@@ -212,6 +212,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     public registerEffectGroups() {
+        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.BARS)); // main video
         this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.VIDEO)); // main video
         this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.OVERLAY)); // main overlay
         this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION)); // main presentation
