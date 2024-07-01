@@ -49,10 +49,10 @@ export default class OverlayManager {
     public initialize() {
         this.swish = {
             overlay: this.api.createEffect('overlay-swish', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {
-                number: '070 797 78 20',
+                number: '123 607 27 97',
             }) as SwishOverlayEffect,
             wall: this.api.createEffect('wall-swish', getGroup(CHANNELS.WALL, GROUPS.OVERLAY), {
-                number: '070 797 78 20',
+                number: '123 607 27 97',
             }) as SwishWallEffect,
         };
 

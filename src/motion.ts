@@ -38,15 +38,32 @@ export default class MotionManager {
     public setColor(color?: string) {
         this.motion?.setColor(color);
         this.color = color;
+
+        if (this.connection)
+            for (const sender of this.senders)
+                this.sendColor(this.color, sender);
+    }
+
+    private sendColor(color: string, sender: dmxlib.sender) {
+        const value = color
+            .match(/#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i)
+            .slice(1)
+            .map(v => parseInt(v, 16));
+
+        for (let i = 0; i < 512; i++)
+            sender.prepChannel(i, value[i % 3]);
+
+        sender.transmit();
     }
 
     private acceptIncoming = true;
     private connection: ArtNetConfig = null;
 
     private artnetColor: string;
-    private setupDMX(config: ArtNetConfig) { // IDEA: Add support for closing the connection, eg when the user changes the config or it already exists
+    private senders = [];
+    private setupDMX(_config: ArtNetConfig) { // IDEA: Add support for closing the connection, eg when the user changes the config or it already exists
         if (this.connection) return;
-        const { universe, net, subnet, channel } = this.connection = config;
+        const { universe, net, subnet, channel } = this.connection = _config;
 
         const dmxnet = new dmxlib.dmxnet();
         const receiver = dmxnet.newReceiver({
@@ -54,6 +71,15 @@ export default class MotionManager {
             net,
             subnet,
         });
+
+        for (let i = 0; i < config.artnet_send.count; i++)
+            this.senders.push(dmxnet.newSender({
+                universe: config.artnet_send.universe_start + i,
+                ip: config.artnet_send.ip.replace(
+                    'x',
+                    (config.artnet_send.subnet_start + i).toString().padStart(3, '0')
+                ),
+            }));
 
         receiver.on('data', (data: number[]) => {
             const channelIndex = channel - 1;
