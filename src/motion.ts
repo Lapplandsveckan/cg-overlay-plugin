@@ -52,8 +52,6 @@ export default class MotionManager {
 
         for (let i = 0; i < 512; i++)
             sender.prepChannel(i, value[i % 3]);
-
-        sender.transmit();
     }
 
     private acceptIncoming = true;
@@ -79,6 +77,7 @@ export default class MotionManager {
                     'x',
                     (config.artnet_send.subnet_start + i).toString().padStart(3, '0')
                 ),
+                base_refresh_interval: 100,
             }));
 
         receiver.on('data', (data: number[]) => {

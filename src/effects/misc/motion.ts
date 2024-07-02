@@ -38,7 +38,7 @@ export class MotionEffect extends Effect {
             const mixerCmd = MixerCommand
                 .create()
                 .keyer(1)
-                .brightness(2)
+                .brightness(3)
                 .saturation(0)
                 .allocate(this.videoLayer);
 
@@ -89,7 +89,7 @@ export class MotionEffect extends Effect {
             const mixerCmd = MixerCommand
                 .create()
                 .keyer(1)
-                .brightness(2)
+                .brightness(3)
                 .saturation(0)
                 .allocate(this.videoLayer);
 
