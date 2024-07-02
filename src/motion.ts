@@ -59,7 +59,7 @@ export default class MotionManager {
 
     private artnetColor: string;
     private senders = [];
-    private setupDMX(_config: ArtNetConfig) { // IDEA: Add support for closing the connection, eg when the user changes the config or it already exists
+    private async setupDMX(_config: ArtNetConfig) { // IDEA: Add support for closing the connection, eg when the user changes the config or it already exists
         if (this.connection) return;
         const { universe, net, subnet, channel } = this.connection = _config;
 
@@ -70,7 +70,7 @@ export default class MotionManager {
             subnet,
         });
 
-        for (let i = 0; i < config.artnet_send.count; i++)
+        for (let i = 0; i < config.artnet_send.count; i++) {
             this.senders.push(dmxnet.newSender({
                 subuni: config.artnet_send.universe_start + i,
                 ip: config.artnet_send.ip.replace(
@@ -79,6 +79,9 @@ export default class MotionManager {
                 ),
                 base_refresh_interval: 100,
             }));
+
+            await new Promise(resolve => setTimeout(resolve, 5));
+        }
 
         receiver.on('data', (data: number[]) => {
             const channelIndex = channel - 1;
