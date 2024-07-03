@@ -25,7 +25,7 @@ export const ToggleVideoRouteEditor: React.FC<ToggleVideoRouteEditorProps> = ({e
 
     return (
         <>
-            <Typography variant="h6">ToggleVideoRoute</Typography>
+            <Typography variant="h6">Toggle Video Route</Typography>
             <TextField
                 label="Title"
                 value={title}
