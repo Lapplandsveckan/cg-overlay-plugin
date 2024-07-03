@@ -76,8 +76,12 @@ export default class VideoManager {
 
         this.plugin.sendVideoInformation();
 
-        await effect.play();
-        await effect.waitForFinish();
+        try {
+            await effect.play()
+            await effect.waitForFinish();
+        } catch (err) {
+            this.plugin.getLogger().error(`Failed to play video: ${err}`);
+        }
 
         if (this.queue.length) setTimeout(() => effect.deactivate(), 250);
         this.playNext();
