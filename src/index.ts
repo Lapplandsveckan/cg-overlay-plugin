@@ -209,6 +209,14 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         registerRundownAction('insamling', async (rundown) => {
             this.overlay.toggleInsamling(rundown.data);
         });
+
+        registerRundownAction('toggle-videoroute', async (rundown) => {
+            this.api.setVideoRouteEnabled(rundown.data.route);
+        });
+
+        // registerRundownAction('set-videoroute', async (rundown) => {
+        //     this.api.setVideoRouteEnabled(rundown.data.route);
+        // });
     }
 
     public registerEffectGroups() {
