@@ -1,8 +1,8 @@
-import React, {useState} from 'react';
-import {TextField, Typography} from '@mui/material';
+import React, {useEffect, useState} from 'react';
+import {MenuItem, Select, TextField, Typography} from '@mui/material';
 
 // @ts-ignore
-import {RundownEditorActionBar} from '@web-lib';
+import {RundownEditorActionBar, useSocket} from '@web-lib';
 
 interface RundownEntry {
     id: string;
@@ -20,8 +20,23 @@ interface ToggleVideoRouteEditorProps {
     deleteEntry: (entry: RundownEntry) => void;
 }
 
+function useRoutes() {
+    const conn = useSocket();
+    const [routes, setRoutes] = useState<any[]>([]);
+
+    useEffect(() =>
+        conn.rawRequest('/api/routes', 'GET', {}).then(rundowns => setRoutes(rundowns.data ?? [])),
+[]);
+
+    return {
+        routes,
+    };
+}
+
 export const ToggleVideoRouteEditor: React.FC<ToggleVideoRouteEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
     const [title, setTitle] = useState(entry?.title ?? '');
+    const [route, setRoute] = useState(entry?.data?.route ?? '');
+    const { routes } = useRoutes();
 
     return (
         <>
@@ -31,6 +46,24 @@ export const ToggleVideoRouteEditor: React.FC<ToggleVideoRouteEditorProps> = ({e
                 value={title}
                 onChange={e => setTitle(e.target['value'])}
             />
+
+            <Select>
+                {routes.map(route => (
+                    <option key={route.id} value={route.id}>{route.name}</option>
+                ))}
+            </Select>
+
+            <Select
+                variant="outlined"
+                label="Type"
+                color="primary"
+                value={route}
+                onChange={(event) => setRoute(event.target['value'])}
+            >
+                {routes.map(route => (
+                    <MenuItem value={route.id} key={route.id}>{route.name ?? route.id}</MenuItem>
+                ))}
+            </Select>
 
             <RundownEditorActionBar
                 exists={!creating}
