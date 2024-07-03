@@ -40,6 +40,7 @@ export class MotionEffect extends Effect {
                 .keyer(1)
                 .brightness(4)
                 .saturation(0)
+                .contrast(2)
                 .allocate(this.videoLayer);
 
             cmds.push(mixerCmd);
@@ -91,6 +92,7 @@ export class MotionEffect extends Effect {
                 .keyer(1)
                 .brightness(4)
                 .saturation(0)
+                .contrast(2)
                 .allocate(this.videoLayer);
 
             const colorCmd = PlayCommand
