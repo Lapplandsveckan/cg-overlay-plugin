@@ -1,4 +1,4 @@
-import {BasicChannel, CasparPlugin, Logger, PluginAPI} from '@lappis/cg-manager';
+import {BasicChannel, Logger, PluginAPI} from '@lappis/cg-manager';
 import {SwishOverlayEffect} from './effects/overlay/swish';
 import {SwishWallEffect} from './effects/wall/swish';
 import {VideoTransitionWallEffect} from './effects/wall/videotransition';
@@ -7,6 +7,7 @@ import {InsamlingOverlayEffect, InsamlingOverlayEffectOptions} from './effects/o
 import {VideoEffect} from './effects/misc/video';
 import {RouteEffect} from './effects/misc/route';
 import LappisOverlayPlugin from './index';
+import {TextWallEffect} from './effects/wall/text';
 
 export const CHANNELS = {
     MAIN: 1,
@@ -47,6 +48,9 @@ export default class OverlayManager {
     private videoTransition: VideoTransitionWallEffect = null;
     private videoTransitionState = 0;
 
+    private textEffect: TextWallEffect = null;
+    private textState = 0;
+
     public initialize() {
         this.swish = {
             overlay: this.api.createEffect('overlay-swish', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {
@@ -56,6 +60,8 @@ export default class OverlayManager {
                 number: '123 607 27 97',
             }) as SwishWallEffect,
         };
+
+        this.textEffect = this.api.createEffect('wall-text', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {}) as TextWallEffect;
 
         this.bars = this.api.createEffect('overlay-bars', getGroup(CHANNELS.MAIN, GROUPS.BARS), {}) as BarsOverlayEffect; // TODO: special group so it is underneeth all overlays
         this.insamling = this.api.createEffect('overlay-insamling', getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY), {}) as InsamlingOverlayEffect; // TODO: special group so it is underneeth all overlays
@@ -289,5 +295,18 @@ export default class OverlayManager {
                     });
                 break;
         }
+    }
+
+    public setText(text: string) {
+        if (!text && this.textState === 1) {
+            this.textEffect.deactivate();
+            this.textState = 0;
+            return;
+        }
+
+        this.textEffect.update({ text });
+
+        if (this.textState === 0) this.textEffect.activate();
+        this.textState = 1;
     }
 }

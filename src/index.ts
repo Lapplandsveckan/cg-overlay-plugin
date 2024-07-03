@@ -18,6 +18,7 @@ import {MotionEffect, MotionEffectOptions} from './effects/misc/motion';
 import MotionManager from './motion';
 import {AtemManager} from './atem';
 import {config} from './config';
+import {TextWallEffect, TextWallEffectOptions} from './effects/wall/text';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -149,6 +150,15 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
 
         this.api.registerEffect(
+            'wall-text',
+            (group, options) => new TextWallEffect(
+                group,
+                options as TextWallEffectOptions,
+                this.templates.getFilePath('wall/text'),
+            ),
+        );
+
+        this.api.registerEffect(
             'lappis-video',
             (group, options) => new VideoEffect(group, options as VideoEffectOptions),
         );
@@ -212,6 +222,10 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         registerRundownAction('toggle-videoroute', async (rundown) => {
             this.api.setVideoRouteEnabled(rundown.data.route);
+        });
+
+        registerRundownAction('text', async (rundown) => {
+            this.overlay.setText(rundown.data.text);
         });
     }
 
