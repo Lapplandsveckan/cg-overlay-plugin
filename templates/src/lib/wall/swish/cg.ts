@@ -7,7 +7,7 @@ import {offCGEvent, onCGEvent} from '../../cg';
 export function register(
     setState: (state: number) => void,
     setNumber: (number: string) => void,
-    setLabels: (labels: string) => void
+    setLabels: (labels: string) => void,
 ) {
     const states = [
         () => setState(0),
