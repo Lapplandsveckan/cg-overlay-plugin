@@ -61,7 +61,7 @@ export default class OverlayManager {
             }) as SwishWallEffect,
         };
 
-        this.textEffect = this.api.createEffect('wall-text', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {}) as TextWallEffect;
+        // this.textEffect = this.api.createEffect('wall-text', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {}) as TextWallEffect;
 
         this.bars = this.api.createEffect('overlay-bars', getGroup(CHANNELS.MAIN, GROUPS.BARS), {}) as BarsOverlayEffect; // TODO: special group so it is underneeth all overlays
         this.insamling = this.api.createEffect('overlay-insamling', getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY), {}) as InsamlingOverlayEffect; // TODO: special group so it is underneeth all overlays
@@ -270,35 +270,30 @@ export default class OverlayManager {
     }
 
     public async toggleInsamling(options?: InsamlingOverlayEffectOptions) {
-        try {
-            this.insamlingState = 1 - this.insamlingState;
+        this.insamlingState = 1 - this.insamlingState;
 
-            if (options)
-                this.insamling.update(options);
+        if (options)
+            this.insamling.update(options);
 
-            switch (this.insamlingState) {
-                case 0:
-                    if (this.externalEnabledVideoSession) await this.togglePresentationMode(true);
-                    this.insamling
-                        .deactivate()
-                        .catch(err => {
-                            this.logger.error('Failed to deactivate insamling effect');
-                            this.logger.error(err);
-                        });
-                    break;
-                case 1:
-                    if (!this.externalEnabledVideoSession) await this.togglePresentationMode(true);
-                    this.insamling
-                        .activate()
-                        .catch(err => {
-                            this.logger.error('Failed to activate insamling effect');
-                            this.logger.error(err);
-                        });
-                    break;
-            }
-        } catch (e) {
-            this.logger.error('Failed to toggle insamling effect');
-            this.logger.error(e);
+        switch (this.insamlingState) {
+            case 0:
+                if (this.externalEnabledVideoSession) await this.togglePresentationMode(true);
+                this.insamling
+                    .deactivate()
+                    .catch(err => {
+                        this.logger.error('Failed to deactivate insamling effect');
+                        this.logger.error(err);
+                    });
+                break;
+            case 1:
+                if (!this.externalEnabledVideoSession) await this.togglePresentationMode(true);
+                this.insamling
+                    .activate()
+                    .catch(err => {
+                        this.logger.error('Failed to activate insamling effect');
+                        this.logger.error(err);
+                    });
+                break;
         }
     }
 
