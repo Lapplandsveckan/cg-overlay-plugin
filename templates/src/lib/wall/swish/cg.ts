@@ -14,7 +14,11 @@ export function register(
         () => setState(1),
     ];
 
-    const number = (params) => (params.number && setNumber(params.number), params.labels && setLabels(params.labels));
+    const number = (params) => {
+        if (params.number) setNumber(params.number);
+        if (params.labels) setLabels(params.labels);
+    };
+
     onCGEvent('update', number);
 
     onCGEvent('stop', states[0]);
