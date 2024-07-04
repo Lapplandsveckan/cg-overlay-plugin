@@ -47,12 +47,6 @@ export const ToggleVideoRouteEditor: React.FC<ToggleVideoRouteEditorProps> = ({e
                 onChange={e => setTitle(e.target['value'])}
             />
 
-            <Select>
-                {routes.map(route => (
-                    <option key={route.id} value={route.id}>{route.name}</option>
-                ))}
-            </Select>
-
             <Select
                 variant="outlined"
                 label="Type"

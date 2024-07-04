@@ -298,8 +298,8 @@ export default class OverlayManager {
     }
 
     public setText(text: string) {
-        if (!text && this.textState === 1) {
-            this.textEffect.deactivate();
+        if (!text) {
+            if (this.textState === 1) this.textEffect.deactivate();
             this.textState = 0;
             return;
         }
