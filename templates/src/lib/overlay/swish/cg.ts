@@ -21,7 +21,7 @@ export function register(
 
     const number = (params) => {
         if (params.number) setNumber(params.number?.replace(/,/g, '\n'));
-        if (params.labels) setLabels(params.labels?.replace(/,/g, '\n'));
+        setLabels(params.labels?.replace(/,/g, '\n'));
     };
 
     onCGEvent('update', number);
