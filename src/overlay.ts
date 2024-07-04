@@ -270,30 +270,35 @@ export default class OverlayManager {
     }
 
     public async toggleInsamling(options?: InsamlingOverlayEffectOptions) {
-        this.insamlingState = 1 - this.insamlingState;
+        try {
+            this.insamlingState = 1 - this.insamlingState;
 
-        if (options)
-            this.insamling.update(options);
+            if (options)
+                this.insamling.update(options);
 
-        switch (this.insamlingState) {
-            case 0:
-                if (this.externalEnabledVideoSession) await this.togglePresentationMode();
-                this.insamling
-                    .deactivate()
-                    .catch(err => {
-                        this.logger.error('Failed to deactivate insamling effect');
-                        this.logger.error(err);
-                    });
-                break;
-            case 1:
-                if (!this.externalEnabledVideoSession) await this.togglePresentationMode();
-                this.insamling
-                    .activate()
-                    .catch(err => {
-                        this.logger.error('Failed to activate insamling effect');
-                        this.logger.error(err);
-                    });
-                break;
+            switch (this.insamlingState) {
+                case 0:
+                    if (this.externalEnabledVideoSession) await this.togglePresentationMode(true);
+                    this.insamling
+                        .deactivate()
+                        .catch(err => {
+                            this.logger.error('Failed to deactivate insamling effect');
+                            this.logger.error(err);
+                        });
+                    break;
+                case 1:
+                    if (!this.externalEnabledVideoSession) await this.togglePresentationMode(true);
+                    this.insamling
+                        .activate()
+                        .catch(err => {
+                            this.logger.error('Failed to activate insamling effect');
+                            this.logger.error(err);
+                        });
+                    break;
+            }
+        } catch (e) {
+            this.logger.error('Failed to toggle insamling effect');
+            this.logger.error(e);
         }
     }
 
