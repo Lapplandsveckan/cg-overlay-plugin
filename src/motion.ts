@@ -75,7 +75,7 @@ export default class MotionManager {
                 subuni: config.artnet_send.universe_start + i,
                 ip: config.artnet_send.ip.replace(
                     'x',
-                    (config.artnet_send.subnet_start + i).toString().padStart(3, '0')
+                    (config.artnet_send.subnet_start + i).toString().padStart(3, '0'),
                 ),
                 base_refresh_interval: 100,
             }));
@@ -93,7 +93,7 @@ export default class MotionManager {
         // Buffer the color changes from dmx to avoid flickering
         setInterval(() => {
             if (!this.acceptIncoming || !this.artnetColor) return;
-            this.setColor(this.artnetColor)
+            this.setColor(this.artnetColor);
             this.artnetColor = null;
         }, 50);
     }

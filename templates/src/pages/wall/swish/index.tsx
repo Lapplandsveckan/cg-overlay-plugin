@@ -17,8 +17,14 @@ export const SlidingSwish: React.FC<{ count: number, className: string }> = ({ c
     );
 };
 
-export const SwishAnimation: React.FC<{ number: string, state: number, labels: string }> = ({ number, state, labels }) => {
-    let Labels = labels.split('\n');
+interface SwishAnimationProps {
+    number: string;
+    state: number;
+    labels: string;
+}
+
+export const SwishAnimation: React.FC<SwishAnimationProps> = ({ number, state, labels }) => {
+    const Labels = labels.split('\n');
     return (
         <CG
             state={state}

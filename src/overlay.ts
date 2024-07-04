@@ -134,7 +134,7 @@ export default class OverlayManager {
             this.videoSession.stop = () => {
                 clearTimeout(timeout);
                 reject(new Error('Video session stopped'));
-            }
+            };
         });
     }
 

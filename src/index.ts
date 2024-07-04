@@ -176,8 +176,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
     protected registerRundownActions() {
         const registerRundownAction = (key: string, action: (rundown: RundownItem) => void) => {
-            this.api.registerUI(this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_ITEM, key), path.join(__dirname, 'ui', key, 'Item'))
-            this.api.registerUI(this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_EDITOR, key), path.join(__dirname, 'ui', key, 'Editor'))
+            this.api.registerUI(this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_ITEM, key), path.join(__dirname, 'ui', key, 'Item'));
+            this.api.registerUI(this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_EDITOR, key), path.join(__dirname, 'ui', key, 'Editor'));
 
             this.api.registerRundownAction(key, action);
         };

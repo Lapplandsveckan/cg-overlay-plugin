@@ -77,7 +77,7 @@ export default class VideoManager {
         this.plugin.sendVideoInformation();
 
         try {
-            await effect.play()
+            await effect.play();
             await effect.waitForFinish();
         } catch (err) {
             this.plugin.getLogger().error(`Failed to play video: ${err}`);
@@ -99,7 +99,7 @@ export default class VideoManager {
         const data = {
             current: null,
             queue: media,
-        }
+        };
 
         if (this.playing) {
             const video = media.shift();
@@ -107,7 +107,7 @@ export default class VideoManager {
             data.current = {
                 ...video,
                 metadata: this.playing.effect.getMetadata(),
-            }
+            };
         }
 
         return data;
