@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {TextField, Typography} from '@mui/material';
+import {Checkbox, FormControlLabel, TextField, Typography} from '@mui/material';
 
 // @ts-ignore
 import {RundownEditorActionBar} from '@web-lib';
@@ -23,6 +23,8 @@ interface SwishEditorProps {
 export const SwishEditor: React.FC<SwishEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
     const [title, setTitle] = useState(entry?.title ?? '');
     const [number, setNumber] = useState(entry?.data.number ?? '');
+    const [labels, setLabels] = useState(entry?.data.labels ?? '');
+    const [skipFirst, setSkipFirst] = useState(entry?.data.skipFirst ?? false);
 
     return (
         <>
@@ -39,6 +41,21 @@ export const SwishEditor: React.FC<SwishEditorProps> = ({entry, updateEntry, del
                 onChange={e => setNumber(e.target['value'])}
             />
 
+            <TextField
+                label="Labels"
+                value={labels}
+                onChange={e => setLabels(e.target['value'])}
+            />
+
+            <FormControlLabel
+                label="Skip First"
+
+                control={<Checkbox />}
+
+                checked={skipFirst}
+                onChange={e => setSkipFirst(e.target['checked'])}
+            />
+
             <RundownEditorActionBar
                 exists={!creating}
 
@@ -48,6 +65,8 @@ export const SwishEditor: React.FC<SwishEditorProps> = ({entry, updateEntry, del
                         ...entry,
                         data: {
                             number,
+                            labels,
+                            skipFirst,
                         },
                         title,
                     });

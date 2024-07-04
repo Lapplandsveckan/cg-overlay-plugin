@@ -22,6 +22,7 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
     tl.set(styles.swish__number, {
         top: '50%',
         fontSize: '120pt',
+        flexDirection: 'column',
     }, 'start');
 
     tl.set(styles.swish__top, {
@@ -37,6 +38,10 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
 
 function handleMinimize(tl: gsap.core.Timeline, styles: Record<string, string>, prevState: number) {
     // tl.clear();
+
+    tl.set(styles.swish__number, {
+        flexDirection: 'row',
+    }, 'start');
 
     let delay = 0.3;
     if (prevState === 0) {

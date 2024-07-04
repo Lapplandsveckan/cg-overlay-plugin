@@ -1,7 +1,7 @@
 import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
 
 export interface TextWallEffectOptions {
-    name: string;
+    text: string;
 }
 
 export class TextWallEffect extends Effect {
@@ -13,7 +13,7 @@ export class TextWallEffect extends Effect {
         this.allocateLayers(1);
         this.executor.executeAllocations();
 
-        const cmd = CgCommand.add(template, false, { name: this.options.name });
+        const cmd = CgCommand.add(template, false, { text: this.options.text });
         cmd.allocate(this.layer);
 
         this.executor.execute(cmd);
@@ -24,7 +24,7 @@ export class TextWallEffect extends Effect {
         return this.layers[0];
     }
 
-    public update(data: any) {
+    public update(data: TextWallEffectOptions) {
         return this.executor.execute(
             CgCommand
                 .update(data)
@@ -59,7 +59,7 @@ export class TextWallEffect extends Effect {
 
     public getMetadata(): {} {
         return {
-            name: this.options.name,
+            text: this.options.text,
         };
     }
 }

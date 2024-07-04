@@ -79,6 +79,32 @@
 
     text-anchor: middle;
     alignment-baseline: middle;
+
+    white-space: pre;
+}
+
+.swish__side {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    width: 50vw;
+    height: 50vh;
+
+    position: absolute;
+    left: 25vw;
+    top: 25vh;
+
+    box-sizing: border-box;
+}
+
+.swish__side div {
+    margin: 25px 0;
+    font-size: 120pt;
+
+    opacity: 0.6;
+    color: #FFF;
 }
 
 /* Animation of the sliding swish texts */

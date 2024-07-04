@@ -61,10 +61,10 @@ export default class OverlayManager {
             }) as SwishWallEffect,
         };
 
-        // this.textEffect = this.api.createEffect('wall-text', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {}) as TextWallEffect;
-
         this.bars = this.api.createEffect('overlay-bars', getGroup(CHANNELS.MAIN, GROUPS.BARS), {}) as BarsOverlayEffect; // TODO: special group so it is underneeth all overlays
         this.insamling = this.api.createEffect('overlay-insamling', getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY), {}) as InsamlingOverlayEffect; // TODO: special group so it is underneeth all overlays
+
+        // this.textEffect = this.api.createEffect('wall-text', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {}) as TextWallEffect;
     }
 
     public dispose() {
@@ -202,12 +202,16 @@ export default class OverlayManager {
         this.videoTransition = wall as VideoTransitionWallEffect;
     }
 
-    public toggleSwish(number?: string) {
+    public toggleSwish(number?: string, labels?: string, skipFirst?: boolean) {
         this.swishState = (this.swishState + 1) % 4;
+        if (this.swishState === 0 && skipFirst) this.swishState = 1;
+
+        number = number?.replace(/,/g, '\n');
+        labels = labels?.replace(/,/g, '\n');
 
         if (number) {
-            this.swish.overlay.update({ number });
-            this.swish.wall.update({ number });
+            this.swish.overlay.update({ number, labels });
+            this.swish.wall.update({ number, labels });
         }
 
         switch (this.swishState) {
@@ -220,10 +224,10 @@ export default class OverlayManager {
                     });
                 break;
             case 1:
-                this.swish.overlay
-                    .minimize()
+                Promise
+                    .all([this.swish.overlay.minimize(), this.swish.wall.activate()])
                     .catch(err => {
-                        this.logger.error('Failed to minimize swish effect');
+                        this.logger.error('Failed to activate swish effect');
                         this.logger.error(err);
                     });
                 break;

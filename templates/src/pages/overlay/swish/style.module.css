@@ -87,6 +87,12 @@
 
     text-anchor: middle;
     alignment-baseline: middle;
+
+    overflow: visible;
+}
+
+.swish__number div {
+    margin: 0 50px;
 }
 
 .swish__top {
@@ -102,8 +108,28 @@
     left: 0;
     top: -120vh;
 
-    padding: 0 175px;
     box-sizing: border-box;
+}
+
+.swish__side {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    width: 50vw;
+    height: 50vh;
+
+    position: absolute;
+    left: 25vw;
+    top: 25vh;
+
+    box-sizing: border-box;
+}
+
+.swish__side div {
+    margin: 25px 0;
+    font-size: 60pt;
 }
 
 .swish_top_element {

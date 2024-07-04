@@ -2,6 +2,7 @@ import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
 
 export interface SwishOverlayEffectOptions {
     number: string;
+    labels: string;
 }
 
 export class SwishOverlayEffect extends Effect {
@@ -14,7 +15,7 @@ export class SwishOverlayEffect extends Effect {
         this.allocateLayers(1);
         this.executor.executeAllocations();
 
-        const cmd = CgCommand.add(template, false, { number: this.options.number });
+        const cmd = CgCommand.add(template, false, this.options);
         cmd.allocate(this.layer);
 
         this.executor.execute(cmd);
