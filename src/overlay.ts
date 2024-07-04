@@ -277,7 +277,7 @@ export default class OverlayManager {
 
         switch (this.insamlingState) {
             case 0:
-                if (this.externalEnabledVideoSession) await this.togglePresentationMode();
+                if (this.externalEnabledVideoSession) await this.togglePresentationMode(true);
                 this.insamling
                     .deactivate()
                     .catch(err => {
@@ -286,7 +286,7 @@ export default class OverlayManager {
                     });
                 break;
             case 1:
-                if (!this.externalEnabledVideoSession) await this.togglePresentationMode();
+                if (!this.externalEnabledVideoSession) await this.togglePresentationMode(true);
                 this.insamling
                     .activate()
                     .catch(err => {

@@ -66,7 +66,9 @@ export const ToggleVideoRouteEditor: React.FC<ToggleVideoRouteEditorProps> = ({e
                 onSave={() => {
                     updateEntry({
                         ...entry,
-                        data: {},
+                        data: {
+                            route,
+                        },
                         title,
                     });
                 }}
