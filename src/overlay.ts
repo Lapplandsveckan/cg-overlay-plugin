@@ -206,9 +206,6 @@ export default class OverlayManager {
         this.swishState = (this.swishState + 1) % 4;
         if (this.swishState === 0 && skipFirst) this.swishState = 1;
 
-        number = number?.replace(/,/g, '\n');
-        labels = labels?.replace(/,/g, '\n');
-
         if (number) {
             this.swish.overlay.update({ number, labels });
             this.swish.wall.update({ number, labels });
