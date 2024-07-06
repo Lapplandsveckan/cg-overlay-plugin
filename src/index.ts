@@ -19,6 +19,7 @@ import MotionManager from './motion';
 import {AtemManager} from './atem';
 import {config} from './config';
 import {TextWallEffect, TextWallEffectOptions} from './effects/wall/text';
+import {WallVideoEffect, WallVideoEffectOptions} from './effects/misc/wall_video';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -164,6 +165,11 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
 
         this.api.registerEffect(
+            'lappis-wall-video',
+            (group, options) => new WallVideoEffect(group, options as WallVideoEffectOptions),
+        );
+
+        this.api.registerEffect(
             'lappis-route',
             (group, options) => new RouteEffect(group, options as RouteEffectOptions),
         );
@@ -186,14 +192,14 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             const video = this.api.getFileDatabase().get(rundown.data.clip);
             if (!video) return null; // throw new WebError('Clip not found', 404);
 
-            this.video.queueVideo(video.id);
+            this.video.queueVideo(video.id, rundown.data.options);
         });
 
         registerRundownAction('play-video', async (rundown) => {
             const video = this.api.getFileDatabase().get(rundown.data.clip);
             if (!video) return null; // throw new WebError('Clip not found', 404);
 
-            this.video.playVideo(video.id);
+            this.video.playVideo(video.id, rundown.data.options);
         });
 
         registerRundownAction('namnskylt', async (rundown) => {

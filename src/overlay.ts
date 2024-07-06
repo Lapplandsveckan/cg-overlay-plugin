@@ -8,6 +8,7 @@ import {VideoEffect} from './effects/misc/video';
 import {RouteEffect} from './effects/misc/route';
 import LappisOverlayPlugin from './index';
 import {TextWallEffect} from './effects/wall/text';
+import {WallVideoEffect} from './effects/misc/wall_video';
 
 export const CHANNELS = {
     MAIN: 1,
@@ -107,10 +108,7 @@ export default class OverlayManager {
     }
 
     public startVideoSession(atem = false) {
-        if (this.videoSession) {
-            this.logger.warn('Video session already running');
-            return Promise.resolve();
-        }
+        if (this.videoSession) return Promise.resolve();
 
         const width = 0.54;
         const wallEffect = this.api.createEffect('lappis-route', `${CHANNELS.WALL}:video`, {
@@ -150,7 +148,7 @@ export default class OverlayManager {
         this.videoSession = null;
     }
 
-    public playVideo(video: string) {
+    public playVideo(video: string, loop?: boolean) {
         const media = this.api.getFileDatabase().get(video);
         if (!media) throw new Error('Video not found');
 
@@ -158,7 +156,21 @@ export default class OverlayManager {
             media,
             holdLastFrame: true,
             disposeOnStop: true,
+
+            loop,
         }) as VideoEffect;
+    }
+
+    public playWallVideo(video: string, loop?: boolean) {
+        const media = this.api.getFileDatabase().get(video);
+        if (!media) throw new Error('Video not found');
+
+        return this.api.createEffect('lappis-wall-video', `${CHANNELS.WALL}:video`, {
+            media,
+            disposeOnStop: true,
+
+            loop,
+        }) as WallVideoEffect;
     }
 
     public showNamnskylt(name: string) {

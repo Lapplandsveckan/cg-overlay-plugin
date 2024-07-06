@@ -16,18 +16,17 @@ import { MediaDoc } from '@lappis/cg-manager/dist/types/scanner/db';
 type Tuple<T, N extends number> = N extends N ? number extends N ? T[] : _TupleOf<T, N, []> : never;
 type _TupleOf<T, N extends number, R extends unknown[]> = R['length'] extends N ? R : _TupleOf<T, N, [T, ...R]>;
 
-export interface VideoEffectOptions {
+export interface WallVideoEffectOptions {
     media: MediaDoc;
     loop?: boolean;
     disposeOnStop?: boolean;
-    holdLastFrame?: boolean;
     transform?: Tuple<number, 8>;
 }
 
-export class VideoEffect extends Effect {
-    protected options: VideoEffectOptions;
+export class WallVideoEffect extends Effect {
+    protected options: WallVideoEffectOptions;
 
-    public constructor(group: EffectGroup, options: VideoEffectOptions) {
+    public constructor(group: EffectGroup, options: WallVideoEffectOptions) {
         super(group);
 
         this.options = options;
@@ -38,11 +37,6 @@ export class VideoEffect extends Effect {
 
     protected playing: boolean = false;
     protected paused: boolean = false;
-
-    protected startedTime: number = -1;
-    protected pausedTime: number = -1;
-    protected pausedDuration: number = 0;
-    protected clipDuration: number;
 
     public activate(play: boolean = true) {
         if (!super.activate()) return;
@@ -73,14 +67,6 @@ export class VideoEffect extends Effect {
         return this.executor.execute(cmd);
     }
 
-    public waitForFinish() {
-        if (this.canceled) return Promise.resolve();
-        return new Promise<void>(resolve => {
-            if (!this.active) return resolve();
-            this.once('video:finish', resolve);
-        });
-    }
-
     private canceled: boolean = false;
     public cancel() {
         if (!this.active) return;
@@ -89,29 +75,11 @@ export class VideoEffect extends Effect {
         this.deactivate();
     }
 
-    private playTimeout: any;
-
     protected handlePlay() {
         this.playing = true;
         this.paused = false;
 
         this.emit('video:play');
-        if (this.options.loop) return;
-
-        const duration = this.options.media.mediainfo.format.duration;
-        if (duration === undefined) return;
-
-        this.playTimeout = setTimeout(() => this.handleFinish(), duration * 1000);
-        this.startedTime = Date.now();
-        this.clipDuration = duration;
-    }
-
-    protected handleFinish() {
-        if (!this.active) return;
-        this.emit('video:finish');
-
-        this.playing = false;
-        if (!this.options.holdLastFrame) this.deactivate();
     }
 
     public pause() {
@@ -121,9 +89,6 @@ export class VideoEffect extends Effect {
 
         this.playing = false;
         this.paused = true;
-
-        clearTimeout(this.playTimeout); // TODO: only pause the timeout
-        this.pausedTime = Date.now();
 
         const cmd = new PauseCommand(this.layer);
         return this.executor.execute(cmd);
@@ -137,13 +102,6 @@ export class VideoEffect extends Effect {
         this.playing = true;
         this.paused = false;
 
-        const playTime = this.pausedTime - this.startedTime - this.pausedDuration;
-        this.pausedDuration += Date.now() - this.pausedTime;
-        this.pausedTime = -1;
-
-        const duration = this.clipDuration * 1000 - playTime;
-        this.playTimeout = setTimeout(() => this.handleFinish(), duration * 1000);
-
         const cmd = new ResumeCommand(this.layer);
         return this.executor.execute(cmd);
     }
@@ -152,7 +110,6 @@ export class VideoEffect extends Effect {
         if (!super.deactivate()) return;
         this.emit('video:deactivate');
 
-        clearTimeout(this.playTimeout);
         this.playing = false;
 
         const cmd: Command = new ClearCommand(this.layer);
@@ -165,14 +122,6 @@ export class VideoEffect extends Effect {
     public getMetadata(): {} {
         return {
             playing: this.playing,
-
-            startedTime: this.startedTime,
-            pausedTime: this.pausedTime,
-
-            pausedDuration: this.pausedDuration,
-            clipDuration: this.clipDuration * 1000,
-
-            playDuration: this.playing ? Date.now() - this.startedTime - this.pausedDuration : 0,
             now: Date.now(),
         };
     }
