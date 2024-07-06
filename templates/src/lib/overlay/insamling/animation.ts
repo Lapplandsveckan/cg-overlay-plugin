@@ -27,18 +27,18 @@ function handleShow(tl: gsap.core.Timeline, styles: Styles, goal: number, now: n
     }, 'start');
 
     tl.set('#goal', {
-        height: Math.min(800 / proportion, 700),
+        height: Math.min(700 / proportion, 700),
         duration: 3,
     }, 'start');
 
     tl.to('#now', {
-        height: Math.min(800 * proportion, 700),
+        height: Math.min(700 * proportion, 700),
         duration: 3,
         ease: 'none',
     }, 'start');
 
     tl.to('#goal', {
-        height: Math.min(800 / proportion, 700),
+        height: Math.min(700 / proportion, 700),
         duration: 3,
         ease: 'none',
     }, 'start');
