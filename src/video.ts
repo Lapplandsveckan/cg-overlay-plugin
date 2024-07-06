@@ -34,9 +34,10 @@ export default class VideoManager {
     public stopVideo(clearQueue = false) {
         if (clearQueue) this.queue = [];
         if (this.playing) {
-            this.playing.effect.cancel();
             if (this.playing.extraEffects)
                 this.playing.extraEffects.forEach(effect => effect.deactivate());
+
+            this.playing.effect.cancel();
         }
     }
 
@@ -116,16 +117,18 @@ export default class VideoManager {
         } catch (err) {
             this.plugin.getLogger().error(`Failed to play video: ${err}`);
 
-            effect.deactivate();
             if (extraEffects)
                 extraEffects.forEach(effect => effect.deactivate());
+
+            effect.deactivate();
         }
 
-        if (this.queue.length) {
+        if (this.queue.length && effect.active) {
             setTimeout(() => {
-                effect.deactivate();
                 if (extraEffects)
                     extraEffects.forEach(effect => effect.deactivate());
+
+                effect.deactivate();
             }, 250);
         }
 
