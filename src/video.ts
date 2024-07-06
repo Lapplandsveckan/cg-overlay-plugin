@@ -91,15 +91,21 @@ export default class VideoManager {
         }
 
         this.playing = {video, effect, extraEffects};
-        if (!video.metadata.skipIntro) {
-            const [error] = await noTryAsync(() => this.plugin.getOverlayManager().startVideoSession(true));
-            if (error) {
-                this.plugin.getLogger().error(`Failed to start video session: ${error}`);
-                return;
-            }
+
+        const [error] = await noTryAsync(() => this.plugin.getOverlayManager().startVideoSession(true, video.metadata.skipIntro));
+        if (error) {
+            this.plugin.getLogger().error(`Failed to start video session: ${error}`);
+            return;
         }
 
         this.plugin.sendVideoInformation();
+
+        const session = this.plugin.overlay.getVideoSession();
+        if (!video.metadata.secondaryVideo && !session.wall.active)
+            session.wall.activate().catch(err => this.plugin.getLogger().error(`Failed to activate wall: ${err}`));
+
+        if (video.metadata.secondaryVideo && session.wall.active)
+            session.wall.deactivate().catch(err => this.plugin.getLogger().error(`Failed to deactivate wall: ${err}`));
 
         try {
             const promises: Promise<any>[] = [effect.play()];

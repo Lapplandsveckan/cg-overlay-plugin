@@ -96,6 +96,10 @@ export default class OverlayManager {
         stop: () => void,
     } = null;
 
+    public getVideoSession() {
+        return this.videoSession;
+    }
+
     private externalEnabledVideoSession: boolean = false;
     public togglePresentationMode(atem = false) {
         this.externalEnabledVideoSession = !this.externalEnabledVideoSession;
@@ -107,7 +111,7 @@ export default class OverlayManager {
         return Promise.resolve();
     }
 
-    public startVideoSession(atem = false) {
+    public startVideoSession(atem = false, skipIntro = false) {
         if (this.videoSession) return Promise.resolve();
 
         const width = 0.54;
@@ -118,7 +122,14 @@ export default class OverlayManager {
         }) as RouteEffect;
 
         this.videoSession = {wall: wallEffect, stop: () => null};
-        if (this.videoTransitionState !== 1) this.toggleVideoTransition();
+        if (this.videoTransitionState !== 1) this.toggleVideoTransition(skipIntro);
+
+        if (skipIntro) {
+            wallEffect.activate();
+            if (atem) this.plugin.atem.setVideoProgram();
+
+            return Promise.resolve();
+        }
 
         return new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(() => {
@@ -185,7 +196,7 @@ export default class OverlayManager {
             });
     }
 
-    public toggleVideoTransition() {
+    public toggleVideoTransition(skipIntro = false) {
         if (this.videoTransitionState === 1) {
             this.videoTransitionState = 0;
             this.videoTransition
@@ -200,6 +211,22 @@ export default class OverlayManager {
         }
 
         this.videoTransitionState = 1;
+
+        if (skipIntro) {
+            const wall = this.api.createEffect('wall-videotransition', '2:presentation', {
+                skipIntro: true,
+            });
+
+            wall
+                .activate()
+                .catch(err => {
+                    this.logger.error('Failed to activate videotransition effect');
+                    this.logger.error(err);
+                });
+
+            this.videoTransition = wall as VideoTransitionWallEffect;
+            return;
+        }
 
         const overlay = this.api.createEffect('overlay-videotransition', '1:presentation', {});
         const wall = this.api.createEffect('wall-videotransition', '2:presentation', {});

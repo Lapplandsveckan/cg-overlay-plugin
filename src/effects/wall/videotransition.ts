@@ -1,7 +1,7 @@
 import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
 
 export interface VideoTransitionWallEffectOptions {
-
+    skipIntro?: boolean;
 }
 
 export class VideoTransitionWallEffect extends Effect {
@@ -27,6 +27,15 @@ export class VideoTransitionWallEffect extends Effect {
 
     public activate() {
         if (!super.activate()) return;
+
+        if (this.options.skipIntro) {
+            this.emit('transition:ready');
+            return this.executor.execute(
+                CgCommand
+                    .next()
+                    .allocate(this.layer),
+            );
+        }
 
         setTimeout(() => {
             if (!this.active) return;
