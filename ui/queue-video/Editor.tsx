@@ -27,8 +27,8 @@ export const QueueVideoEditor: React.FC<QueueVideoEditorProps> = ({entry, update
     const [secondaryMedia, setSecondaryMedia] = useState<any | null>(entry.data);
     const [title, setTitle] = useState(entry.title);
 
-    const [skipIntro, setSkipIntro] = useState(entry.data.options.skipIntro ?? false);
-    const [loop, setLoop] = useState(entry.data.options.loop ?? false);
+    const [skipIntro, setSkipIntro] = useState(entry.data.options?.skipIntro ?? false);
+    const [loop, setLoop] = useState(entry.data.options?.loop ?? false);
 
     useEffect(() => {
         if (!entry.data) return;
