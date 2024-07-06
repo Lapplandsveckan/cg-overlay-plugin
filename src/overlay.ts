@@ -117,7 +117,6 @@ export default class OverlayManager {
         const width = 0.54;
         const wallEffect = this.api.createEffect('lappis-route', `${CHANNELS.WALL}:video`, {
             source: new BasicChannel(CHANNELS.VIDEO),
-            disposeOnStop: true,
             transform: [0, 0, 1, 1, 0.5 - (width / 2), 0, 0.5 + (width / 2), 1],
         }) as RouteEffect;
 
@@ -153,7 +152,7 @@ export default class OverlayManager {
         if (this.videoTransitionState !== 0) this.toggleVideoTransition();
 
         if (atem) this.plugin.atem.returnToPreview();
-        this.videoSession.wall.deactivate();
+        this.videoSession.wall.dispose();
 
         this.videoSession.stop();
         this.videoSession = null;
