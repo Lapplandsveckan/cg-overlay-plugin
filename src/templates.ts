@@ -28,29 +28,25 @@ export class Templates {
     constructor(onListen: () => void) {
         const server = http.createServer((req, res) => {
             let url = req.url;
-            if (path.extname(url) === '') url += '/'; // Append trailing slash if missing
+            if (path.extname(url) === '') url += '/';
             if (url.endsWith('/')) url += 'index.html';
 
             const filePath = path.join(publicDirectory, url);
             const contentType = getMime(path.extname(filePath));
 
-            // Read file
             fs.readFile(filePath, (err, data) => {
                 if (!err) {
-                    // Serve the file with appropriate content type
                     res.writeHead(200, { 'Content-Type': contentType });
                     res.end(data, 'utf-8');
                     return;
                 }
 
                 if (err.code === 'ENOENT') {
-                    // Page not found
                     res.writeHead(404);
                     res.end('404 - Not Found');
                     return;
                 }
 
-                // Server error
                 res.writeHead(500);
                 res.end('500 - Internal Server Error');
             });

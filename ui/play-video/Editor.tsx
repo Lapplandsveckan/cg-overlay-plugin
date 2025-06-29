@@ -24,7 +24,6 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
     const socket = useSocket();
 
     const [media, setMedia] = useState<any | null>(entry.data);
-    const [secondaryMedia, setSecondaryMedia] = useState<any | null>(entry.data);
     const [title, setTitle] = useState(entry.title);
 
     const [skipIntro, setSkipIntro] = useState(entry.data.options?.skipIntro ?? false);
@@ -34,11 +33,6 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
         if (!entry.data) return;
         socket.caspar.getMedia().then(media => setMedia(media.get(entry.data.clip) || null));
     }, [entry.data.clip]);
-
-    useEffect(() => {
-        if (!entry.data.options) return;
-        socket.caspar.getMedia().then(media => setSecondaryMedia(media.get(entry.data.options?.secondaryVideo) || null));
-    }, [entry.data.options?.secondaryVideo]);
 
     return (
         <>
@@ -59,22 +53,6 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
                 />
                 <Button
                     onClick={() => setMedia(null)}
-                >
-                    Remove
-                </Button>
-            </Stack>
-
-            <Stack
-                spacing={2}
-                direction="row"
-            >
-                <Typography variant="h6">Secondary video</Typography>
-                <MediaSelect
-                    clip={secondaryMedia}
-                    onClipSelect={clip => setSecondaryMedia(clip)}
-                />
-                <Button
-                    onClick={() => setSecondaryMedia(null)}
                 >
                     Remove
                 </Button>
@@ -112,8 +90,6 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
                             options: {
                                 skipIntro,
                                 loop,
-
-                                secondaryVideo: secondaryMedia?.id,
                             },
                         },
                         title,
