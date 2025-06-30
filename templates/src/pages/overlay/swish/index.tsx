@@ -37,17 +37,6 @@ export const SwishAnimation: React.FC<SwishAnimationProps> = ({ number, state, l
         >
             <div className={styles.swish__main}>
                 <div className={styles.swish__wrapper}>
-                    <div className={styles.swish__sliding}>
-                        <div className={`${styles.swish__sliding__section} ${styles.swish__sliding__top}`}>
-                            <SlidingSwish className={styles.swish__sliding__top_top} count={6}/>
-                            <SlidingSwish className={styles.swish__sliding__top_bottom} count={6}/>
-                        </div>
-                        <div className={`${styles.swish__sliding__section} ${styles.swish__sliding__bottom}`}>
-                            <SlidingSwish className={styles.swish__sliding__bottom_top} count={6}/>
-                            <SlidingSwish className={styles.swish__sliding__bottom_bottom} count={6}/>
-                        </div>
-                    </div>
-
                     <div
                         className={styles.swish__number}
                     >
@@ -61,35 +50,7 @@ export const SwishAnimation: React.FC<SwishAnimationProps> = ({ number, state, l
                     <div
                         className={styles.swish__top}
                         style={{
-                            padding: number.length > 20 ? '0 125px' : '0 175px',
-                        }}
-                    >
-                        {
-                            Labels.map((label, i) => (
-                                <div key={i} className={styles.swish_top_element}>{label}</div>
-                            ))
-                        }
-                    </div>
-
-                    <div
-                        className={styles.swish__side}
-                        style={{
-                            visibility: labels.split('\n').length === 2 ? 'visible' : 'hidden',
-                            transform: 'translateX(-80%)',
-                        }}
-                    >
-                        {
-                            Labels.map((label, i) => (
-                                <div key={i} className={styles.swish_top_element}>{label}</div>
-                            ))
-                        }
-                    </div>
-
-                    <div
-                        className={styles.swish__side}
-                        style={{
-                            visibility: labels.split('\n').length === 2 ? 'visible' : 'hidden',
-                            transform: 'translateX(75%)',
+                            padding: '0 250px',
                         }}
                     >
                         {

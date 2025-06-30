@@ -44,14 +44,6 @@ export class SwishOverlayEffect extends Effect {
         );
     }
 
-    public minimize() {
-        return this.executor.execute(
-            CgCommand
-                .next()
-                .allocate(this.layer),
-        );
-    }
-
     public deactivate() {
         if (!super.deactivate()) return;
         return this.executor.execute(

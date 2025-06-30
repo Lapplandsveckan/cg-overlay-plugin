@@ -14,14 +14,7 @@
     overflow: hidden;
     top: -100%;
 
-    background-image: url(/images/banner1.png);
+    background-image: url(/images/banner2.jpg);
     background-size: 100vw 110vh;
     background-repeat: no-repeat;
-}
-
-.container .banner-logo {
-    position: absolute;
-    font-size: 250px;
-    color: #FFF;
-    transform: translate(-50px, 30px);
 }

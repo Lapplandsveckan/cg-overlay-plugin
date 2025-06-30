@@ -47,7 +47,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.overlay = new OverlayManager(this);
         this.atem = new AtemManager();
 
-        // this.atem.connect(config.atem.ip);
+        this.atem.connect(config.atem.ip);
 
         this.registerEffectGroups();
         this.registerEffects();
@@ -155,8 +155,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         });
 
         registerRundownAction('swish', async (rundown) => {
-            const {number, labels, skipFirst} = rundown.data;
-            this.overlay.toggleSwish(number, labels, skipFirst);
+            const {number, labels} = rundown.data;
+            this.overlay.toggleSwish(number, labels);
         });
 
         registerRundownAction('bars', async (rundown) => {
