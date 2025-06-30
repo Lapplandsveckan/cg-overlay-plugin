@@ -47,7 +47,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.overlay = new OverlayManager(this);
         this.atem = new AtemManager();
 
-        this.atem.connect(config.atem.ip);
+        // this.atem.connect(config.atem.ip);
 
         this.registerEffectGroups();
         this.registerEffects();
@@ -187,7 +187,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY)), // video-out
         ];
 
-        this.logger.debug(`Registering effect groups: ${groups.map(g => g?.name).join(', ')}`);
+        this.logger.info(`Registering effect groups: ${groups.map(g => g?.name).join(', ')}`);
     }
 
     public registerRoutes() {
