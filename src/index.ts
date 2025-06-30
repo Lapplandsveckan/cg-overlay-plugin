@@ -177,13 +177,17 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     public registerEffectGroups() {
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.BARS)); // main video
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.VIDEO)); // main video
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.OVERLAY)); // main overlay
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION)); // main presentation
+        const groups = [
+            this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.BARS)), // main video
+            this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.VIDEO)), // main video
+            this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.OVERLAY)), // main overlay
+            this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION)), // main presentation
 
-        this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.VIDEO)); // video-out
-        this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY)); // video-out
+            this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.VIDEO)), // video-out
+            this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY)), // video-out
+        ];
+
+        this.logger.debug(`Registering effect groups: ${groups.map(g => g?.name).join(', ')}`);
     }
 
     public registerRoutes() {
