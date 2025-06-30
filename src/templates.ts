@@ -26,7 +26,7 @@ export class Templates {
     private server: any;
 
     constructor(onListen: () => void) {
-        const server = http.createServer((req, res) => {
+        this.server = http.createServer((req, res) => {
             let url = req.url;
             if (path.extname(url) === '') url += '/';
             if (url.endsWith('/')) url += 'index.html';
@@ -52,7 +52,7 @@ export class Templates {
             });
         });
 
-        server.listen(PORT, () => onListen());
+        this.server.listen(PORT, () => onListen());
     }
 
     getFilePath(file: string) {
