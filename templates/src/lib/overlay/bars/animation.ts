@@ -6,9 +6,9 @@ export function handleState(tl: gsap.core.Timeline, state: number, prevState: nu
 function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
     tl.clear();
 
-    // which height? 60, 100, 108, 120?
+    // which height? 60, 100, 108, 120, 130?
     tl.to(styles.bar, {
-        height: 108,
+        height: 130,
         duration: 4,
     }, 'start');
 }

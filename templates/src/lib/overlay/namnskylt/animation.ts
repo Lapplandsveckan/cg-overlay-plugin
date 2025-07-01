@@ -13,13 +13,13 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
 
     // Move the text
     tl.set(styles.namnskylt__main__name, {
-        top: '12.5%',
+        top: '87.5%',
         scale: 1,
     }, 'start');
 
     // Move entire container
     tl.to(styles.namnskylt__main, {
-        top: '75%',
+        top: '0%',
         duration: 1,
     }, 'start');
 }
@@ -44,14 +44,14 @@ function handleMinimize(tl: gsap.core.Timeline, styles: Record<string, string>, 
 
     // Move entire container
     tl.to(styles.namnskylt__main, {
-        top: '90%',
+        top: '12.7%', // dont ask
         duration,
     }, 'mid');
 
     // Move the text
     tl.to(styles.namnskylt__main__name, {
-        top: '5%',
-        scale: 0.5,
+        top: '80%',
+        scale: 0.75,
         duration,
     }, 'mid');
 }
