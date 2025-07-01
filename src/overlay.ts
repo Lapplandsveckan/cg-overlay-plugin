@@ -31,7 +31,7 @@ export default class OverlayManager {
     }
 
     private swish: SwishOverlayEffect = null;
-    private swishState = -1;
+    private swishState = 0;
 
     private bars: BarsOverlayEffect = null;
     private barsState = 0;
@@ -173,16 +173,16 @@ export default class OverlayManager {
 
         switch (this.swishState) {
             case 0:
-                this.swish.activate()
+                this.swish.deactivate()
                     .catch(err => {
-                        this.logger.error('Failed to activate swish effect');
+                        this.logger.error('Failed to deactivate swish effect');
                         this.logger.error(err);
                     });
                 break;
             case 1:
-                this.swish.deactivate()
+                this.swish.activate()
                     .catch(err => {
-                        this.logger.error('Failed to deactivate swish effect');
+                        this.logger.error('Failed to activate swish effect');
                         this.logger.error(err);
                     });
                 break;
