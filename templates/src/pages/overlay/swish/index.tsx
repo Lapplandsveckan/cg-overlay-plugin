@@ -50,7 +50,7 @@ export const SwishAnimation: React.FC<SwishAnimationProps> = ({ number, state, l
                     <div
                         className={styles.swish__top}
                         style={{
-                            padding: '0 250px',
+                            padding: '0 350px',
                         }}
                     >
                         {

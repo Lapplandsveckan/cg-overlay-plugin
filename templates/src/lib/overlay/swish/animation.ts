@@ -10,7 +10,6 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
 
     tl.set(styles.swish__number, {
         top: '-100%',
-        fontSize: '120pt',
     }, 'start');
 
     tl.set(styles.swish__top, {
@@ -23,14 +22,13 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
     }, 'mid');
 
     tl.to(styles.swish__number, {
-        top: '7%',
-        fontSize: '80px',
+        top: '7.5%',
 
         duration: 1,
     }, 'mid');
 
     tl.to(styles.swish__top, {
-        top: '3%',
+        top: '3.25%',
 
         duration: 1,
     }, 'mid');
