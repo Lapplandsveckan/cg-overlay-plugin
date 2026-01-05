@@ -2,3 +2,5 @@ dist
 node_modules
 overlay-plugin
 templates/.next
+.idea
+.DS_Store
