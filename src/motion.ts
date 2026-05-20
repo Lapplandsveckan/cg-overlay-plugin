@@ -1,8 +1,32 @@
 import * as dmxlib from 'dmxnet';
+import TransportStream from 'winston-transport';
+import {Logger} from '@lappis/cg-manager';
 import { config } from './config';
 import {MotionEffect} from './effects/misc/motion';
 import LappisOverlayPlugin from './index';
 import {CHANNELS, getGroup, GROUPS} from './overlay';
+
+class PluginLoggerTransport extends TransportStream {
+    private pluginLogger: Logger;
+
+    public constructor(pluginLogger: Logger) {
+        super({level: 'debug'});
+        this.pluginLogger = pluginLogger;
+    }
+
+    public log(info: any, callback: () => void) {
+        setImmediate(() => this.emit('logged', info));
+
+        const message = String(info.message ?? '');
+        switch (info.level) {
+            case 'error': this.pluginLogger.error(message); break;
+            case 'warn': this.pluginLogger.warn(message); break;
+            default: this.pluginLogger.debug(message); break;
+        }
+
+        callback();
+    }
+}
 
 export interface ArtNetConfig {
     universe: number;
@@ -63,7 +87,12 @@ export default class MotionManager {
         if (this.connection) return;
         const { universe, net, subnet, channel } = this.connection = _config;
 
-        const dmxnet = new dmxlib.dmxnet();
+        const dmxnet = new dmxlib.dmxnet({
+            log: {
+                level: 'debug',
+                transports: [new PluginLoggerTransport(this.plugin.getLogger().scope('dmxnet'))],
+            },
+        });
         const receiver = dmxnet.newReceiver({
             universe,
             net,
