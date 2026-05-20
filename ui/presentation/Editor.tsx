@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Checkbox, FormControlLabel, TextField, Typography} from '@mui/material';
+import {Checkbox, FormControlLabel, FormHelperText, Stack, TextField, Typography} from '@mui/material';
 
 // @ts-ignore
 import {RundownEditorActionBar} from '@web-lib';
@@ -25,22 +25,30 @@ export const PresentationEditor: React.FC<PresentationEditorProps> = ({entry, up
     const [atem, setAtem] = useState(entry?.data.atem ?? false);
 
     return (
-        <>
+        <Stack spacing={2}>
             <Typography variant="h6">Presentation</Typography>
+
             <TextField
                 label="Title"
                 value={title}
                 onChange={e => setTitle(e.target['value'])}
+                helperText="Shown in the rundown."
             />
 
-            <FormControlLabel
-                label="ATEM"
-
-                control={<Checkbox />}
-
-                checked={atem}
-                onChange={e => setAtem(e.target['checked'])}
-            />
+            <Stack>
+                <FormControlLabel
+                    label="Switch ATEM source"
+                    control={
+                        <Checkbox
+                            checked={atem}
+                            onChange={e => setAtem(e.target['checked'])}
+                        />
+                    }
+                />
+                <FormHelperText sx={{marginLeft: 4}}>
+                    Cut the ATEM to the presentation source when this entry plays.
+                </FormHelperText>
+            </Stack>
 
             <RundownEditorActionBar
                 exists={!creating}
@@ -56,7 +64,7 @@ export const PresentationEditor: React.FC<PresentationEditorProps> = ({entry, up
                     });
                 }}
             />
-        </>
+        </Stack>
     );
 };
 

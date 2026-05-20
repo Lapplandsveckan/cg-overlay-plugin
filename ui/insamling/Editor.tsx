@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {TextField, Typography} from '@mui/material';
+import {InputAdornment, Stack, TextField, Typography} from '@mui/material';
 
 // @ts-ignore
 import {RundownEditorActionBar} from '@web-lib';
@@ -22,29 +22,42 @@ interface InsamlingEditorProps {
 
 export const InsamlingEditor: React.FC<InsamlingEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
     const [title, setTitle] = useState(entry?.title ?? '');
-    const [goal, setGoal] = useState(entry?.data.goal ?? '0');
-    const [now, setNow] = useState(entry?.data.now ?? '0');
+    const [goal, setGoal] = useState<string>(String(entry?.data.goal ?? '0'));
+    const [now, setNow] = useState<string>(String(entry?.data.now ?? '0'));
+
+    const kr = <InputAdornment position="end">kr</InputAdornment>;
 
     return (
-        <>
+        <Stack spacing={2}>
             <Typography variant="h6">Insamling</Typography>
+
             <TextField
                 label="Title"
                 value={title}
                 onChange={e => setTitle(e.target['value'])}
+                helperText="Shown in the rundown."
             />
 
-            <TextField
-                label="Goal"
-                value={goal}
-                onChange={e => setGoal(e.target['value'])}
-            />
-
-            <TextField
-                label="Now"
-                value={now}
-                onChange={e => setNow(e.target['value'])}
-            />
+            <Stack direction="row" spacing={2}>
+                <TextField
+                    label="Current"
+                    type="number"
+                    value={now}
+                    onChange={e => setNow(e.target['value'])}
+                    InputProps={{endAdornment: kr}}
+                    helperText="Amount collected so far."
+                    sx={{flex: 1}}
+                />
+                <TextField
+                    label="Goal"
+                    type="number"
+                    value={goal}
+                    onChange={e => setGoal(e.target['value'])}
+                    InputProps={{endAdornment: kr}}
+                    helperText="Target amount for the campaign."
+                    sx={{flex: 1}}
+                />
+            </Stack>
 
             <RundownEditorActionBar
                 exists={!creating}
@@ -61,7 +74,7 @@ export const InsamlingEditor: React.FC<InsamlingEditorProps> = ({entry, updateEn
                     });
                 }}
             />
-        </>
+        </Stack>
     );
 };
 

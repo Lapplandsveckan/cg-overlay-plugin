@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {TextField, Typography} from '@mui/material';
+import {Stack, TextField, Typography} from '@mui/material';
 
 // @ts-ignore
 import {RundownEditorActionBar} from '@web-lib';
@@ -24,12 +24,16 @@ export const NamnskyltEditor: React.FC<NamnskyltEditorProps> = ({entry, updateEn
     const [name, setName] = useState(entry?.data.name ?? '');
 
     return (
-        <>
+        <Stack spacing={2}>
             <Typography variant="h6">Namnskylt</Typography>
+
             <TextField
                 label="Namn"
                 value={name}
                 onChange={e => setName(e.target['value'])}
+                required
+                error={name === ''}
+                helperText={name === '' ? 'Required' : 'Name shown on the lower-third overlay.'}
             />
 
             <RundownEditorActionBar
@@ -46,7 +50,7 @@ export const NamnskyltEditor: React.FC<NamnskyltEditorProps> = ({entry, updateEn
                     });
                 }}
             />
-        </>
+        </Stack>
     );
 };
 

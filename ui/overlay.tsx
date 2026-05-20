@@ -1,4 +1,4 @@
-import {Button, Stack, TextField} from '@mui/material';
+import {Box, Button, Card, CardContent, InputAdornment, Stack, TextField, Typography} from '@mui/material';
 // @ts-ignore
 import {useSocket} from '@web-lib';
 import React from 'react';
@@ -28,124 +28,139 @@ async function toggleInsamling(conn: any, options?: { goal?: number, now?: numbe
 }
 
 
+// Layout primitives
+
+interface ActionCardProps {
+    title: string;
+    description: string;
+    children: React.ReactNode;
+}
+
+const ActionCard: React.FC<ActionCardProps> = ({title, description, children}) => (
+    <Card variant="outlined" sx={{borderColor: 'rgba(255,255,255,0.08)'}}>
+        <CardContent>
+            <Stack spacing={1.5}>
+                <Box>
+                    <Typography variant="subtitle1" fontWeight={600}>{title}</Typography>
+                    <Typography variant="caption" color="text.secondary">{description}</Typography>
+                </Box>
+                {children}
+            </Stack>
+        </CardContent>
+    </Card>
+);
+
 // Components
 
-const SwishTest = () => {
+const SwishCard = () => {
     const conn = useSocket();
     const [number, setNumber] = React.useState('');
 
     return (
-        <Stack>
-            <TextField
-                label={'Number'}
-                value={number}
-                InputLabelProps={{
-                    shrink: true,
-                }}
-                placeholder={'123 607 27 97'}
-                onChange={e => setNumber(e.target['value'])}
-                sx={{
-                    flexGrow: 1,
-                }}
-            />
-            <Button
-                onClick={() => toggleSwish(conn, number)}
-            >
-                Swish
-            </Button>
-        </Stack>
+        <ActionCard title="Swish" description="Toggle the Swish donation overlay. Leave the number empty to use the default.">
+            <Stack direction="row" spacing={1.5} alignItems="center">
+                <TextField
+                    size="small"
+                    label="Number"
+                    value={number}
+                    placeholder="123 607 27 97"
+                    InputLabelProps={{shrink: true}}
+                    onChange={e => setNumber(e.target['value'])}
+                    sx={{flexGrow: 1}}
+                />
+                <Button variant="contained" onClick={() => toggleSwish(conn, number)}>
+                    Toggle
+                </Button>
+            </Stack>
+        </ActionCard>
     );
 };
 
-const NamnskyltTest = () => {
+const NamnskyltCard = () => {
     const conn = useSocket();
     const [name, setName] = React.useState('Eliyah Sundström');
 
     return (
-        <Stack>
-            <TextField
-                label={'Name'}
-                value={name}
-                InputLabelProps={{
-                    shrink: true,
-                }}
-                onChange={e => setName(e.target['value'])}
-                sx={{
-                    flexGrow: 1,
-                }}
-                required={true}
-                error={name === ''}
-            />
-            <Button
-                onClick={() => name && showNamnskylt(conn, name)}
-            >
-                Namnskylt
+        <ActionCard title="Namnskylt" description="Show a name plate overlay for the person currently on camera.">
+            <Stack direction="row" spacing={1.5} alignItems="center">
+                <TextField
+                    size="small"
+                    label="Name"
+                    value={name}
+                    InputLabelProps={{shrink: true}}
+                    onChange={e => setName(e.target['value'])}
+                    sx={{flexGrow: 1}}
+                    required
+                    error={name === ''}
+                    helperText={name === '' ? 'Required' : ' '}
+                />
+                <Button
+                    variant="contained"
+                    disabled={!name}
+                    onClick={() => showNamnskylt(conn, name)}
+                >
+                    Show
+                </Button>
+            </Stack>
+        </ActionCard>
+    );
+};
+
+const VideotransitionCard = () => {
+    const conn = useSocket();
+    return (
+        <ActionCard title="Videotransition" description="Trigger the configured transition between video sources.">
+            <Button variant="contained" onClick={() => toggleVideotransition(conn)}>
+                Trigger
             </Button>
-        </Stack>
+        </ActionCard>
     );
 };
 
-const VideotransitionTest = () => {
+const BarsCard = () => {
     const conn = useSocket();
-
     return (
-        <Button
-            onClick={() => toggleVideotransition(conn)}
-        >
-            Videotransition
-        </Button>
+        <ActionCard title="Bars" description="Toggle cinematic black letterbox bars on the output.">
+            <Button variant="contained" onClick={() => toggleBars(conn)}>
+                Toggle
+            </Button>
+        </ActionCard>
     );
 };
 
-const BarsTest = () => {
-    const conn = useSocket();
-
-    return (
-        <Button
-            onClick={() => toggleBars(conn)}
-        >
-            Bars
-        </Button>
-    );
-};
-
-const InsamlingTest = () => {
+const InsamlingCard = () => {
     const conn = useSocket();
     const [goal, setGoal] = React.useState(1000);
     const [now, setNow] = React.useState(500);
 
     return (
-        <Stack>
-            <TextField
-                label={'Goal'}
-                type={'number'}
-                value={goal}
-                InputLabelProps={{
-                    shrink: true,
-                }}
-                onChange={e => setGoal(parseInt(e.target['value']))}
-                sx={{
-                    flexGrow: 1,
-                }}
-            />
-            <TextField
-                label={'Now'}
-                type={'number'}
-                value={now}
-                InputLabelProps={{
-                    shrink: true,
-                }}
-                onChange={e => setNow(parseInt(e.target['value']))}
-                sx={{
-                    flexGrow: 1,
-                }}
-            />
-            <Button
-                onClick={() => toggleInsamling(conn, { goal, now })}
-            >
-                Insamling
-            </Button>
-        </Stack>
+        <ActionCard title="Insamling" description="Toggle the fundraising progress overlay with a target and a current amount.">
+            <Stack direction="row" spacing={1.5} alignItems="center">
+                <TextField
+                    size="small"
+                    label="Current"
+                    type="number"
+                    value={now}
+                    InputLabelProps={{shrink: true}}
+                    InputProps={{endAdornment: <InputAdornment position="end">kr</InputAdornment>}}
+                    onChange={e => setNow(parseInt(e.target['value']))}
+                    sx={{flex: 1}}
+                />
+                <TextField
+                    size="small"
+                    label="Goal"
+                    type="number"
+                    value={goal}
+                    InputLabelProps={{shrink: true}}
+                    InputProps={{endAdornment: <InputAdornment position="end">kr</InputAdornment>}}
+                    onChange={e => setGoal(parseInt(e.target['value']))}
+                    sx={{flex: 1}}
+                />
+                <Button variant="contained" onClick={() => toggleInsamling(conn, { goal, now })}>
+                    Toggle
+                </Button>
+            </Stack>
+        </ActionCard>
     );
 };
 
@@ -155,21 +170,27 @@ const OverlayTest = ({ path }) => {
     if (path && path[0] === 'video') return <VideoQueue />;
 
     return (
-        <>
-            <SwishTest/>
-            <NamnskyltTest/>
-            <VideotransitionTest/>
-            <BarsTest/>
-            <InsamlingTest/>
+        <Stack spacing={2} sx={{maxWidth: 720, margin: '0 auto', padding: 2}}>
+            <Typography variant="h5" fontWeight={600}>Overlay controls</Typography>
 
-            <a href={'lappis/motion'}>
-                Motion
-            </a>
+            <SwishCard/>
+            <NamnskyltCard/>
+            <VideotransitionCard/>
+            <BarsCard/>
+            <InsamlingCard/>
 
-            <a href={'lappis/video'}>
-                Video
-            </a>
-        </>
+            <Box sx={{paddingTop: 1}}>
+                <Typography variant="overline" color="text.secondary">More</Typography>
+                <Stack direction="row" spacing={1.5} sx={{marginTop: 1}}>
+                    <Button component="a" href="lappis/motion" variant="outlined" fullWidth>
+                        Motion
+                    </Button>
+                    <Button component="a" href="lappis/video" variant="outlined" fullWidth>
+                        Video queue
+                    </Button>
+                </Stack>
+            </Box>
+        </Stack>
     );
 };
 

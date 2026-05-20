@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Checkbox, FormControlLabel, TextField, Typography} from '@mui/material';
+import {Checkbox, FormControlLabel, FormHelperText, Stack, TextField, Typography} from '@mui/material';
 
 // @ts-ignore
 import {RundownEditorActionBar} from '@web-lib';
@@ -27,34 +27,46 @@ export const SwishEditor: React.FC<SwishEditorProps> = ({entry, updateEntry, del
     const [skipFirst, setSkipFirst] = useState(entry?.data.skipFirst ?? false);
 
     return (
-        <>
+        <Stack spacing={2}>
             <Typography variant="h6">Swish</Typography>
+
             <TextField
                 label="Title"
                 value={title}
                 onChange={e => setTitle(e.target['value'])}
+                helperText="Shown in the rundown."
             />
 
             <TextField
-                label="Number"
+                label="Swish number"
                 value={number}
+                placeholder="123 607 27 97"
+                InputLabelProps={{shrink: true}}
                 onChange={e => setNumber(e.target['value'])}
+                helperText="The Swish number displayed on screen."
             />
 
             <TextField
                 label="Labels"
                 value={labels}
                 onChange={e => setLabels(e.target['value'])}
+                helperText="Comma-separated labels shown alongside the number."
             />
 
-            <FormControlLabel
-                label="Skip First"
-
-                control={<Checkbox />}
-
-                checked={skipFirst}
-                onChange={e => setSkipFirst(e.target['checked'])}
-            />
+            <Stack>
+                <FormControlLabel
+                    label="Skip first reveal"
+                    control={
+                        <Checkbox
+                            checked={skipFirst}
+                            onChange={e => setSkipFirst(e.target['checked'])}
+                        />
+                    }
+                />
+                <FormHelperText sx={{marginLeft: 4}}>
+                    Skip the intro animation when the overlay appears.
+                </FormHelperText>
+            </Stack>
 
             <RundownEditorActionBar
                 exists={!creating}
@@ -72,7 +84,7 @@ export const SwishEditor: React.FC<SwishEditorProps> = ({entry, updateEntry, del
                     });
                 }}
             />
-        </>
+        </Stack>
     );
 };
 

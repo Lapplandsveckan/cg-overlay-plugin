@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {TextField, Typography} from '@mui/material';
+import {Stack, TextField, Typography} from '@mui/material';
 
 // @ts-ignore
 import {RundownEditorActionBar} from '@web-lib';
@@ -24,12 +24,17 @@ export const BarsEditor: React.FC<BarsEditorProps> = ({entry, updateEntry, delet
     const [title, setTitle] = useState(entry?.title ?? '');
 
     return (
-        <>
+        <Stack spacing={2}>
             <Typography variant="h6">Bars</Typography>
+            <Typography variant="body2" color="text.secondary">
+                Toggle cinematic black letterbox bars on the output.
+            </Typography>
+
             <TextField
                 label="Title"
                 value={title}
                 onChange={e => setTitle(e.target['value'])}
+                helperText="Shown in the rundown."
             />
 
             <RundownEditorActionBar
@@ -44,7 +49,7 @@ export const BarsEditor: React.FC<BarsEditorProps> = ({entry, updateEntry, delet
                     });
                 }}
             />
-        </>
+        </Stack>
     );
 };
 

@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {MenuItem, Select, TextField, Typography} from '@mui/material';
+import {FormControl, FormHelperText, InputLabel, MenuItem, Select, Stack, TextField, Typography} from '@mui/material';
 
 // @ts-ignore
 import {RundownEditorActionBar, useSocket} from '@web-lib';
@@ -24,40 +24,48 @@ function useRoutes() {
     const conn = useSocket();
     const [routes, setRoutes] = useState<any[]>([]);
 
-    useEffect(() =>
-        conn.rawRequest('/api/routes', 'GET', {}).then(rundowns => setRoutes(rundowns.data ?? [])),
-[]);
+    useEffect(() => {
+        conn.rawRequest('/api/routes', 'GET', {}).then(rundowns => setRoutes(rundowns.data ?? []));
+    }, []);
 
-    return {
-        routes,
-    };
+    return {routes};
 }
 
 export const ToggleVideoRouteEditor: React.FC<ToggleVideoRouteEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
     const [title, setTitle] = useState(entry?.title ?? '');
     const [route, setRoute] = useState(entry?.data?.route ?? '');
-    const { routes } = useRoutes();
+    const {routes} = useRoutes();
 
     return (
-        <>
-            <Typography variant="h6">Toggle Video Route</Typography>
+        <Stack spacing={2}>
+            <Typography variant="h6">Toggle video route</Typography>
+
             <TextField
                 label="Title"
                 value={title}
                 onChange={e => setTitle(e.target['value'])}
+                helperText="Shown in the rundown."
             />
 
-            <Select
-                variant="outlined"
-                label="Type"
-                color="primary"
-                value={route}
-                onChange={(event) => setRoute(event.target['value'])}
-            >
-                {routes.map(route => (
-                    <MenuItem value={route.id} key={route.id}>{route.name ?? route.id}</MenuItem>
-                ))}
-            </Select>
+            <FormControl>
+                <InputLabel id="toggle-video-route-select">Route</InputLabel>
+                <Select
+                    labelId="toggle-video-route-select"
+                    label="Route"
+                    value={route}
+                    onChange={(event) => setRoute(event.target['value'])}
+                >
+                    {routes.length === 0 && (
+                        <MenuItem disabled value="">
+                            <em>No routes available</em>
+                        </MenuItem>
+                    )}
+                    {routes.map(r => (
+                        <MenuItem value={r.id} key={r.id}>{r.name ?? r.id}</MenuItem>
+                    ))}
+                </Select>
+                <FormHelperText>The route to toggle when this entry plays.</FormHelperText>
+            </FormControl>
 
             <RundownEditorActionBar
                 exists={!creating}
@@ -73,7 +81,7 @@ export const ToggleVideoRouteEditor: React.FC<ToggleVideoRouteEditorProps> = ({e
                     });
                 }}
             />
-        </>
+        </Stack>
     );
 };
 
