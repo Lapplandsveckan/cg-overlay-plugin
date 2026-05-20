@@ -64,6 +64,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.api.registerUI(UI_INJECTION_ZONE.PLUGIN_PAGE, path.join(__dirname, 'ui', 'overlay'));
         this.api.registerUI(UI_INJECTION_ZONE.RUNDOWN_SIDE, path.join(__dirname, 'ui', 'video'));
+        this.api.registerUI(UI_INJECTION_ZONE.RUNDOWN_BOTTOM_PANEL, path.join(__dirname, 'ui', 'play-video', 'BottomPanel'));
 
         this.registerRundownActions();
     }
