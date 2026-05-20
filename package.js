@@ -49,10 +49,10 @@ async function packageSource() {
 
     if (os.platform() !== 'win32') {
         // This is cursed, but works better than using fs
-        await rawcmd(`cp -r "${path.join(root, 'node_modules')}" "${path.join(root, 'dist', 'node_modules')}"`).catch(() => null);
+        await rawcmd(`cp -r "${path.join(root, 'node_modules')}" "${path.join(root, 'dist', 'node_modules')}"`);
+    } else {
+        await fs.cp(path.join(root, 'node_modules'), path.join(root, 'dist', 'node_modules'), { recursive: true });
     }
-
-    await fs.cp(path.join(root, 'node_modules'), path.join(root, 'dist', 'node_modules'), { recursive: true });
 }
 
 async function packageUI() {
