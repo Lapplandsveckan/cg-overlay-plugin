@@ -40,6 +40,7 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({entry
 
     const data = useMediaCardData(clip);
     const wallData = useMediaCardData(wallClip);
+    const playNow = entry.data?.options?.playNow;
 
     useEffect(() => {
         if (!entry.data?.clip) return;
@@ -55,6 +56,7 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({entry
         <Stack spacing={1}>
             <Stack direction="row" spacing={1} alignItems="center">
                 <Typography variant="body1">Play video</Typography>
+                {playNow && <Chip label="Play now" size="small" color="warning" />}
                 {wallData && <Chip label="+ wall" size="small" variant="outlined" />}
             </Stack>
             {data ? (

@@ -188,18 +188,12 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             this.api.registerRundownAction(key, action);
         };
 
-        registerRundownAction('queue-video', async (rundown) => {
-            const video = this.api.getFileDatabase().get(rundown.data.clip);
-            if (!video) return null; // throw new WebError('Clip not found', 404);
-
-            this.video.queueVideo(video.id, rundown.data.options);
-        });
-
         registerRundownAction('play-video', async (rundown) => {
             const video = this.api.getFileDatabase().get(rundown.data.clip);
             if (!video) return null; // throw new WebError('Clip not found', 404);
 
-            this.video.playVideo(video.id, rundown.data.options);
+            if (rundown.data.options?.playNow) this.video.playVideo(video.id, rundown.data.options);
+            else this.video.queueVideo(video.id, rundown.data.options);
         });
 
         registerRundownAction('namnskylt', async (rundown) => {
