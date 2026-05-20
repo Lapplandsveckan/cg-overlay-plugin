@@ -20,6 +20,7 @@ import {AtemManager} from './atem';
 import {config} from './config';
 import {TextWallEffect, TextWallEffectOptions} from './effects/wall/text';
 import {WallVideoEffect, WallVideoEffectOptions} from './effects/misc/wall_video';
+import {NamnskyltPresetStore} from './namnskylt-presets';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -27,6 +28,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public motion: MotionManager;
     public overlay: OverlayManager;
     public atem: AtemManager;
+    public namnskyltPresets: NamnskyltPresetStore;
 
     public getLogger() {
         return this.logger;
@@ -55,6 +57,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.overlay = new OverlayManager(this);
         this.motion = new MotionManager(this);
         this.atem = new AtemManager();
+        this.namnskyltPresets = new NamnskyltPresetStore(this);
 
         this.atem.connect(config.atem.ip);
 
@@ -64,7 +67,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.api.registerUI(UI_INJECTION_ZONE.PLUGIN_PAGE, path.join(__dirname, 'ui', 'overlay'));
         this.api.registerUI(UI_INJECTION_ZONE.RUNDOWN_SIDE, path.join(__dirname, 'ui', 'video'));
-        this.api.registerUI(UI_INJECTION_ZONE.RUNDOWN_BOTTOM_PANEL, path.join(__dirname, 'ui', 'play-video', 'BottomPanel'));
+        this.api.registerUI(UI_INJECTION_ZONE.RUNDOWN_BOTTOM_PANEL, path.join(__dirname, 'ui', 'panel'));
 
         this.registerRundownActions();
     }
@@ -284,5 +287,15 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.api.registerRoute('videos', async req => this.video.clearQueue(), 'DELETE');
         this.api.registerRoute('video', async req => this.video.stopVideo(typeof req.data === 'object' && req.data['clear']), 'DELETE');
+
+        this.api.registerRoute('namnskylt-presets', async req => {
+            await this.namnskyltPresets.ready;
+            return this.namnskyltPresets.get();
+        }, 'GET');
+
+        this.api.registerRoute('namnskylt-presets', async req => {
+            await this.namnskyltPresets.ready;
+            return this.namnskyltPresets.replace(req.data);
+        }, 'UPDATE');
     }
 }
