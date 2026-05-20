@@ -42,7 +42,6 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
     const socket = useSocket();
 
     const [media, setMedia] = useState<any | null>(null);
-    const [secondaryMedia, setSecondaryMedia] = useState<any | null>(null);
     const [title, setTitle] = useState(entry.title);
 
     const [skipIntro, setSkipIntro] = useState(entry.data.options?.skipIntro ?? false);
@@ -54,12 +53,7 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
         socket.caspar.getMedia().then(media => setMedia(media.get(entry.data.clip) || null));
     }, [entry.data?.clip]);
 
-    useEffect(() => {
-        if (!entry.data?.options?.secondaryVideo) return;
-        socket.caspar.getMedia().then(media => setSecondaryMedia(media.get(entry.data.options.secondaryVideo) || null));
-    }, [entry.data?.options?.secondaryVideo]);
-
-    const additionalOptionsActive = playNow || skipIntro || loop || !!secondaryMedia;
+    const additionalOptionsActive = playNow || skipIntro || loop;
 
     return (
         <Stack spacing={2.5}>
@@ -95,50 +89,41 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
                     </Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                    <Stack spacing={2}>
-                        <Box>
-                            <Typography variant="caption" color="text.secondary" sx={{display: 'block', marginBottom: 0.5}}>
-                                Secondary video — plays simultaneously on the wall.
-                            </Typography>
-                            <VideoPicker clip={secondaryMedia} onChange={setSecondaryMedia} />
-                        </Box>
-
-                        <FormGroup row sx={{gap: 2}}>
-                            <FormControlLabel
-                                label="Play now"
-                                title="Stop the current video and clear the queue before playing this clip."
-                                control={
-                                    <Checkbox
-                                        size="small"
-                                        checked={playNow}
-                                        onChange={e => setPlayNow(e.target['checked'])}
-                                    />
-                                }
-                            />
-                            <FormControlLabel
-                                label="Skip intro"
-                                title="Skip the lead-in animation of the clip."
-                                control={
-                                    <Checkbox
-                                        size="small"
-                                        checked={skipIntro}
-                                        onChange={e => setSkipIntro(e.target['checked'])}
-                                    />
-                                }
-                            />
-                            <FormControlLabel
-                                label="Loop"
-                                title="Loop the clip until manually stopped."
-                                control={
-                                    <Checkbox
-                                        size="small"
-                                        checked={loop}
-                                        onChange={e => setLoop(e.target['checked'])}
-                                    />
-                                }
-                            />
-                        </FormGroup>
-                    </Stack>
+                    <FormGroup row sx={{gap: 2}}>
+                        <FormControlLabel
+                            label="Play now"
+                            title="Stop the current video and clear the queue before playing this clip."
+                            control={
+                                <Checkbox
+                                    size="small"
+                                    checked={playNow}
+                                    onChange={e => setPlayNow(e.target['checked'])}
+                                />
+                            }
+                        />
+                        <FormControlLabel
+                            label="Skip intro"
+                            title="Skip the lead-in animation of the clip."
+                            control={
+                                <Checkbox
+                                    size="small"
+                                    checked={skipIntro}
+                                    onChange={e => setSkipIntro(e.target['checked'])}
+                                />
+                            }
+                        />
+                        <FormControlLabel
+                            label="Loop"
+                            title="Loop the clip until manually stopped."
+                            control={
+                                <Checkbox
+                                    size="small"
+                                    checked={loop}
+                                    onChange={e => setLoop(e.target['checked'])}
+                                />
+                            }
+                        />
+                    </FormGroup>
                 </AccordionDetails>
             </Accordion>
 
@@ -155,8 +140,6 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
                                 loop,
                                 skipIntro,
                                 playNow,
-
-                                secondaryVideo: secondaryMedia?.id,
                             }
                         },
                         title,

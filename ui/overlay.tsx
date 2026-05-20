@@ -2,7 +2,6 @@ import {Box, Button, Card, CardContent, InputAdornment, Stack, TextField, Typogr
 // @ts-ignore
 import {useSocket} from '@web-lib';
 import React from 'react';
-import {MotionControl} from './motion';
 import VideoQueue from './video';
 
 // Actions
@@ -166,7 +165,6 @@ const InsamlingCard = () => {
 
 // Main component
 const OverlayTest = ({ path }) => {
-    if (path && path[0] === 'motion') return <MotionControl />;
     if (path && path[0] === 'video') return <VideoQueue />;
 
     return (
@@ -182,9 +180,6 @@ const OverlayTest = ({ path }) => {
             <Box sx={{paddingTop: 1}}>
                 <Typography variant="overline" color="text.secondary">More</Typography>
                 <Stack direction="row" spacing={1.5} sx={{marginTop: 1}}>
-                    <Button component="a" href="lappis/motion" variant="outlined" fullWidth>
-                        Motion
-                    </Button>
                     <Button component="a" href="lappis/video" variant="outlined" fullWidth>
                         Video queue
                     </Button>

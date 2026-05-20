@@ -36,10 +36,8 @@ function useMediaCardData(clip: any) {
 export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({entry}) => {
     const socket = useSocket();
     const [clip, setClip] = useState<any | null>(null);
-    const [wallClip, setWallClip] = useState<any | null>(null);
 
     const data = useMediaCardData(clip);
-    const wallData = useMediaCardData(wallClip);
     const playNow = entry.data?.options?.playNow;
 
     useEffect(() => {
@@ -47,17 +45,11 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({entry
         socket.caspar.getMedia().then(media => setClip(media.get(entry.data.clip) || null));
     }, [entry.data?.clip]);
 
-    useEffect(() => {
-        if (!entry.data?.options?.secondaryVideo) return;
-        socket.caspar.getMedia().then(media => setWallClip(media.get(entry.data.options.secondaryVideo) || null));
-    }, [entry.data?.options?.secondaryVideo]);
-
     return (
         <Stack spacing={1}>
             <Stack direction="row" spacing={1} alignItems="center">
                 <Typography variant="body1">Play video</Typography>
                 {playNow && <Chip label="Play now" size="small" color="warning" />}
-                {wallData && <Chip label="+ wall" size="small" variant="outlined" />}
             </Stack>
             {data ? (
                 <MediaCard {...data} columns={1} />
@@ -66,7 +58,6 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({entry
                     <Typography variant="caption" color="warning.main">No clip selected</Typography>
                 </Box>
             )}
-            {wallData && <MediaCard {...wallData} columns={1} />}
         </Stack>
     );
 };

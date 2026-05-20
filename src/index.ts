@@ -4,9 +4,6 @@ import {Templates} from './templates';
 import {SwishOverlayEffect, SwishOverlayEffectOptions} from './effects/overlay/swish';
 import {NamnskyltOverlayEffect, NamnskyltOverlayEffectOptions} from './effects/overlay/namnskylt';
 import {VideoTransitionOverlayEffect, VideoTransitionOverlayEffectOptions} from './effects/overlay/videotransition';
-import {SwishWallEffect, SwishWallEffectOptions} from './effects/wall/swish';
-import {NamnskyltWallEffect, NamnskyltWallEffectOptions} from './effects/wall/namnskylt';
-import {VideoTransitionWallEffect, VideoTransitionWallEffectOptions} from './effects/wall/videotransition';
 import {BarsOverlayEffect, BarsOverlayEffectOptions} from './effects/overlay/bars';
 import {InsamlingOverlayEffect, InsamlingOverlayEffectOptions} from './effects/overlay/insamling';
 import {VideoEffect, VideoEffectOptions} from './effects/misc/video';
@@ -14,18 +11,13 @@ import VideoManager from './video';
 import {RouteEffect, RouteEffectOptions} from './effects/misc/route';
 import OverlayManager, {CHANNELS, getGroup, GROUPS} from './overlay';
 import {RundownItem} from '@lappis/cg-manager/dist/types/rundown';
-import {MotionEffect, MotionEffectOptions} from './effects/misc/motion';
-import MotionManager from './motion';
 import {AtemManager} from './atem';
 import {config} from './config';
-import {TextWallEffect, TextWallEffectOptions} from './effects/wall/text';
-import {WallVideoEffect, WallVideoEffectOptions} from './effects/misc/wall_video';
 import {NamnskyltPresetStore} from './namnskylt-presets';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
     public video: VideoManager;
-    public motion: MotionManager;
     public overlay: OverlayManager;
     public atem: AtemManager;
     public namnskyltPresets: NamnskyltPresetStore;
@@ -55,7 +47,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.templates = new Templates(() => this.overlay.initialize());
         this.video = new VideoManager(this);
         this.overlay = new OverlayManager(this);
-        this.motion = new MotionManager(this);
         this.atem = new AtemManager();
         this.namnskyltPresets = new NamnskyltPresetStore(this);
 
@@ -128,59 +119,13 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
 
         this.api.registerEffect(
-            'wall-swish',
-            (group, options) => new SwishWallEffect(
-                group,
-                options as SwishWallEffectOptions,
-                this.templates.getFilePath('wall/swish'),
-            ),
-        );
-
-        this.api.registerEffect(
-            'wall-namnskylt',
-            (group, options) => new NamnskyltWallEffect(
-                group,
-                options as NamnskyltWallEffectOptions,
-                this.templates.getFilePath('wall/namnskylt'),
-            ),
-        );
-
-        this.api.registerEffect(
-            'wall-videotransition',
-            (group, options) => new VideoTransitionWallEffect(
-                group,
-                options as VideoTransitionWallEffectOptions,
-                this.templates.getFilePath('wall/videotransition'),
-            ),
-        );
-
-        this.api.registerEffect(
-            'wall-text',
-            (group, options) => new TextWallEffect(
-                group,
-                options as TextWallEffectOptions,
-                this.templates.getFilePath('wall/text'),
-            ),
-        );
-
-        this.api.registerEffect(
             'lappis-video',
             (group, options) => new VideoEffect(group, options as VideoEffectOptions),
         );
 
         this.api.registerEffect(
-            'lappis-wall-video',
-            (group, options) => new WallVideoEffect(group, options as WallVideoEffectOptions),
-        );
-
-        this.api.registerEffect(
             'lappis-route',
             (group, options) => new RouteEffect(group, options as RouteEffectOptions),
-        );
-
-        this.api.registerEffect(
-            'motion',
-            (group, options) => new MotionEffect(group, options as MotionEffectOptions),
         );
     }
 
@@ -227,10 +172,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         registerRundownAction('toggle-videoroute', async (rundown) => {
             this.api.setVideoRouteEnabled(rundown.data.route);
         });
-
-        registerRundownAction('text', async (rundown) => {
-            this.overlay.setText(rundown.data.text);
-        });
     }
 
     public registerEffectGroups() {
@@ -238,11 +179,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.VIDEO)); // main video
         this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.OVERLAY)); // main overlay
         this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION)); // main presentation
-
-        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.MOTION)); // wall motion
-        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.PRESENTATION)); // wall presentation
-        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.VIDEO)); // wall video
-        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.OVERLAY)); // wall overlay
 
         this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.VIDEO)); // video-out
         this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY)); // video-out
@@ -266,20 +202,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
             const { now, goal } = req.data as any;
             this.overlay.toggleInsamling({ now, goal });
-        }, 'ACTION');
-
-        this.api.registerRoute('motion/clip', async req => {
-            if (!req.data) return null; // throw new WebError('Invalid request', 400);
-
-            const { clip } = req.data as {clip: string};
-            this.motion.setMotion(clip);
-        }, 'ACTION');
-
-        this.api.registerRoute('motion/color', async req => {
-            if (!req.data) return null; // throw new WebError('Invalid request', 400);
-
-            const { color } = req.data as {color: string};
-            this.motion.setColor(color);
         }, 'ACTION');
 
         this.api.registerRoute('videos', async req => this.video.getInformation(), 'GET');

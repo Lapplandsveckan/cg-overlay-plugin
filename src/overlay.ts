@@ -1,18 +1,12 @@
-import {BasicChannel, Logger, PluginAPI} from '@lappis/cg-manager';
+import {Logger, PluginAPI} from '@lappis/cg-manager';
 import {SwishOverlayEffect} from './effects/overlay/swish';
-import {SwishWallEffect} from './effects/wall/swish';
-import {VideoTransitionWallEffect} from './effects/wall/videotransition';
 import {BarsOverlayEffect} from './effects/overlay/bars';
 import {InsamlingOverlayEffect, InsamlingOverlayEffectOptions} from './effects/overlay/insamling';
 import {VideoEffect} from './effects/misc/video';
-import {RouteEffect} from './effects/misc/route';
 import LappisOverlayPlugin from './index';
-import {TextWallEffect} from './effects/wall/text';
-import {WallVideoEffect} from './effects/misc/wall_video';
 
 export const CHANNELS = {
     MAIN: 1,
-    WALL: 2,
     VIDEO: 3,
 };
 
@@ -21,7 +15,6 @@ export const GROUPS = {
     OVERLAY: 'overlay',
     VIDEO: 'video',
     PRESENTATION: 'presentation',
-    MOTION: 'motion',
 };
 
 export const getGroup = (channel: number, group: string) => `${channel}:${group}`;
@@ -37,7 +30,7 @@ export default class OverlayManager {
         this.logger = instance['logger'];
     }
 
-    private swish: { overlay: SwishOverlayEffect, wall: SwishWallEffect } = null;
+    private swish: SwishOverlayEffect = null;
     private swishState = -1;
 
     private bars: BarsOverlayEffect = null;
@@ -46,32 +39,20 @@ export default class OverlayManager {
     private insamling: InsamlingOverlayEffect = null;
     private insamlingState = 0;
 
-    private videoTransition: VideoTransitionWallEffect = null;
     private videoTransitionState = 0;
 
-    private textEffect: TextWallEffect = null;
-    private textState = 0;
-
     public initialize() {
-        this.swish = {
-            overlay: this.api.createEffect('overlay-swish', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {
-                number: '123 607 27 97',
-            }) as SwishOverlayEffect,
-            wall: this.api.createEffect('wall-swish', getGroup(CHANNELS.WALL, GROUPS.OVERLAY), {
-                number: '123 607 27 97',
-            }) as SwishWallEffect,
-        };
+        this.swish = this.api.createEffect('overlay-swish', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {
+            number: '123 607 27 97',
+        }) as SwishOverlayEffect;
 
         this.bars = this.api.createEffect('overlay-bars', getGroup(CHANNELS.MAIN, GROUPS.BARS), {}) as BarsOverlayEffect; // TODO: special group so it is underneeth all overlays
         this.insamling = this.api.createEffect('overlay-insamling', getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY), {}) as InsamlingOverlayEffect; // TODO: special group so it is underneeth all overlays
-
-        // this.textEffect = this.api.createEffect('wall-text', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {}) as TextWallEffect;
     }
 
     public dispose() {
         if (this.swish) {
-            this.swish.overlay.dispose();
-            this.swish.wall.dispose();
+            this.swish.dispose();
             this.swish = null;
         }
 
@@ -84,15 +65,9 @@ export default class OverlayManager {
             this.insamling.dispose();
             this.insamling = null;
         }
-
-        if (this.videoTransition) {
-            this.videoTransition.dispose();
-            this.videoTransition = null;
-        }
     }
 
     private videoSession: null | {
-        wall: RouteEffect,
         stop: () => void,
     } = null;
 
@@ -114,19 +89,11 @@ export default class OverlayManager {
     public startVideoSession(atem = false, skipIntro = false) {
         if (this.videoSession) return Promise.resolve();
 
-        const width = 0.54;
-        const wallEffect = this.api.createEffect('lappis-route', `${CHANNELS.WALL}:video`, {
-            source: new BasicChannel(CHANNELS.VIDEO),
-            transform: [0, 0, 1, 1, 0.5 - (width / 2), 0, 0.5 + (width / 2), 1],
-        }) as RouteEffect;
-
-        this.videoSession = {wall: wallEffect, stop: () => null};
+        this.videoSession = {stop: () => null};
         if (this.videoTransitionState !== 1) this.toggleVideoTransition(skipIntro);
 
         if (skipIntro) {
-            wallEffect.activate();
             if (atem) this.plugin.atem.setVideoProgram();
-
             return Promise.resolve();
         }
 
@@ -135,7 +102,6 @@ export default class OverlayManager {
                 this.videoSession.stop = () => null;
                 resolve();
 
-                wallEffect.activate();
                 if (atem) this.plugin.atem.setVideoProgram();
             }, 3000);
 
@@ -152,7 +118,6 @@ export default class OverlayManager {
         if (this.videoTransitionState !== 0) this.toggleVideoTransition();
 
         if (atem) this.plugin.atem.returnToPreview();
-        this.videoSession.wall.dispose();
 
         this.videoSession.stop();
         this.videoSession = null;
@@ -171,24 +136,10 @@ export default class OverlayManager {
         }) as VideoEffect;
     }
 
-    public playWallVideo(video: string, loop?: boolean) {
-        const media = this.api.getFileDatabase().get(video);
-        if (!media) throw new Error('Video not found');
-
-        return this.api.createEffect('lappis-wall-video', `${CHANNELS.WALL}:video`, {
-            media,
-            disposeOnStop: true,
-
-            loop,
-        }) as WallVideoEffect;
-    }
-
     public showNamnskylt(name: string) {
         const overlay = this.api.createEffect('overlay-namnskylt', '1:overlay', { name });
-        const wall = this.api.createEffect('wall-namnskylt', '2:overlay', { name });
 
-        Promise
-            .all([wall.activate(), overlay.activate()])
+        overlay.activate()
             .catch(err => {
                 this.logger.error('Failed to activate namnskylt effect');
                 this.logger.error(err);
@@ -198,86 +149,46 @@ export default class OverlayManager {
     public toggleVideoTransition(skipIntro = false) {
         if (this.videoTransitionState === 1) {
             this.videoTransitionState = 0;
-            this.videoTransition
-                .deactivate()
-                .catch(err => {
-                    this.logger.error('Failed to deactivate videotransition effect');
-                    this.logger.error(err);
-                });
-
-            this.videoTransition = null;
             return;
         }
 
         this.videoTransitionState = 1;
-
-        if (skipIntro) {
-            const wall = this.api.createEffect('wall-videotransition', '2:presentation', {
-                skipIntro: true,
-            });
-
-            wall
-                .activate()
-                .catch(err => {
-                    this.logger.error('Failed to activate videotransition effect');
-                    this.logger.error(err);
-                });
-
-            this.videoTransition = wall as VideoTransitionWallEffect;
-            return;
-        }
+        if (skipIntro) return;
 
         const overlay = this.api.createEffect('overlay-videotransition', '1:presentation', {});
-        const wall = this.api.createEffect('wall-videotransition', '2:presentation', {});
-
-        Promise
-            .all([wall.activate(), overlay.activate()])
+        overlay.activate()
             .catch(err => {
                 this.logger.error('Failed to activate videotransition effect');
                 this.logger.error(err);
             });
-
-        this.videoTransition = wall as VideoTransitionWallEffect;
     }
 
     public toggleSwish(number?: string, labels?: string, skipFirst?: boolean) {
-        this.swishState = (this.swishState + 1) % 4;
+        this.swishState = (this.swishState + 1) % 3;
         if (this.swishState === 0 && skipFirst) this.swishState = 1;
 
         labels = labels || '';
         if (number) {
-            this.swish.overlay.update({ number, labels });
-            this.swish.wall.update({ number, labels });
+            this.swish.update({ number, labels });
         }
 
         switch (this.swishState) {
             case 0:
-                Promise
-                    .all([this.swish.overlay.activate(), this.swish.wall.activate()])
+                this.swish.activate()
                     .catch(err => {
                         this.logger.error('Failed to activate swish effect');
                         this.logger.error(err);
                     });
                 break;
             case 1:
-                Promise
-                    .all([this.swish.overlay.minimize(), this.swish.wall.activate()])
+                this.swish.minimize()
                     .catch(err => {
                         this.logger.error('Failed to activate swish effect');
                         this.logger.error(err);
                     });
                 break;
             case 2:
-                this.swish.wall
-                    .deactivate()
-                    .catch(err => {
-                        this.logger.error('Failed to deactivate swish effect');
-                        this.logger.error(err);
-                    });
-                break;
-            case 3:
-                this.swish.overlay
-                    .deactivate()
+                this.swish.deactivate()
                     .catch(err => {
                         this.logger.error('Failed to deactivate swish effect');
                         this.logger.error(err);
@@ -335,18 +246,5 @@ export default class OverlayManager {
                     });
                 break;
         }
-    }
-
-    public setText(text: string) {
-        if (!text) {
-            if (this.textState === 1) this.textEffect.deactivate();
-            this.textState = 0;
-            return;
-        }
-
-        this.textEffect.update({ text });
-
-        if (this.textState === 0) this.textEffect.activate();
-        this.textState = 1;
     }
 }
