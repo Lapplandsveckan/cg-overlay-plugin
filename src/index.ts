@@ -61,7 +61,9 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.atem = new AtemManager();
         this.namnskyltPresets = new NamnskyltPresetStore(this);
 
-        this.atem.connect(config.atem.ip);
+        if (config.atem.ip) {
+            this.atem.connect(config.atem.ip);
+        }
 
         this.registerEffectGroups();
         this.registerEffects();
