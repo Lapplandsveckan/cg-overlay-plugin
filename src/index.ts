@@ -30,6 +30,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public atem: AtemManager;
     public namnskyltPresets: NamnskyltPresetStore;
 
+    private reconnectHandler: () => void;
+
     public getLogger() {
         return this.logger;
     }
@@ -70,9 +72,21 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.api.registerUI(UI_INJECTION_ZONE.RUNDOWN_BOTTOM_PANEL, path.join(__dirname, 'ui', 'panel'));
 
         this.registerRundownActions();
+
+        this.reconnectHandler = () => {
+            this.logger.info('Server reconnected — restoring effect groups and persistent effects');
+            this.registerEffectGroups();
+            this.overlay.initialize();
+        };
+        this.api.onReconnect(this.reconnectHandler);
     }
 
     protected onDisable() {
+        if (this.reconnectHandler) {
+            this.api.offReconnect(this.reconnectHandler);
+            this.reconnectHandler = null;
+        }
+
         this.overlay.dispose();
         this.overlay = null;
 
