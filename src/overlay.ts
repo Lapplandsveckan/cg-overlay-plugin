@@ -164,8 +164,12 @@ export default class OverlayManager {
     }
 
     public toggleSwish(number?: string, labels?: string, skipFirst?: boolean) {
-        this.swishState = (this.swishState + 1) % 3;
-        if (this.swishState === 0 && skipFirst) this.swishState = 1;
+        if (skipFirst) {
+            // 2-step cycle: show minimized, then dismiss.
+            this.swishState = this.swishState === 1 ? 2 : 1;
+        } else {
+            this.swishState = (this.swishState + 1) % 3;
+        }
 
         labels = labels || '';
         if (number) {
