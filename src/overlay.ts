@@ -241,8 +241,12 @@ export default class OverlayManager {
     }
 
     public toggleSwish(number?: string, labels?: string, skipFirst?: boolean) {
-        this.swishState = (this.swishState + 1) % 4;
-        if (this.swishState === 0 && skipFirst) this.swishState = 1;
+        if (skipFirst) {
+            // 2-step cycle: show minimized + wall, then dismiss both.
+            this.swishState = this.swishState === 1 ? 3 : 1;
+        } else {
+            this.swishState = (this.swishState + 1) % 4;
+        }
 
         labels = labels || '';
         if (number) {
@@ -276,8 +280,8 @@ export default class OverlayManager {
                     });
                 break;
             case 3:
-                this.swish.overlay
-                    .deactivate()
+                Promise
+                    .all([this.swish.overlay.deactivate(), this.swish.wall.deactivate()])
                     .catch(err => {
                         this.logger.error('Failed to deactivate swish effect');
                         this.logger.error(err);
