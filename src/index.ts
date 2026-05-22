@@ -177,10 +177,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             this.overlay.toggleBars();
         });
 
-        registerRundownAction('presentation', async (rundown) => {
-            this.overlay.togglePresentationMode(rundown.data.atem ?? false);
-        });
-
         registerRundownAction('insamling', async (rundown) => {
             this.overlay.toggleInsamling(rundown.data);
         });
@@ -203,10 +199,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public registerRoutes() {
         this.api.registerRoute('bars', async req => {
             this.overlay.toggleBars();
-        }, 'ACTION');
-
-        this.api.registerRoute('presentation', async req => {
-            this.overlay.togglePresentationMode(typeof req.data === 'object' ? req.data['atem'] : false);
         }, 'ACTION');
 
         this.api.registerRoute('swish', async req => {

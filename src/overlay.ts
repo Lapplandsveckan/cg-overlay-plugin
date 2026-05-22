@@ -75,17 +75,6 @@ export default class OverlayManager {
         return this.videoSession;
     }
 
-    private externalEnabledVideoSession: boolean = false;
-    public togglePresentationMode(atem = false) {
-        this.externalEnabledVideoSession = !this.externalEnabledVideoSession;
-
-        if (this.externalEnabledVideoSession) return this.startVideoSession(atem);
-        if (this.plugin.video.playing) return Promise.resolve();
-
-        this.stopVideoSession(atem);
-        return Promise.resolve();
-    }
-
     public startVideoSession(atem = false, skipIntro = false) {
         if (this.videoSession) return Promise.resolve();
 
@@ -113,7 +102,7 @@ export default class OverlayManager {
     }
 
     public stopVideoSession(atem = false) {
-        if (this.externalEnabledVideoSession) return;
+        if (this.insamlingState === 1) return; // insamling still showing — keep session alive
         if (!this.videoSession) return this.logger.warn('No video session to stop');
         if (this.videoTransitionState !== 0) this.toggleVideoTransition();
 
@@ -232,19 +221,19 @@ export default class OverlayManager {
 
         switch (this.insamlingState) {
             case 0:
-                if (this.externalEnabledVideoSession) await this.togglePresentationMode(true);
                 this.insamling
                     .deactivate()
-                    .catch(err => {
+                    ?.catch(err => {
                         this.logger.error('Failed to deactivate insamling effect');
                         this.logger.error(err);
                     });
+                if (!this.plugin.video.playing) this.stopVideoSession(true);
                 break;
             case 1:
-                if (!this.externalEnabledVideoSession) await this.togglePresentationMode(true);
+                await this.startVideoSession(true);
                 this.insamling
                     .activate()
-                    .catch(err => {
+                    ?.catch(err => {
                         this.logger.error('Failed to activate insamling effect');
                         this.logger.error(err);
                     });
