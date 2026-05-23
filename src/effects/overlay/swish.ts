@@ -45,6 +45,10 @@ export class SwishOverlayEffect extends Effect {
     }
 
     public minimize() {
+        // Ensure base tracks this as active so a subsequent deactivate()
+        // actually fires the stop command. Returns false when already
+        // active — fine, we just want the side-effect of flipping the flag.
+        super.activate();
         return this.executor.execute(
             CgCommand
                 .next()
