@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, Link, Stack, Tab, Tabs, TextField, Tooltip, Typography} from '@mui/material';
 
 // @ts-ignore
-import {useSocket} from '@web-lib';
+import {MediaDropZone, useSocket} from '@web-lib';
 
 const RUNDOWN_ITEM_MIME = 'application/x-cg-rundown-item';
 
@@ -191,6 +191,15 @@ const MediaTab: React.FC = () => {
     const isEmpty = clips.length === 0 && folders.length === 0;
 
     return (
+        <MediaDropZone
+            accept={['video/*']}
+            overlayLabel="Drop video to upload"
+            onComplete={(results: {file: File; error?: string}[]) => {
+                for (const r of results) {
+                    if (r.error) console.error(`Upload failed for ${r.file.name}: ${r.error}`);
+                }
+            }}
+        >
         <Stack spacing={1.5} sx={{padding: 1.5, height: '100%', boxSizing: 'border-box'}}>
             <Stack direction="row" spacing={1.5} alignItems="center">
                 {path.length > 0 ? (
@@ -267,6 +276,7 @@ const MediaTab: React.FC = () => {
                 )}
             </Box>
         </Stack>
+        </MediaDropZone>
     );
 };
 

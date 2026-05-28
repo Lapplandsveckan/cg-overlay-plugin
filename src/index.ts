@@ -1,5 +1,5 @@
 import path from 'path';
-import {CasparPlugin, UI_INJECTION_ZONE} from '@lappis/cg-manager';
+import {CasparPlugin, RundownActionMetadata, UI_INJECTION_ZONE} from '@lappis/cg-manager';
 import {Templates} from './templates';
 import {SwishOverlayEffect, SwishOverlayEffectOptions} from './effects/overlay/swish';
 import {NamnskyltOverlayEffect, NamnskyltOverlayEffectOptions} from './effects/overlay/namnskylt';
@@ -146,11 +146,11 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     protected registerRundownActions() {
-        const registerRundownAction = (key: string, action: (rundown: RundownItem) => void) => {
+        const registerRundownAction = (key: string, action: (rundown: RundownItem) => void, metadata?: RundownActionMetadata) => {
             this.api.registerUI(this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_ITEM, key), path.join(__dirname, 'ui', key, 'Item'));
             this.api.registerUI(this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_EDITOR, key), path.join(__dirname, 'ui', key, 'Editor'));
 
-            this.api.registerRundownAction(key, action);
+            this.api.registerRundownAction(key, action, metadata);
         };
 
         registerRundownAction('play-video', async (rundown) => {
@@ -159,6 +159,18 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
             if (rundown.data.options?.playNow) this.video.playVideo(video.id, rundown.data.options);
             else this.video.queueVideo(video.id, rundown.data.options);
+        }, {
+            accepts: {
+                fileTypes: ['video/*'],
+                match: file => {
+                    if (!file.type.startsWith('video/')) return null;
+                    return {
+                        type: 'play-video',
+                        title: stripExt(file.name),
+                        data: {clip: (file as unknown as {mediaId: string}).mediaId},
+                    };
+                },
+            },
         });
 
         registerRundownAction('namnskylt', async (rundown) => {
@@ -224,4 +236,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             return this.namnskyltPresets.replace(req.data);
         }, 'UPDATE');
     }
+}
+
+function stripExt(name: string): string {
+    return name.replace(/\.[^.]+$/, '');
 }
