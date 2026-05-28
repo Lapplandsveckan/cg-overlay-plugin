@@ -9,6 +9,7 @@ import {NamnskyltWallEffect, NamnskyltWallEffectOptions} from './effects/wall/na
 import {VideoTransitionWallEffect, VideoTransitionWallEffectOptions} from './effects/wall/videotransition';
 import {BarsOverlayEffect, BarsOverlayEffectOptions} from './effects/overlay/bars';
 import {InsamlingOverlayEffect, InsamlingOverlayEffectOptions} from './effects/overlay/insamling';
+import {BibelordOverlayEffect, BibelordOverlayEffectOptions} from './effects/overlay/bibelord';
 import {VideoEffect, VideoEffectOptions} from './effects/misc/video';
 import VideoManager from './video';
 import {RouteEffect, RouteEffectOptions} from './effects/misc/route';
@@ -128,6 +129,15 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
 
         this.api.registerEffect(
+            'overlay-bibelord',
+            (group, options) => new BibelordOverlayEffect(
+                group,
+                options as BibelordOverlayEffectOptions,
+                this.templates.getFilePath('overlay/bibelord'),
+            ),
+        );
+
+        this.api.registerEffect(
             'wall-swish',
             (group, options) => new SwishWallEffect(
                 group,
@@ -227,6 +237,11 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         registerRundownAction('text', async (rundown) => {
             this.overlay.setText(rundown.data.text);
         });
+
+        registerRundownAction('bibelord', async (rundown) => {
+            const slides = Array.isArray(rundown.data?.slides) ? rundown.data.slides : [];
+            this.overlay.openBibelord(rundown.id, rundown.title ?? '', slides);
+        });
     }
 
     public registerEffectGroups() {
@@ -293,5 +308,32 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             await this.namnskyltPresets.ready;
             return this.namnskyltPresets.replace(req.data);
         }, 'UPDATE');
+
+        this.api.registerRoute('bibelord', async req => this.overlay.getBibelordState(), 'GET');
+
+        this.api.registerRoute('bibelord', async req => {
+            if (!req.data || typeof req.data !== 'object') return null;
+
+            const {action, index} = req.data as {action: string, index?: number};
+            switch (action) {
+                case 'close':
+                    this.overlay.closeBibelord();
+                    break;
+                case 'stop':
+                    this.overlay.stopBibelordPlayback();
+                    break;
+                case 'next':
+                    this.overlay.nextBibelordSlide();
+                    break;
+                case 'prev':
+                    this.overlay.prevBibelordSlide();
+                    break;
+                case 'jump':
+                    if (typeof index === 'number') this.overlay.jumpBibelordSlide(index);
+                    break;
+            }
+
+            return this.overlay.getBibelordState();
+        }, 'ACTION');
     }
 }
