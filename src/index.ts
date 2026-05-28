@@ -22,6 +22,7 @@ import {config} from './config';
 import {TextWallEffect, TextWallEffectOptions} from './effects/wall/text';
 import {WallVideoEffect, WallVideoEffectOptions} from './effects/misc/wall_video';
 import {NamnskyltPresetStore} from './namnskylt-presets';
+import {PresentationStore} from './presentations';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -30,6 +31,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public overlay: OverlayManager;
     public atem: AtemManager;
     public namnskyltPresets: NamnskyltPresetStore;
+    public presentations: PresentationStore;
 
     public getLogger() {
         return this.logger;
@@ -59,6 +61,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.motion = new MotionManager(this);
         this.atem = new AtemManager();
         this.namnskyltPresets = new NamnskyltPresetStore(this);
+        this.presentations = new PresentationStore(this);
 
         this.atem.connect(config.atem.ip);
 
@@ -239,8 +242,21 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         });
 
         registerRundownAction('bibelord', async (rundown) => {
-            const slides = Array.isArray(rundown.data?.slides) ? rundown.data.slides : [];
-            this.overlay.openBibelord(rundown.id, rundown.title ?? '', slides);
+            const presentationId = rundown.data?.presentationId;
+            if (typeof presentationId !== 'string' || !presentationId) {
+                this.logger.warn('bibelord rundown action: no presentationId on entry');
+                return;
+            }
+
+            await this.presentations.ready;
+            if (!this.presentations.get(presentationId)) {
+                this.logger.warn(`bibelord rundown action: presentation ${presentationId} not found`);
+                return;
+            }
+
+            // Single broadcast — the UI opens the run modal in response.
+            // Playback itself is triggered by the UI when the operator clicks a slide.
+            this.overlay.broadcastArmEvent(presentationId, rundown.id);
         });
     }
 
@@ -314,26 +330,69 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.api.registerRoute('bibelord', async req => {
             if (!req.data || typeof req.data !== 'object') return null;
 
-            const {action, index} = req.data as {action: string, index?: number};
-            switch (action) {
-                case 'close':
-                    this.overlay.closeBibelord();
+            const data = req.data as {action: string, presentationId?: string, slideId?: string};
+            switch (data.action) {
+                case 'play': {
+                    if (!data.presentationId || !data.slideId) return null;
+                    await this.presentations.ready;
+                    const presentation = this.presentations.get(data.presentationId);
+                    if (!presentation) return null;
+                    const slide = presentation.slides.find(s => s.id === data.slideId);
+                    if (!slide) return null;
+                    this.overlay.playBibelordSlide(
+                        presentation.id,
+                        slide.id,
+                        {text: slide.text, reference: slide.reference},
+                    );
                     break;
+                }
                 case 'stop':
                     this.overlay.stopBibelordPlayback();
-                    break;
-                case 'next':
-                    this.overlay.nextBibelordSlide();
-                    break;
-                case 'prev':
-                    this.overlay.prevBibelordSlide();
-                    break;
-                case 'jump':
-                    if (typeof index === 'number') this.overlay.jumpBibelordSlide(index);
                     break;
             }
 
             return this.overlay.getBibelordState();
         }, 'ACTION');
+
+        // Presentations CRUD
+        this.api.registerRoute('presentations', async req => {
+            await this.presentations.ready;
+            return this.presentations.list();
+        }, 'GET');
+
+        this.api.registerRoute('presentations/:id', async req => {
+            await this.presentations.ready;
+            return this.presentations.get(req.params.id);
+        }, 'GET');
+
+        this.api.registerRoute('presentations', async req => {
+            await this.presentations.ready;
+            const input = (req.data && typeof req.data === 'object') ? req.data as any : {};
+            const created = await this.presentations.create(input);
+            this.api.broadcast('presentations', 'UPDATE', this.presentations.list());
+            return created;
+        }, 'ACTION');
+
+        this.api.registerRoute('presentations/:id', async req => {
+            await this.presentations.ready;
+            const patch = (req.data && typeof req.data === 'object') ? req.data as any : {};
+            const updated = await this.presentations.update(req.params.id, patch);
+            if (updated) this.api.broadcast('presentations', 'UPDATE', this.presentations.list());
+            return updated;
+        }, 'UPDATE');
+
+        this.api.registerRoute('presentations/:id', async req => {
+            await this.presentations.ready;
+            const ok = await this.presentations.remove(req.params.id);
+            if (ok) {
+                // If the deleted presentation is currently playing, stop the overlay.
+                const state = this.overlay.getBibelordState();
+                if (state.playing && state.presentationId === req.params.id) {
+                    this.overlay.stopBibelordPlayback();
+                }
+                this.api.broadcast('presentations', 'UPDATE', this.presentations.list());
+            }
+            return ok;
+        }, 'DELETE');
     }
 }

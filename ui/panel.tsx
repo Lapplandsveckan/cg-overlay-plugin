@@ -1,8 +1,23 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, Link, Stack, Tab, Tabs, TextField, Tooltip, Typography} from '@mui/material';
 
 // @ts-ignore
 import {useSocket} from '@web-lib';
+
+import SlidePreview from './bibelord/SlidePreview';
+import RunModal from './bibelord/RunModal';
+import {
+    ArmEvent,
+    createPresentation,
+    playSlide,
+    Presentation,
+    stopPlayback,
+    useArmEvents,
+    usePlaybackState,
+    usePresentation,
+    usePresentations,
+} from './bibelord/api';
+import {bibelEditorUrl, bibelIndexUrl} from './bibelord/urls';
 
 const RUNDOWN_ITEM_MIME = 'application/x-cg-rundown-item';
 
@@ -459,11 +474,217 @@ const NamnskyltarTab: React.FC = () => {
 };
 
 // ============================================================
+// Bibel tab + global run modal
+// ============================================================
+
+interface PresentationCardProps {
+    presentation: Presentation;
+}
+
+const PresentationCard: React.FC<PresentationCardProps> = ({presentation}) => {
+    const firstSlide = presentation.slides[0];
+    return (
+        <Box
+            draggable
+            onDragStart={e => setRundownDragPayload(e, {
+                type: 'bibelord',
+                data: {presentationId: presentation.id},
+                title: presentation.title,
+            })}
+            onClick={() => window.location.assign(bibelEditorUrl(presentation.id))}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => {
+                if (e.key === 'Enter') window.location.assign(bibelEditorUrl(presentation.id));
+            }}
+            sx={{
+                cursor: 'grab',
+                userSelect: 'none',
+                outline: 'none',
+                '&:active': {cursor: 'grabbing'},
+                '&:hover .bibel-title': {color: '#4a90e2'},
+                '&:hover .bibel-thumb': {borderColor: '#4a90e2'},
+            }}
+        >
+            <Stack spacing={0.75}>
+                <Box
+                    className="bibel-thumb"
+                    sx={{
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: 1,
+                        overflow: 'hidden',
+                        transition: 'border-color 80ms',
+                    }}
+                >
+                    {firstSlide ? (
+                        <SlidePreview text={firstSlide.text} reference={firstSlide.reference} />
+                    ) : (
+                        <Box
+                            sx={{
+                                aspectRatio: '16/9',
+                                backgroundColor: '#000',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'rgba(255,255,255,0.35)',
+                                fontSize: 12,
+                                fontStyle: 'italic',
+                            }}
+                        >
+                            Empty
+                        </Box>
+                    )}
+                </Box>
+                <Stack direction="row" spacing={0.5} alignItems="center" sx={{paddingLeft: 0.25}}>
+                    <Typography
+                        className="bibel-title"
+                        variant="body2"
+                        sx={{flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#e8eaed'}}
+                    >
+                        {presentation.title}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                        {presentation.slides.length}
+                    </Typography>
+                </Stack>
+            </Stack>
+        </Box>
+    );
+};
+
+const BibelTab: React.FC = () => {
+    const conn = useSocket();
+    const {presentations} = usePresentations();
+    const [creating, setCreating] = useState(false);
+
+    const handleCreate = async () => {
+        setCreating(true);
+        try {
+            const p = await createPresentation(conn, {title: 'Untitled', slides: []});
+            window.location.assign(bibelEditorUrl(p.id));
+        } catch (err) {
+            console.error(err);
+            setCreating(false);
+        }
+    };
+
+    return (
+        <Stack spacing={1.5} sx={{padding: 1.5, height: '100%', boxSizing: 'border-box'}}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Typography variant="body2" color="text.secondary">
+                    Drag to add to rundown · Click to edit
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        component="a"
+                        href={bibelIndexUrl()}
+                    >
+                        Open all
+                    </Button>
+                    <Button
+                        variant="contained"
+                        size="small"
+                        onClick={handleCreate}
+                        disabled={creating}
+                    >
+                        {creating ? 'Creating…' : '+ New'}
+                    </Button>
+                </Stack>
+            </Stack>
+
+            <Box sx={{flexGrow: 1, overflowY: 'auto', minHeight: 0}}>
+                {presentations === null ? null
+                    : presentations.length === 0 ? (
+                        <Stack alignItems="center" justifyContent="center" sx={{height: '100%', color: 'text.secondary'}}>
+                            <Typography variant="body2">No presentations yet.</Typography>
+                        </Stack>
+                    ) : (
+                        <Box
+                            sx={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                                gap: 1.5,
+                            }}
+                        >
+                            {presentations.map(p => (
+                                <PresentationCard key={p.id} presentation={p} />
+                            ))}
+                        </Box>
+                    )}
+            </Box>
+        </Stack>
+    );
+};
+
+// ============================================================
+// Global run modal — listens for arm events, controls playback
+// ============================================================
+
+const GlobalRunModal: React.FC = () => {
+    const conn = useSocket();
+    const [armedPresentationId, setArmedPresentationId] = useState<string | null>(null);
+
+    const presentation = usePresentation(armedPresentationId);
+    const playback = usePlaybackState();
+
+    const onArm = useCallback((event: ArmEvent) => {
+        setArmedPresentationId(event.presentationId);
+    }, []);
+    useArmEvents(onArm);
+
+    // If a slide is playing and the modal is closed (no armed pres), open the
+    // modal pointed at the playing presentation so the operator can control it.
+    useEffect(() => {
+        if (!armedPresentationId && playback?.playing && playback.presentationId) {
+            setArmedPresentationId(playback.presentationId);
+        }
+    }, [armedPresentationId, playback?.playing, playback?.presentationId]);
+
+    const open = !!armedPresentationId;
+
+    return (
+        <RunModal
+            open={open}
+            presentation={presentation ?? null}
+            playback={playback}
+            onClose={async () => {
+                // If actively playing, also stop the overlay on close.
+                if (playback?.playing) {
+                    try {
+                        await stopPlayback(conn);
+                    } catch (err) {
+                        console.error(err);
+                    }
+                }
+                setArmedPresentationId(null);
+            }}
+            onStop={async () => {
+                try {
+                    await stopPlayback(conn);
+                } catch (err) {
+                    console.error(err);
+                }
+            }}
+            onPlay={async (slideId) => {
+                if (!armedPresentationId) return;
+                try {
+                    await playSlide(conn, armedPresentationId, slideId);
+                } catch (err) {
+                    console.error(err);
+                }
+            }}
+        />
+    );
+};
+
+// ============================================================
 // Container
 // ============================================================
 
 const BottomPanel: React.FC = () => {
-    const [tab, setTab] = useState<'media' | 'namnskyltar'>('media');
+    const [tab, setTab] = useState<'media' | 'namnskyltar' | 'bibel'>('media');
 
     return (
         <Stack direction="column" sx={{height: '100%'}}>
@@ -478,11 +699,15 @@ const BottomPanel: React.FC = () => {
             >
                 <Tab label="Media" value="media" />
                 <Tab label="Namnskyltar" value="namnskyltar" />
+                <Tab label="Bibel" value="bibel" />
             </Tabs>
             <Box sx={{flexGrow: 1, minHeight: 0}}>
                 {tab === 'media' && <MediaTab />}
                 {tab === 'namnskyltar' && <NamnskyltarTab />}
+                {tab === 'bibel' && <BibelTab />}
             </Box>
+
+            <GlobalRunModal />
         </Stack>
     );
 };

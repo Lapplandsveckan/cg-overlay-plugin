@@ -11,23 +11,20 @@ import {TextWallEffect} from './effects/wall/text';
 import {WallVideoEffect} from './effects/misc/wall_video';
 import {BibelordOverlayEffect} from './effects/overlay/bibelord';
 
-export interface BibelordSlide {
-    id: string;
-    text: string;
-    reference: string;
-    translation: string;
-    book: string;
-    chapter: number;
-    verse: number;
+// Re-export the canonical slide type from the store; OverlayManager
+// stays narrow and only cares about (presentationId, slideId).
+export type {Slide} from './presentations';
+
+export interface BibelordPlaybackState {
+    playing: boolean;
+    presentationId: string | null;
+    slideId: string | null;
 }
 
-export interface BibelordState {
-    active: boolean;
-    playing: boolean;
-    entryId: string | null;
-    title: string;
-    slides: BibelordSlide[];
-    currentIndex: number;
+export interface BibelordArmEvent {
+    presentationId: string;
+    rundownId: string | null;
+    ts: number;
 }
 
 export const CHANNELS = {
@@ -73,13 +70,10 @@ export default class OverlayManager {
     private textState = 0;
 
     private bibelordEffect: BibelordOverlayEffect = null;
-    private bibelordState: BibelordState = {
-        active: false,
+    private bibelordState: BibelordPlaybackState = {
         playing: false,
-        entryId: null,
-        title: '',
-        slides: [],
-        currentIndex: 0,
+        presentationId: null,
+        slideId: null,
     };
 
     public initialize() {
@@ -376,85 +370,36 @@ export default class OverlayManager {
         }
     }
 
-    public getBibelordState(): BibelordState {
-        return {...this.bibelordState, slides: [...this.bibelordState.slides]};
+    public getBibelordState(): BibelordPlaybackState {
+        return {...this.bibelordState};
     }
 
     private broadcastBibelord() {
         this.api.broadcast('bibelord', 'UPDATE', this.getBibelordState());
     }
 
-    public openBibelord(entryId: string, title: string, slides: BibelordSlide[]) {
-        if (!slides || slides.length === 0) {
-            this.logger.warn('openBibelord called with no slides');
-            return;
-        }
-
-        this.bibelordState = {
-            active: true,
-            playing: false,
-            entryId,
-            title,
-            slides,
-            currentIndex: 0,
-        };
-
-        this.broadcastBibelord();
+    public broadcastArmEvent(presentationId: string, rundownId: string | null) {
+        const event: BibelordArmEvent = {presentationId, rundownId, ts: Date.now()};
+        this.api.broadcast('bibelord-arm', 'UPDATE', event);
     }
 
-    public closeBibelord() {
-        if (!this.bibelordState.active) return;
-
+    public playBibelordSlide(
+        presentationId: string,
+        slideId: string,
+        render: {text: string, reference: string},
+    ) {
         const wasPlaying = this.bibelordState.playing;
-        this.bibelordState = {...this.bibelordState, active: false, playing: false};
 
-        if (wasPlaying && this.bibelordEffect) {
-            this.bibelordEffect
-                .deactivate()
-                ?.catch(err => {
-                    this.logger.error('Failed to deactivate bibelord effect');
-                    this.logger.error(err);
-                });
-        }
-
-        this.broadcastBibelord();
-    }
-
-    public stopBibelordPlayback() {
-        if (!this.bibelordState.active || !this.bibelordState.playing) return;
-
-        this.bibelordState = {...this.bibelordState, playing: false};
-
-        if (this.bibelordEffect) {
-            this.bibelordEffect
-                .deactivate()
-                ?.catch(err => {
-                    this.logger.error('Failed to deactivate bibelord effect');
-                    this.logger.error(err);
-                });
-        }
-
-        this.broadcastBibelord();
-    }
-
-    public jumpBibelordSlide(index: number) {
-        if (!this.bibelordState.active) return;
-        const {slides} = this.bibelordState;
-        if (index < 0 || index >= slides.length) return;
-
-        const wasPlaying = this.bibelordState.playing;
-        const slide = slides[index];
-
-        this.bibelordState = {...this.bibelordState, currentIndex: index, playing: true};
+        this.bibelordState = {playing: true, presentationId, slideId};
 
         if (!this.bibelordEffect) {
             this.bibelordEffect = this.api.createEffect(
                 'overlay-bibelord',
                 getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION),
-                {text: slide.text, reference: slide.reference},
+                render,
             ) as BibelordOverlayEffect;
         } else {
-            this.bibelordEffect.update({text: slide.text, reference: slide.reference});
+            this.bibelordEffect.update(render);
         }
 
         if (!wasPlaying) {
@@ -469,16 +414,21 @@ export default class OverlayManager {
         this.broadcastBibelord();
     }
 
-    public nextBibelordSlide() {
+    public stopBibelordPlayback() {
         if (!this.bibelordState.playing) return;
-        const next = this.bibelordState.currentIndex + 1;
-        if (next >= this.bibelordState.slides.length) return;
-        this.jumpBibelordSlide(next);
-    }
 
-    public prevBibelordSlide() {
-        if (!this.bibelordState.playing) return;
-        this.jumpBibelordSlide(this.bibelordState.currentIndex - 1);
+        this.bibelordState = {playing: false, presentationId: null, slideId: null};
+
+        if (this.bibelordEffect) {
+            this.bibelordEffect
+                .deactivate()
+                ?.catch(err => {
+                    this.logger.error('Failed to deactivate bibelord effect');
+                    this.logger.error(err);
+                });
+        }
+
+        this.broadcastBibelord();
     }
 
     public setText(text: string) {
