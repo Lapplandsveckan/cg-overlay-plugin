@@ -14,6 +14,7 @@ import {RundownItem} from '@lappis/cg-manager/dist/types/rundown';
 import {AtemManager} from './atem';
 import {config} from './config';
 import {NamnskyltPresetStore} from './namnskylt-presets';
+import {RabbitManager} from './rabbit';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -21,6 +22,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public overlay: OverlayManager;
     public atem: AtemManager;
     public namnskyltPresets: NamnskyltPresetStore;
+    public rabbit: RabbitManager;
 
     private reconnectHandler: () => void;
 
@@ -51,9 +53,14 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.overlay = new OverlayManager(this);
         this.atem = new AtemManager();
         this.namnskyltPresets = new NamnskyltPresetStore(this);
+        this.rabbit = new RabbitManager(this);
 
         if (config.atem.ip) {
             this.atem.connect(config.atem.ip);
+        }
+
+        if (config.rabbit.url) {
+            this.rabbit.connect(config.rabbit.url);
         }
 
         this.registerEffectGroups();
@@ -85,6 +92,9 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.templates.dispose();
         this.templates = null;
+
+        this.rabbit?.disconnect().catch(err => this.logger.error(`AMQP disconnect failed: ${err}`));
+        this.rabbit = null;
     }
 
     private registerEffects() {

@@ -3,4 +3,7 @@ export const config = {
         ip: '',
         videoInput: 18,
     },
+    rabbit: {
+        url: 'amqp://amqp.418teapot.io',
+    },
 };
