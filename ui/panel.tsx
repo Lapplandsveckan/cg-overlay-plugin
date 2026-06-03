@@ -3,6 +3,7 @@ import {Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTi
 
 // @ts-ignore
 import {MediaDropZone, useSocket} from '@web-lib';
+import {useTranslation} from './i18n';
 
 const RUNDOWN_ITEM_MIME = 'application/x-cg-rundown-item';
 
@@ -127,6 +128,7 @@ const FolderTile: React.FC<FolderTileProps> = ({name, onOpen}) => (
 );
 
 const MediaTab: React.FC = () => {
+    const {t} = useTranslation('cg-overlay-plugin');
     const socket = useSocket();
     const [allMedia, setAllMedia] = useState<any[]>([]);
     const [query, setQuery] = useState('');
@@ -193,7 +195,7 @@ const MediaTab: React.FC = () => {
     return (
         <MediaDropZone
             accept={['video/*']}
-            overlayLabel="Drop video to upload"
+            overlayLabel={t('panel.dropToUpload')}
             onComplete={(results: {file: File; error?: string}[]) => {
                 for (const r of results) {
                     if (r.error) console.error(`Upload failed for ${r.file.name}: ${r.error}`);
@@ -211,7 +213,7 @@ const MediaTab: React.FC = () => {
                             onClick={() => setPath([])}
                             sx={{fontSize: 13}}
                         >
-                            ← All
+                            {t('panel.backAll')}
                         </Link>
                         {path.map((segment, idx) => (
                             <Link
@@ -231,7 +233,7 @@ const MediaTab: React.FC = () => {
                 )}
                 <TextField
                     size="small"
-                    placeholder="Search all clips…"
+                    placeholder={t('panel.searchPlaceholder')}
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     sx={{width: 220}}
@@ -251,7 +253,7 @@ const MediaTab: React.FC = () => {
                 {isEmpty ? (
                     <Stack alignItems="center" justifyContent="center" sx={{height: '100%', color: 'text.secondary'}}>
                         <Typography variant="body2">
-                            {searching ? 'No clips match your search.' : 'No clips in this folder.'}
+                            {searching ? t('panel.noSearchResults') : t('panel.emptyFolder')}
                         </Typography>
                     </Stack>
                 ) : (
@@ -307,61 +309,66 @@ const DragHandleIcon: React.FC = () => (
     </Box>
 );
 
-const NamnskyltCard: React.FC<NamnskyltCardProps> = ({name, onDelete}) => (
-    <Stack
-        draggable
-        direction="row"
-        spacing={1.25}
-        alignItems="center"
-        onDragStart={e => setRundownDragPayload(e, {
-            type: 'namnskylt',
-            data: {name},
-            title: name,
-        })}
-        sx={{
-            padding: '10px 12px',
-            borderRadius: 1,
-            border: '1px solid rgba(255,255,255,0.08)',
-            backgroundColor: '#23252b',
-            cursor: 'grab',
-            transition: 'border-color 80ms, background-color 80ms',
-            userSelect: 'none',
-            minHeight: 44,
-            '&:hover': {
-                borderColor: '#4a90e2',
-                backgroundColor: '#2a2d35',
-                '& svg': {color: 'rgba(232,234,237,0.85)'},
-                '& .delete-btn': {opacity: 1},
-            },
-            '&:active': {cursor: 'grabbing'},
-        }}
-    >
-        <DragHandleIcon />
-        <Typography variant="body2" sx={{color: '#e8eaed', flexGrow: 1, minWidth: 0}}>{name}</Typography>
-        <Tooltip title="Remove preset">
-            <IconButton
-                className="delete-btn"
-                size="small"
-                onMouseDown={e => e.stopPropagation()}
-                onClick={e => {
-                    e.stopPropagation();
-                    onDelete();
-                }}
-                sx={{
-                    opacity: 0,
-                    transition: 'opacity 80ms',
-                    color: 'rgba(232,234,237,0.65)',
-                    padding: 0.25,
-                    '&:hover': {color: '#e88c8c', backgroundColor: 'rgba(232,140,140,0.08)'},
-                }}
-            >
-                <Box component="span" sx={{fontSize: 16, lineHeight: 1, fontWeight: 300}}>×</Box>
-            </IconButton>
-        </Tooltip>
-    </Stack>
-);
+const NamnskyltCard: React.FC<NamnskyltCardProps> = ({name, onDelete}) => {
+    const {t} = useTranslation('cg-overlay-plugin');
+
+    return (
+        <Stack
+            draggable
+            direction="row"
+            spacing={1.25}
+            alignItems="center"
+            onDragStart={e => setRundownDragPayload(e, {
+                type: 'namnskylt',
+                data: {name},
+                title: name,
+            })}
+            sx={{
+                padding: '10px 12px',
+                borderRadius: 1,
+                border: '1px solid rgba(255,255,255,0.08)',
+                backgroundColor: '#23252b',
+                cursor: 'grab',
+                transition: 'border-color 80ms, background-color 80ms',
+                userSelect: 'none',
+                minHeight: 44,
+                '&:hover': {
+                    borderColor: '#4a90e2',
+                    backgroundColor: '#2a2d35',
+                    '& svg': {color: 'rgba(232,234,237,0.85)'},
+                    '& .delete-btn': {opacity: 1},
+                },
+                '&:active': {cursor: 'grabbing'},
+            }}
+        >
+            <DragHandleIcon />
+            <Typography variant="body2" sx={{color: '#e8eaed', flexGrow: 1, minWidth: 0}}>{name}</Typography>
+            <Tooltip title={t('panel.removePreset')}>
+                <IconButton
+                    className="delete-btn"
+                    size="small"
+                    onMouseDown={e => e.stopPropagation()}
+                    onClick={e => {
+                        e.stopPropagation();
+                        onDelete();
+                    }}
+                    sx={{
+                        opacity: 0,
+                        transition: 'opacity 80ms',
+                        color: 'rgba(232,234,237,0.65)',
+                        padding: 0.25,
+                        '&:hover': {color: '#e88c8c', backgroundColor: 'rgba(232,140,140,0.08)'},
+                    }}
+                >
+                    <Box component="span" sx={{fontSize: 16, lineHeight: 1, fontWeight: 300}}>×</Box>
+                </IconButton>
+            </Tooltip>
+        </Stack>
+    );
+};
 
 const NamnskyltarTab: React.FC = () => {
+    const {t} = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
     const [presets, setPresets] = useState<string[]>([]);
     const [loaded, setLoaded] = useState(false);
@@ -416,14 +423,14 @@ const NamnskyltarTab: React.FC = () => {
         <Stack spacing={1.5} sx={{padding: 1.5, height: '100%', boxSizing: 'border-box'}}>
             <Stack direction="row" alignItems="center" justifyContent="flex-end">
                 <Button variant="outlined" size="small" onClick={() => setDialogOpen(true)}>
-                    Add preset
+                    {t('panel.addPreset')}
                 </Button>
             </Stack>
 
             <Box sx={{flexGrow: 1, overflowY: 'auto', minHeight: 0}}>
                 {!loaded ? null : sorted.length === 0 ? (
                     <Stack alignItems="center" justifyContent="center" sx={{height: '100%', color: 'text.secondary'}}>
-                        <Typography variant="body2">No presets yet.</Typography>
+                        <Typography variant="body2">{t('panel.noPresets')}</Typography>
                     </Stack>
                 ) : (
                     <Box
@@ -445,12 +452,12 @@ const NamnskyltarTab: React.FC = () => {
             </Box>
 
             <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="xs">
-                <DialogTitle>Add namnskylt preset</DialogTitle>
+                <DialogTitle>{t('panel.addPresetTitle')}</DialogTitle>
                 <DialogContent>
                     <TextField
                         autoFocus
                         fullWidth
-                        label="Namn"
+                        label={t('panel.nameLabel')}
                         value={draftName}
                         onChange={e => setDraftName(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleAdd()}
@@ -458,9 +465,9 @@ const NamnskyltarTab: React.FC = () => {
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setDialogOpen(false)} disabled={saving}>Cancel</Button>
+                    <Button onClick={() => setDialogOpen(false)} disabled={saving}>{t('panel.cancel')}</Button>
                     <Button variant="contained" onClick={handleAdd} disabled={!draftName.trim() || saving}>
-                        {saving ? 'Saving…' : 'Add'}
+                        {saving ? t('panel.saving') : t('panel.add')}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -473,6 +480,7 @@ const NamnskyltarTab: React.FC = () => {
 // ============================================================
 
 const BottomPanel: React.FC = () => {
+    const {t} = useTranslation('cg-overlay-plugin');
     const [tab, setTab] = useState<'media' | 'namnskyltar'>('media');
 
     return (
@@ -486,8 +494,8 @@ const BottomPanel: React.FC = () => {
                     '& .MuiTab-root': {minHeight: 40, textTransform: 'none'},
                 }}
             >
-                <Tab label="Media" value="media" />
-                <Tab label="Namnskyltar" value="namnskyltar" />
+                <Tab label={t('panel.mediaTab')} value="media" />
+                <Tab label={t('panel.namnskyltarTab')} value="namnskyltar" />
             </Tabs>
             <Box sx={{flexGrow: 1, minHeight: 0}}>
                 {tab === 'media' && <MediaTab />}

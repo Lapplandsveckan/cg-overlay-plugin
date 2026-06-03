@@ -30,6 +30,8 @@ module.exports = {
     externals: {
         'dmxnet': 'commonjs dmxnet',
         'atem-connection': 'commonjs atem-connection',
+        'i18next': 'i18n',
+        'react-i18next': 'ReactI18next',
     },
     mode: 'production',
     target: 'node',

@@ -3,6 +3,7 @@ import {InputAdornment, Stack, TextField, Typography} from '@mui/material';
 
 // @ts-ignore
 import {RundownEditorActionBar} from '@web-lib';
+import {useTranslation} from '../i18n';
 
 interface RundownEntry {
     id: string;
@@ -21,6 +22,7 @@ interface InsamlingEditorProps {
 }
 
 export const InsamlingEditor: React.FC<InsamlingEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
+    const {t} = useTranslation('cg-overlay-plugin');
     const [title, setTitle] = useState(entry?.title ?? '');
     const [goal, setGoal] = useState<string>(String(entry?.data.goal ?? '0'));
     const [now, setNow] = useState<string>(String(entry?.data.now ?? '0'));
@@ -29,32 +31,32 @@ export const InsamlingEditor: React.FC<InsamlingEditorProps> = ({entry, updateEn
 
     return (
         <Stack spacing={2}>
-            <Typography variant="h6">Insamling</Typography>
+            <Typography variant="h6">{t('insamling.heading')}</Typography>
 
             <TextField
-                label="Title"
+                label={t('insamling.titleLabel')}
                 value={title}
                 onChange={e => setTitle(e.target['value'])}
-                helperText="Shown in the rundown."
+                helperText={t('insamling.titleHelper')}
             />
 
             <Stack direction="row" spacing={2}>
                 <TextField
-                    label="Current"
+                    label={t('insamling.currentLabel')}
                     type="number"
                     value={now}
                     onChange={e => setNow(e.target['value'])}
                     InputProps={{endAdornment: kr}}
-                    helperText="Amount collected so far."
+                    helperText={t('insamling.currentHelper')}
                     sx={{flex: 1}}
                 />
                 <TextField
-                    label="Goal"
+                    label={t('insamling.goalLabel')}
                     type="number"
                     value={goal}
                     onChange={e => setGoal(e.target['value'])}
                     InputProps={{endAdornment: kr}}
-                    helperText="Target amount for the campaign."
+                    helperText={t('insamling.goalHelper')}
                     sx={{flex: 1}}
                 />
             </Stack>
