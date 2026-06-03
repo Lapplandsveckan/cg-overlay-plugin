@@ -3,6 +3,7 @@ import {Box, Chip, Stack, Typography} from '@mui/material';
 
 // @ts-ignore
 import {useSocket, MediaCard} from '@web-lib';
+import {useTranslation} from '../i18n';
 
 interface RundownEntry {
     id: string;
@@ -34,6 +35,7 @@ function useMediaCardData(clip: any) {
 }
 
 export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({entry}) => {
+    const {t} = useTranslation('cg-overlay-plugin');
     const socket = useSocket();
     const [clip, setClip] = useState<any | null>(null);
     const [wallClip, setWallClip] = useState<any | null>(null);
@@ -55,15 +57,15 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({entry
     return (
         <Stack spacing={1}>
             <Stack direction="row" spacing={1} alignItems="center">
-                <Typography variant="body1">Play video</Typography>
-                {playNow && <Chip label="Play now" size="small" color="warning" />}
-                {wallData && <Chip label="+ wall" size="small" variant="outlined" />}
+                <Typography variant="body1">{t('playVideo.label')}</Typography>
+                {playNow && <Chip label={t('playVideo.playNowChip')} size="small" color="warning" />}
+                {wallData && <Chip label={t('playVideo.wallChip')} size="small" variant="outlined" />}
             </Stack>
             {data ? (
                 <MediaCard {...data} columns={1} />
             ) : (
                 <Box sx={{padding: 1, borderRadius: 1, border: '1px dashed rgba(255,255,255,0.15)'}}>
-                    <Typography variant="caption" color="warning.main">No clip selected</Typography>
+                    <Typography variant="caption" color="warning.main">{t('playVideo.noClip')}</Typography>
                 </Box>
             )}
             {wallData && <MediaCard {...wallData} columns={1} />}

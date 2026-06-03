@@ -3,6 +3,7 @@ import {Stack, TextField, Typography} from '@mui/material';
 
 // @ts-ignore
 import {RundownEditorActionBar} from '@web-lib';
+import {useTranslation} from '../i18n';
 
 interface RundownEntry {
     id: string;
@@ -21,20 +22,21 @@ interface BarsEditorProps {
 }
 
 export const BarsEditor: React.FC<BarsEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
+    const {t} = useTranslation('cg-overlay-plugin');
     const [title, setTitle] = useState(entry?.title ?? '');
 
     return (
         <Stack spacing={2}>
-            <Typography variant="h6">Bars</Typography>
+            <Typography variant="h6">{t('bars.heading')}</Typography>
             <Typography variant="body2" color="text.secondary">
-                Toggle cinematic black letterbox bars on the output.
+                {t('bars.description')}
             </Typography>
 
             <TextField
-                label="Title"
+                label={t('bars.titleLabel')}
                 value={title}
                 onChange={e => setTitle(e.target['value'])}
-                helperText="Shown in the rundown."
+                helperText={t('bars.titleHelper')}
             />
 
             <RundownEditorActionBar

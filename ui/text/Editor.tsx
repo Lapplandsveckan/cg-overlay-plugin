@@ -3,6 +3,7 @@ import {Stack, TextField, Typography} from '@mui/material';
 
 // @ts-ignore
 import {RundownEditorActionBar} from '@web-lib';
+import {useTranslation} from '../i18n';
 
 interface RundownEntry {
     id: string;
@@ -21,27 +22,28 @@ interface TextEditorProps {
 }
 
 export const TextEditor: React.FC<TextEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
+    const {t} = useTranslation('cg-overlay-plugin');
     const [title, setTitle] = useState(entry?.title ?? '');
     const [text, setText] = useState(entry?.data.text ?? '');
 
     return (
         <Stack spacing={2}>
-            <Typography variant="h6">Text</Typography>
+            <Typography variant="h6">{t('text.heading')}</Typography>
 
             <TextField
-                label="Title"
+                label={t('text.titleLabel')}
                 value={title}
                 onChange={e => setTitle(e.target['value'])}
-                helperText="Shown in the rundown."
+                helperText={t('text.titleHelper')}
             />
 
             <TextField
-                label="Text"
+                label={t('text.textLabel')}
                 value={text}
                 onChange={e => setText(e.target['value'])}
                 multiline
                 minRows={3}
-                helperText="The text shown on the wall."
+                helperText={t('text.textHelper')}
             />
 
             <RundownEditorActionBar

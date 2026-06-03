@@ -1,0 +1,88 @@
+{
+    "bars": {
+        "heading": "Bars",
+        "description": "Växla kinematografiska letterbox-bars i utdatan.",
+        "titleLabel": "Titel",
+        "titleHelper": "Visas i rundown:en.",
+        "cinematicBars": "Kinematografiska bars"
+    },
+    "namnskylt": {
+        "heading": "Namnskylt",
+        "nameLabel": "Namn",
+        "nameRequired": "Obligatoriskt",
+        "nameHelper": "Namn som visas i lower-third-överlägget.",
+        "label": "Namnskylt"
+    },
+    "swish": {
+        "heading": "Swish",
+        "titleLabel": "Titel",
+        "titleHelper": "Visas i rundown:en.",
+        "numberLabel": "Swish-nummer",
+        "numberHelper": "Swish-numret som visas på skärmen.",
+        "labelsLabel": "Etiketter",
+        "labelsHelper": "Kommaseparerade etiketter som visas bredvid numret.",
+        "skipFirstLabel": "Hoppa över första visningen",
+        "skipFirstHelper": "Hoppa över intro-animeringen när överlägget visas.",
+        "skipFirst": "Hoppa över första"
+    },
+    "insamling": {
+        "heading": "Insamling",
+        "titleLabel": "Titel",
+        "titleHelper": "Visas i rundown:en.",
+        "currentLabel": "Nuvarande",
+        "currentHelper": "Insamlat belopp hittills.",
+        "goalLabel": "Mål",
+        "goalHelper": "Målbelopp för kampanjen.",
+        "label": "Insamling"
+    },
+    "playVideo": {
+        "heading": "Spela video",
+        "titleLabel": "Titel",
+        "clearButton": "Rensa",
+        "additionalOptions": "Ytterligare alternativ",
+        "playNowLabel": "Spela nu",
+        "playNowTitle": "Stoppa den aktuella videon och rensa kön innan detta klipp spelas.",
+        "skipIntroLabel": "Hoppa över intro",
+        "skipIntroTitle": "Hoppa över klippets intro-animering.",
+        "loopLabel": "Loop",
+        "loopTitle": "Loopa klippet tills det stoppas manuellt.",
+        "secondaryVideoLabel": "Sekundär video — spelas samtidigt på väggen.",
+        "wallChip": "+ vägg",
+        "label": "Spela video",
+        "playNowChip": "Spela nu",
+        "noClip": "Inget klipp valt"
+    },
+    "text": {
+        "heading": "Text",
+        "titleLabel": "Titel",
+        "titleHelper": "Visas i rundown:en.",
+        "textLabel": "Text",
+        "textHelper": "Texten som visas på väggen."
+    },
+    "video": {
+        "nowPlaying": "Spelas nu",
+        "removeFromQueue": "Ta bort från kö",
+        "queue": "Videokö",
+        "remaining": "{{time}} återstår",
+        "empty": "Kön är tom.",
+        "upNext": "Härnäst ({{count}})",
+        "timeProgress": "{{elapsed}} / {{duration}} — {{timeLeft}} kvar"
+    },
+    "panel": {
+        "backAll": "← Alla",
+        "searchPlaceholder": "Sök bland alla klipp…",
+        "noSearchResults": "Inga klipp matchar din sökning.",
+        "emptyFolder": "Inga klipp i den här mappen.",
+        "dropToUpload": "Släpp video för uppladdning",
+        "addPreset": "Lägg till förinställning",
+        "noPresets": "Inga förinställningar ännu.",
+        "addPresetTitle": "Lägg till namnskylt-förinställning",
+        "nameLabel": "Namn",
+        "cancel": "Avbryt",
+        "saving": "Sparar…",
+        "add": "Lägg till",
+        "removePreset": "Ta bort förinställning",
+        "mediaTab": "Media",
+        "namnskyltarTab": "Namnskyltar"
+    }
+}
