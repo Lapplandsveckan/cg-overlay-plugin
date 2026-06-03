@@ -1,0 +1,86 @@
+{
+    "bars": {
+        "heading": "Bars",
+        "description": "Toggle cinematic black letterbox bars on the output.",
+        "titleLabel": "Title",
+        "titleHelper": "Shown in the rundown.",
+        "cinematicBars": "Cinematic bars"
+    },
+    "namnskylt": {
+        "heading": "Namnskylt",
+        "nameLabel": "Name",
+        "nameRequired": "Required",
+        "nameHelper": "Name shown on the lower-third overlay.",
+        "label": "Namnskylt"
+    },
+    "swish": {
+        "heading": "Swish",
+        "titleLabel": "Title",
+        "titleHelper": "Shown in the rundown.",
+        "numberLabel": "Swish number",
+        "numberHelper": "The Swish number displayed on screen.",
+        "labelsLabel": "Labels",
+        "labelsHelper": "Comma-separated labels shown alongside the number.",
+        "skipFirstLabel": "Skip first reveal",
+        "skipFirstHelper": "Skip the intro animation when the overlay appears.",
+        "skipFirst": "Skip first"
+    },
+    "insamling": {
+        "heading": "Insamling",
+        "titleLabel": "Title",
+        "titleHelper": "Shown in the rundown.",
+        "currentLabel": "Current",
+        "currentHelper": "Amount collected so far.",
+        "goalLabel": "Goal",
+        "goalHelper": "Target amount for the campaign.",
+        "label": "Insamling"
+    },
+    "playVideo": {
+        "heading": "Play video",
+        "titleLabel": "Title",
+        "clearButton": "Clear",
+        "additionalOptions": "Additional options",
+        "playNowLabel": "Play now",
+        "playNowTitle": "Stop the current video and clear the queue before playing this clip.",
+        "skipIntroLabel": "Skip intro",
+        "skipIntroTitle": "Skip the lead-in animation of the clip.",
+        "loopLabel": "Loop",
+        "loopTitle": "Loop the clip until manually stopped.",
+"label": "Play video",
+        "playNowChip": "Play now",
+        "noClip": "No clip selected"
+    },
+    "text": {
+        "heading": "Text",
+        "titleLabel": "Title",
+        "titleHelper": "Shown in the rundown.",
+        "textLabel": "Text",
+        "textHelper": "The text shown on the wall."
+    },
+    "video": {
+        "nowPlaying": "Now playing",
+        "removeFromQueue": "Remove from queue",
+        "queue": "Video queue",
+        "remaining": "{{time}} remaining",
+        "empty": "Queue is empty.",
+        "upNext": "Up next ({{count}})",
+        "timeProgress": "{{elapsed}} / {{duration}} — {{timeLeft}} left"
+    },
+    "panel": {
+        "backAll": "← All",
+        "searchPlaceholder": "Search all clips…",
+        "noSearchResults": "No clips match your search.",
+        "emptyFolder": "No clips in this folder.",
+        "dropToUpload": "Drop video to upload",
+        "addPreset": "Add preset",
+        "noPresets": "No presets yet.",
+        "addPresetTitle": "Add namnskylt preset",
+        "nameLabel": "Name",
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "add": "Add",
+        "removePreset": "Remove preset",
+        "mediaTab": "Media",
+        "namnskyltarTab": "Namnskyltar"
+    }
+}
