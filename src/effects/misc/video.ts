@@ -96,14 +96,15 @@ export class VideoEffect extends Effect {
         this.paused = false;
 
         this.emit('video:play');
-        if (this.options.loop) return;
 
         const duration = this.options.media.mediainfo.format.duration;
         if (duration === undefined) return;
 
-        this.playTimeout = setTimeout(() => this.handleFinish(), duration * 1000);
         this.startedTime = Date.now();
         this.clipDuration = duration;
+        if (this.options.loop) return;
+
+        this.playTimeout = setTimeout(() => this.handleFinish(), duration * 1000);
     }
 
     protected handleFinish() {
@@ -141,8 +142,10 @@ export class VideoEffect extends Effect {
         this.pausedDuration += Date.now() - this.pausedTime;
         this.pausedTime = -1;
 
-        const duration = this.clipDuration * 1000 - playTime;
-        this.playTimeout = setTimeout(() => this.handleFinish(), duration * 1000);
+        if (!this.options.loop) {
+            const duration = this.clipDuration * 1000 - playTime;
+            this.playTimeout = setTimeout(() => this.handleFinish(), duration);
+        }
 
         const cmd = new ResumeCommand(this.layer);
         return this.executor.execute(cmd);
@@ -165,6 +168,7 @@ export class VideoEffect extends Effect {
     public getMetadata(): {} {
         return {
             playing: this.playing,
+            loop: this.options.loop ?? false,
 
             startedTime: this.startedTime,
             pausedTime: this.pausedTime,

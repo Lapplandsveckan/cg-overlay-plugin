@@ -36,15 +36,19 @@ interface VideoItemProps {
 
     elapsed?: number;
     isCurrent?: boolean;
+    loop?: boolean;
     onRemove: () => void;
 }
 
-const VideoItem: React.FC<VideoItemProps> = ({title, clip, onRemove, elapsed, isCurrent}) => {
+const VideoItem: React.FC<VideoItemProps> = ({title, clip, onRemove, elapsed, isCurrent, loop}) => {
     const {t} = useTranslation('cg-overlay-plugin');
     const media = useThumbnail(clip);
-    const showProgress = isCurrent && media.duration > 0 && typeof elapsed === 'number';
-    const progressPct = showProgress ? Math.min(100, (elapsed! / media.duration) * 100) : 0;
-    const timeLeft = showProgress ? Math.max(0, media.duration - elapsed!) : media.duration;
+    const displayElapsed = (loop && media.duration > 0 && typeof elapsed === 'number')
+        ? elapsed % media.duration
+        : elapsed;
+    const showProgress = isCurrent && media.duration > 0 && typeof displayElapsed === 'number';
+    const progressPct = showProgress ? Math.min(100, (displayElapsed! / media.duration) * 100) : 0;
+    const timeLeft = showProgress ? Math.max(0, media.duration - displayElapsed!) : media.duration;
 
     return (
         <Stack
@@ -75,6 +79,7 @@ const VideoItem: React.FC<VideoItemProps> = ({title, clip, onRemove, elapsed, is
                 <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
                     <Stack direction="row" spacing={1} alignItems="center" sx={{minWidth: 0}}>
                         {isCurrent && <Chip label={t('video.nowPlaying')} size="small" color="primary" />}
+                        {loop && <Chip label={t('video.looping')} size="small" variant="outlined" />}
                         <Typography variant="subtitle1" noWrap title={title} sx={{minWidth: 0}}>
                             {title}
                         </Typography>
@@ -87,7 +92,7 @@ const VideoItem: React.FC<VideoItemProps> = ({title, clip, onRemove, elapsed, is
                 </Stack>
                 <Typography variant="caption" color="text.secondary">
                     {showProgress
-                        ? t('video.timeProgress', {elapsed: formatTime(elapsed!), duration: formatTime(media.duration), timeLeft: formatTime(timeLeft)})
+                        ? t('video.timeProgress', {elapsed: formatTime(displayElapsed!), duration: formatTime(media.duration), timeLeft: formatTime(timeLeft)})
                         : formatTime(media.duration)}
                 </Typography>
                 {showProgress && (
@@ -125,7 +130,7 @@ const VideoQueue = () => {
     );
     const currentDuration = Number(current?.clip?.mediainfo?.format?.duration) || 0;
     const elapsed = playTime / 1000;
-    const currentTimeLeft = Math.max(0, currentDuration - elapsed);
+    const currentTimeLeft = current?.loop ? 0 : Math.max(0, currentDuration - elapsed);
     const totalRemaining = queueDuration + currentTimeLeft;
 
     useEffect(() => {
@@ -148,6 +153,7 @@ const VideoQueue = () => {
                 title: data.current.data.id,
 
                 clip: data.current.data,
+                loop: data.current.metadata?.loop ?? false,
             });
 
             setPlayTime(data.current.metadata?.playDuration || 0);
@@ -175,11 +181,13 @@ const VideoQueue = () => {
         <Stack direction="column" spacing={2} sx={{maxWidth: 720, margin: '0 auto', padding: 2}}>
             <Stack direction="row" alignItems="baseline" justifyContent="space-between">
                 <Typography variant="h5" fontWeight={600}>{t('video.queue')}</Typography>
-                {totalRemaining > 0 && (
-                    <Typography variant="body2" color="text.secondary">
-                        {t('video.remaining', {time: formatTime(totalRemaining)})}
-                    </Typography>
-                )}
+                {current?.loop
+                    ? <Typography variant="body2" color="text.secondary">{t('video.remainingLooping')}</Typography>
+                    : totalRemaining > 0 && (
+                        <Typography variant="body2" color="text.secondary">
+                            {t('video.remaining', {time: formatTime(totalRemaining)})}
+                        </Typography>
+                    )}
             </Stack>
 
             {isEmpty && (
@@ -193,6 +201,7 @@ const VideoQueue = () => {
                     title={current.title}
                     clip={current.clip}
                     isCurrent
+                    loop={current.loop}
                     elapsed={elapsed}
                     onRemove={() => conn.rawRequest(`/api/plugin/lappis/videos/${current.id}`, 'DELETE', null)}
                 />

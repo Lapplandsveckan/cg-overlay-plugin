@@ -59,9 +59,11 @@
     },
     "video": {
         "nowPlaying": "Now playing",
+        "looping": "Looping",
         "removeFromQueue": "Remove from queue",
         "queue": "Video queue",
         "remaining": "{{time}} remaining",
+        "remainingLooping": "Looping indefinitely",
         "empty": "Queue is empty.",
         "upNext": "Up next ({{count}})",
         "timeProgress": "{{elapsed}} / {{duration}} — {{timeLeft}} left"
