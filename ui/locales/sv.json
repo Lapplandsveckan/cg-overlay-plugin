@@ -61,9 +61,11 @@
     },
     "video": {
         "nowPlaying": "Spelas nu",
+        "looping": "Loopar",
         "removeFromQueue": "Ta bort från kö",
         "queue": "Videokö",
         "remaining": "{{time}} återstår",
+        "remainingLooping": "Loopar oändligt",
         "empty": "Kön är tom.",
         "upNext": "Härnäst ({{count}})",
         "timeProgress": "{{elapsed}} / {{duration}} — {{timeLeft}} kvar"
