@@ -53,7 +53,17 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
 
     useEffect(() => {
         if (!entry.data?.clip) return;
-        socket.caspar.getMedia().then(media => setMedia(media.get(entry.data.clip) || null));
+        const clip = entry.data.clip as string;
+
+        socket.caspar.getMedia().then((map: Map<string, any>) => {
+            if (map.has(clip)) setMedia(map.get(clip));
+        });
+
+        const onMedia = (key: string, value: any) => {
+            if (key === clip && value) setMedia(value);
+        };
+        socket.caspar.on('media', onMedia);
+        return () => socket.caspar.off('media', onMedia);
     }, [entry.data?.clip]);
 
     const additionalOptionsActive = playNow || skipIntro || loop;
