@@ -18,7 +18,7 @@ const OverlayTest = ({ path }) => {
         <Stack spacing={2} sx={{maxWidth: 720, margin: '0 auto', padding: 2}}>
             <Typography variant="h5" fontWeight={600}>Overlay controls</Typography>
 
-            <VideoQueue />;
+            <VideoQueue />
 
             <Box sx={{paddingTop: 1}}>
                 <Typography variant="overline" color="text.secondary">More</Typography>
