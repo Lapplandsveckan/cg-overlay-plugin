@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 
 import SlidePreview from './SlidePreview';
-import {Presentation, Slide, PlaybackState, slideRef, slideLabel} from './api';
+import {Presentation, Slide, PlaybackState, slideRef, slideLabel, useBackgroundImage} from './api';
 
 export interface RunModalProps {
     open: boolean;
@@ -29,6 +29,7 @@ export const RunModal: React.FC<RunModalProps> = ({
     open, presentation, playback, onClose, onStop, onPlay,
 }) => {
     const slides = presentation?.slides ?? [];
+    const backgroundUrl = useBackgroundImage();
 
     // "Playing here" = backend reports playing AND the playing presentation
     // matches the one this modal is currently controlling.
@@ -150,7 +151,7 @@ export const RunModal: React.FC<RunModalProps> = ({
                             onJump={onPlay}
                         />
                     )
-                    : <PickerView slides={slides} onPlay={onPlay} />
+                    : <PickerView slides={slides} onPlay={onPlay} backgroundUrl={backgroundUrl} />
                 }
             </DialogContent>
         </Dialog>
@@ -192,7 +193,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                 </span>
             </Tooltip>
             <Box sx={{flexGrow: 1}}>
-                <SlidePreview text={current.text} reference={slideRef(current)} />
+                <SlidePreview text={current.text} reference={slideRef(current)} backgroundUrl={backgroundUrl} />
             </Box>
             <Tooltip title="Next (→ / Space)">
                 <span>
@@ -239,6 +240,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                         <SlidePreview
                             text={slide.text}
                             reference={slideRef(slide)}
+                            backgroundUrl={backgroundUrl}
                             selected={slide.id === currentSlideId}
                             dimmed={slide.id !== currentSlideId}
                         />
@@ -258,10 +260,11 @@ const PlayingView: React.FC<PlayingViewProps> = ({
 
 interface PickerViewProps {
     slides: Slide[];
+    backgroundUrl?: string | null;
     onPlay: (slideId: string) => void;
 }
 
-const PickerView: React.FC<PickerViewProps> = ({slides, onPlay}) => {
+const PickerView: React.FC<PickerViewProps> = ({slides, backgroundUrl, onPlay}) => {
     if (slides.length === 0) {
         return (
             <Box sx={{padding: 6, textAlign: 'center', color: 'text.secondary'}}>
@@ -305,7 +308,7 @@ const PickerView: React.FC<PickerViewProps> = ({slides, onPlay}) => {
                 >
                     <Stack spacing={0.75}>
                         <Box sx={{position: 'relative'}}>
-                            <SlidePreview text={slide.text} reference={slideRef(slide)} />
+                            <SlidePreview text={slide.text} reference={slideRef(slide)} backgroundUrl={backgroundUrl} />
                             <Box
                                 className="picker-overlay"
                                 sx={{

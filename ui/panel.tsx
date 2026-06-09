@@ -10,6 +10,7 @@ import {
     createPresentation,
     Presentation,
     slideRef,
+    useBackgroundImage,
     usePresentations,
 } from './slides/api';
 import {slidesEditorUrl, slidesIndexUrl} from './slides/urls';
@@ -494,6 +495,7 @@ interface PresentationCardProps {
 
 const PresentationCard: React.FC<PresentationCardProps> = ({presentation}) => {
     const firstSlide = presentation.slides[0];
+    const backgroundUrl = useBackgroundImage();
     return (
         <Box
             draggable
@@ -528,7 +530,7 @@ const PresentationCard: React.FC<PresentationCardProps> = ({presentation}) => {
                     }}
                 >
                     {firstSlide ? (
-                        <SlidePreview text={firstSlide.text} reference={slideRef(firstSlide)} />
+                        <SlidePreview text={firstSlide.text} reference={slideRef(firstSlide)} backgroundUrl={backgroundUrl} />
                     ) : (
                         <Box
                             sx={{

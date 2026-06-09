@@ -54,6 +54,27 @@ export function slideLabel(slide: Slide): string {
 
 const ROOT = '/api/plugin/lappis';
 
+let backgroundCache: Promise<string | null> | null = null;
+
+export function useBackgroundImage(): string | null {
+    const conn = useSocket();
+    const [url, setUrl] = useState<string | null>(null);
+    useEffect(() => {
+        backgroundCache ??= conn.rawRequest(`${ROOT}/assets/background`, 'GET', {})
+            .then((res: any) => {
+                const {data, mimeType} = res?.data ?? {};
+                return data && mimeType ? `data:${mimeType};base64,${data}` : null;
+            })
+            .catch((e: any) => {
+                console.error(e);
+                backgroundCache = null;
+                return null;
+            });
+        backgroundCache.then(setUrl);
+    }, [conn]);
+    return url;
+}
+
 // ---------- CRUD ----------
 
 export function listPresentations(conn: any): Promise<Presentation[]> {

@@ -21,7 +21,7 @@ import {
 import {useSocket} from '@web-lib';
 
 import SlidePreview from './SlidePreview';
-import {BibleSlide, Presentation, Slide, TextSlide, slideLabel, updatePresentation, deletePresentation, usePresentation} from './api';
+import {BibleSlide, Presentation, Slide, TextSlide, slideLabel, updatePresentation, deletePresentation, usePresentation, useBackgroundImage} from './api';
 import {fetchVerses, formatReference, TRANSLATIONS} from './bible-api';
 import {slidesIndexUrl} from './urls';
 
@@ -38,6 +38,7 @@ const COMMON_BOOKS = ['1 Mos', 'Ps', 'Ords', 'Jes', 'Matt', 'Mark', 'Luk', 'Joh'
 export const PresentationEditor: React.FC<Props> = ({id}) => {
     const conn = useSocket();
     const remote = usePresentation(id);
+    const backgroundUrl = useBackgroundImage();
 
     const [localTitle, setLocalTitle] = useState<string | null>(null);
     const [savingTitle, setSavingTitle] = useState(false);
@@ -181,6 +182,7 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
                                 key={slide.id}
                                 slide={slide}
                                 index={idx + 1}
+                                backgroundUrl={backgroundUrl}
                                 onEdit={() => setEditing(slide)}
                                 onDelete={() => handleDeleteSlide(slide.id)}
                             />
@@ -247,16 +249,18 @@ const EmptyState: React.FC<{onAdd: () => void}> = ({onAdd}) => (
 interface SlideCardProps {
     slide: Slide;
     index: number;
+    backgroundUrl?: string | null;
     onEdit: () => void;
     onDelete: () => void;
 }
 
-const SlideCard: React.FC<SlideCardProps> = ({slide, index, onEdit, onDelete}) => (
+const SlideCard: React.FC<SlideCardProps> = ({slide, index, backgroundUrl, onEdit, onDelete}) => (
     <Stack spacing={1}>
         <Box sx={{position: 'relative', '&:hover .slide-overlay': {opacity: 1}}}>
             <SlidePreview
                 text={slide.text}
                 reference={slide.type === 'bible' ? slide.reference : ''}
+                backgroundUrl={backgroundUrl}
             />
             <Stack
                 className="slide-overlay"
@@ -479,6 +483,7 @@ interface EditSlideDialogProps {
 const EditSlideDialog: React.FC<EditSlideDialogProps> = ({slide, onClose, onSave}) => {
     const [text, setText] = useState('');
     const [reference, setReference] = useState('');
+    const backgroundUrl = useBackgroundImage();
 
     useEffect(() => {
         if (!slide) return;
@@ -507,7 +512,7 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({slide, onClose, onSave
             <DialogTitle>Edit slide</DialogTitle>
             <DialogContent>
                 <Stack spacing={2.5} sx={{marginTop: 1}}>
-                    <SlidePreview text={text} reference={reference} />
+                    <SlidePreview text={text} reference={reference} backgroundUrl={backgroundUrl} />
 
                     {slide.type === 'bible' && (
                         <TextField

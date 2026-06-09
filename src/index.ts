@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import {CasparPlugin, RundownActionMetadata, UI_INJECTION_ZONE} from '@lappis/cg-manager';
 import {Templates} from './templates';
 import {SwishOverlayEffect, SwishOverlayEffectOptions} from './effects/overlay/swish';
@@ -304,6 +305,13 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     public registerRoutes() {
+        const bgPath = path.join(__dirname, 'templates', 'images', 'banner1.png');
+        let bgCache: string | null = null;
+        this.api.registerRoute('assets/background', async () => {
+            bgCache ??= fs.readFileSync(bgPath).toString('base64');
+            return {data: bgCache, mimeType: 'image/png'};
+        }, 'GET');
+
         this.api.registerRoute('bars', async req => {
             this.overlay.toggleBars();
         }, 'ACTION');

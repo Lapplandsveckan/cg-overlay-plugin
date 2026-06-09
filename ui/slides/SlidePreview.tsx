@@ -5,6 +5,7 @@ export interface SlidePreviewProps {
     text: string;
     reference?: string;
 
+    backgroundUrl?: string | null;
     aspectRatio?: string;
     minWidth?: number | string;
     selected?: boolean;
@@ -17,6 +18,7 @@ export interface SlidePreviewProps {
 export const SlidePreview: React.FC<SlidePreviewProps> = ({
     text,
     reference = '',
+    backgroundUrl,
     aspectRatio = '16/9',
     minWidth,
     selected,
@@ -28,7 +30,9 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
             aspectRatio,
             width: '100%',
             minWidth,
-            backgroundColor: '#000',
+            backgroundColor: '#1a1c22',
+            backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : undefined,
+            backgroundSize: 'cover',
             borderRadius: 1,
             overflow: 'hidden',
             border: selected ? '2px solid #4a90e2' : '1px solid rgba(255,255,255,0.08)',
@@ -49,7 +53,7 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
             <Typography
                 sx={{
                     maxWidth: '78cqw',
-                    fontFamily: '"Georgia", "Times New Roman", serif',
+                    fontFamily: `'Alright Sans', sans-serif`,
                     fontSize: '6.4cqh',
                     lineHeight: 1.3,
                     fontWeight: 400,
@@ -68,7 +72,7 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
                     position: 'absolute',
                     left: '5cqw',
                     bottom: '5cqh',
-                    fontFamily: '"Georgia", "Times New Roman", serif',
+                    fontFamily: `'Alright Sans', sans-serif`,
                     fontSize: '2.8cqh',
                     fontWeight: 300,
                     letterSpacing: '0.05em',

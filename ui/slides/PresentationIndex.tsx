@@ -13,12 +13,13 @@ import {
 import {useSocket} from '@web-lib';
 
 import SlidePreview from './SlidePreview';
-import {Presentation, createPresentation, usePresentations, slideRef} from './api';
+import {Presentation, createPresentation, usePresentations, useBackgroundImage, slideRef} from './api';
 import {slidesEditorUrl} from './urls';
 
 export const PresentationIndex: React.FC = () => {
     const conn = useSocket();
     const {presentations} = usePresentations();
+    const backgroundUrl = useBackgroundImage();
     const [creating, setCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -62,7 +63,7 @@ export const PresentationIndex: React.FC = () => {
                     >
                         <CreateTile onClick={handleCreate} disabled={creating} />
                         {presentations.map(p => (
-                            <PresentationTile key={p.id} presentation={p} />
+                            <PresentationTile key={p.id} presentation={p} backgroundUrl={backgroundUrl} />
                         ))}
                     </Box>
                 )}
@@ -109,7 +110,7 @@ const CreateTile: React.FC<{onClick: () => void, disabled: boolean}> = ({onClick
     </Box>
 );
 
-const PresentationTile: React.FC<{presentation: Presentation}> = ({presentation}) => {
+const PresentationTile: React.FC<{presentation: Presentation, backgroundUrl?: string | null}> = ({presentation, backgroundUrl}) => {
     const firstSlide = presentation.slides[0];
     return (
         <Stack
@@ -134,7 +135,7 @@ const PresentationTile: React.FC<{presentation: Presentation}> = ({presentation}
                 }}
             >
                 {firstSlide ? (
-                    <SlidePreview text={firstSlide.text} reference={slideRef(firstSlide)} />
+                    <SlidePreview text={firstSlide.text} reference={slideRef(firstSlide)} backgroundUrl={backgroundUrl} />
                 ) : (
                     <Box
                         sx={{
