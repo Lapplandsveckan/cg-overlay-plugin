@@ -1,5 +1,8 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
     Alert,
     Box,
     Button,
@@ -8,10 +11,12 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    FormControlLabel,
     IconButton,
     Link,
     MenuItem,
     Stack,
+    Switch,
     TextField,
     Tooltip,
     Typography,
@@ -21,8 +26,8 @@ import {
 import {useSocket} from '@web-lib';
 
 import SlidePreview from './SlidePreview';
-import {BibleSlide, Presentation, Slide, TextSlide, slideLabel, updatePresentation, deletePresentation, usePresentation, useBackgroundImage} from './api';
-import {fetchVerses, formatReference, TRANSLATIONS} from './bible-api';
+import {BibleSlide, BibleLookup, FetchedVerse, Presentation, Slide, TextSlide, slideLabel, updatePresentation, deletePresentation, usePresentation, useBackgroundImage, fetchBibleSlides} from './api';
+import {BOOKS, TRANSLATIONS} from './bible-api';
 import {slidesIndexUrl} from './urls';
 
 interface Props {
@@ -33,7 +38,6 @@ function makeSlideId(): string {
     return `slide-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-const COMMON_BOOKS = ['1 Mos', 'Ps', 'Ords', 'Jes', 'Matt', 'Mark', 'Luk', 'Joh', 'Apg', 'Rom', '1 Kor', '2 Kor', 'Gal', 'Ef', 'Fil', 'Kol', 'Hebr', 'Jak', '1 Joh', 'Upp'];
 
 export const PresentationEditor: React.FC<Props> = ({id}) => {
     const conn = useSocket();
@@ -315,13 +319,16 @@ interface AddSlidesDialogProps {
 }
 
 const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd}) => {
+    const conn = useSocket();
     const [mode, setMode] = useState<'bible' | 'text'>('bible');
 
     // Bible state
     const [translation, setTranslation] = useState(TRANSLATIONS[0].id);
-    const [book, setBook] = useState('Joh');
+    const [book, setBook] = useState('Johannesevangeliet');
     const [chapter, setChapter] = useState('3');
     const [verseRange, setVerseRange] = useState('16');
+    const [merge, setMerge] = useState(true);
+    const [inlineNumbers, setInlineNumbers] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -337,21 +344,23 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
         setLoading(true);
         setError(null);
         try {
-            const verses = await fetchVerses({
+            const results = await fetchBibleSlides(conn, {
                 translation,
                 book: book.trim(),
                 chapter: parsedChapter,
                 verseStart,
                 verseEnd,
+                merge,
+                inlineNumbers,
             });
-            const slides: BibleSlide[] = verses.map(v => ({
+            const slides: BibleSlide[] = results.map(v => ({
                 type: 'bible',
                 id: makeSlideId(),
                 text: v.text,
-                reference: formatReference(v.book, v.chapter, v.verse),
+                reference: v.reference,
                 translation,
-                book: v.book,
-                chapter: v.chapter,
+                book: book.trim(),
+                chapter: parsedChapter,
                 verse: v.verse,
             }));
             onAdd(slides);
@@ -410,16 +419,16 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
                             </TextField>
 
                             <TextField
+                                select
                                 label="Book"
                                 value={book}
                                 onChange={e => setBook(e.target.value)}
-                                placeholder="Joh"
-                                helperText="e.g. Joh, Rom, Ps"
-                                inputProps={{list: 'presentation-book-list'}}
-                            />
-                            <datalist id="presentation-book-list">
-                                {COMMON_BOOKS.map(b => <option key={b} value={b} />)}
-                            </datalist>
+                                fullWidth
+                            >
+                                {BOOKS.map(b => (
+                                    <MenuItem key={b.abbr} value={b.name}>{b.name}</MenuItem>
+                                ))}
+                            </TextField>
 
                             <Stack direction="row" spacing={1}>
                                 <TextField
@@ -435,10 +444,28 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
                                     onChange={e => setVerseRange(e.target.value)}
                                     placeholder="16 or 16-17"
                                     error={!!rangeError}
-                                    helperText={rangeError ?? `${verseEnd - verseStart + 1} slide${verseEnd === verseStart ? '' : 's'}`}
+                                    helperText={rangeError ?? `${verseEnd - verseStart + 1} verse${verseEnd === verseStart ? '' : 's'}`}
                                     sx={{flex: 1}}
                                 />
                             </Stack>
+
+                            <Accordion disableGutters elevation={0} sx={{border: '1px solid', borderColor: 'divider', borderRadius: 1, '&:before': {display: 'none'}}}>
+                                <AccordionSummary sx={{minHeight: 36, '& .MuiAccordionSummary-content': {margin: '6px 0'}}}>
+                                    <Typography variant="body2" color="text.secondary">Additional options</Typography>
+                                </AccordionSummary>
+                                <AccordionDetails sx={{paddingTop: 0}}>
+                                    <Stack>
+                                        <FormControlLabel
+                                            control={<Switch checked={merge} onChange={e => setMerge(e.target.checked)} size="small" />}
+                                            label={<Typography variant="body2">Merge verses into flowing slides</Typography>}
+                                        />
+                                        <FormControlLabel
+                                            control={<Switch checked={inlineNumbers} onChange={e => setInlineNumbers(e.target.checked)} size="small" />}
+                                            label={<Typography variant="body2">Inline verse numbers in text</Typography>}
+                                        />
+                                    </Stack>
+                                </AccordionDetails>
+                            </Accordion>
                         </>
                     )}
 

@@ -118,6 +118,30 @@ export function playSlide(conn: any, presentationId: string, slideId: string): P
         .then((res: any) => res?.data ?? null);
 }
 
+export interface BibleLookup {
+    translation: string;
+    book: string;
+    chapter: number;
+    verseStart: number;
+    verseEnd: number;
+    merge: boolean;
+    inlineNumbers: boolean;
+}
+
+export interface FetchedVerse {
+    text: string;
+    reference: string;
+    verse: number;
+}
+
+export function fetchBibleSlides(conn: any, lookup: BibleLookup): Promise<FetchedVerse[]> {
+    return conn.rawRequest(`${ROOT}/bible`, 'ACTION', lookup)
+        .then((res: any) => {
+            if (res?.data?.error) throw new Error(res.data.error);
+            return Array.isArray(res?.data) ? res.data : [];
+        });
+}
+
 export function stopPlayback(conn: any): Promise<PlaybackState | null> {
     return conn.rawRequest(`${ROOT}/slides`, 'ACTION', {action: 'stop'})
         .then((res: any) => res?.data ?? null);

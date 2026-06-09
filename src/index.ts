@@ -18,6 +18,7 @@ import OverlayManager, {CHANNELS, getGroup, GROUPS} from './overlay';
 import {RundownItem} from '@lappis/cg-manager/dist/types/rundown';
 import {MotionEffect, MotionEffectOptions} from './effects/misc/motion';
 import MotionManager from './motion';
+import {getVerseSlides, VerseLookup} from './bible';
 import {AtemManager} from './atem';
 import {config} from './config';
 import {TextWallEffect, TextWallEffectOptions} from './effects/wall/text';
@@ -362,6 +363,15 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         }, 'UPDATE');
 
         this.api.registerRoute('slides', async req => this.overlay.getPresentationState(), 'GET');
+
+        this.api.registerRoute('bible', async req => {
+            try {
+                const lookup = req.data as VerseLookup;
+                return getVerseSlides(lookup);
+            } catch (e: any) {
+                return {error: e?.message ?? 'Bible lookup failed'};
+            }
+        }, 'ACTION');
 
         this.api.registerRoute('slides', async req => {
             if (!req.data || typeof req.data !== 'object') return null;

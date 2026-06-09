@@ -1,0 +1,72 @@
+<bible>
+  <testament name="Old">
+    <book index="1" abbr="1Mos">Första Moseboken</book>
+    <book index="2" abbr="2Mos">Andra Moseboken</book>
+    <book index="3" abbr="3Mos">Tredje Moseboken</book>
+    <book index="4" abbr="4Mos">Fjärde Moseboken</book>
+    <book index="5" abbr="5Mos">Femte Moseboken</book>
+    <book index="6" abbr="Jos">Josua</book>
+    <book index="7" abbr="Dom">Domarboken</book>
+    <book index="8" abbr="Rut">Rut</book>
+    <book index="9" abbr="1Sam">Första Samuelsboken</book>
+    <book index="10" abbr="2Sam">Andra Samuelsboken</book>
+    <book index="11" abbr="1Kung">Första Kungaboken</book>
+    <book index="12" abbr="2Kung">Andra Kungaboken</book>
+    <book index="13" abbr="1Krön">Första Krönikeboken</book>
+    <book index="14" abbr="2Krön">Andra Krönikeboken</book>
+    <book index="15" abbr="Esra">Esra</book>
+    <book index="16" abbr="Neh">Nehemja</book>
+    <book index="17" abbr="Est">Ester</book>
+    <book index="18" abbr="Job">Job</book>
+    <book index="19" abbr="Ps">Psaltaren</book>
+    <book index="20" abbr="Ord">Ordspråksboken</book>
+    <book index="21" abbr="Pred">Predikaren</book>
+    <book index="22" abbr="HögaV">Höga Visan</book>
+    <book index="23" abbr="Jes">Jesaja</book>
+    <book index="24" abbr="Jer">Jeremia</book>
+    <book index="25" abbr="Klag">Klagovisorna</book>
+    <book index="26" abbr="Hes">Hesekiel</book>
+    <book index="27" abbr="Dan">Daniel</book>
+    <book index="28" abbr="Hos">Hosea</book>
+    <book index="29" abbr="Joel">Joel</book>
+    <book index="30" abbr="Amos">Amos</book>
+    <book index="31" abbr="Obad">Obadja</book>
+    <book index="32" abbr="Jona">Jona</book>
+    <book index="33" abbr="Mika">Mika</book>
+    <book index="34" abbr="Nah">Nahum</book>
+    <book index="35" abbr="Hab">Habackuk</book>
+    <book index="36" abbr="Sef">Sefanja</book>
+    <book index="37" abbr="Hag">Haggai</book>
+    <book index="38" abbr="Sak">Sakarja</book>
+    <book index="39" abbr="Mal">Malaki</book>
+  </testament>
+  <testament name="New">
+    <book index="40" abbr="Matt">Matteusevangeliet</book>
+    <book index="41" abbr="Mark">Markusevangeliet</book>
+    <book index="42" abbr="Luk">Lukasevangeliet</book>
+    <book index="43" abbr="Joh">Johannesevangeliet</book>
+    <book index="44" abbr="Apg">Apostlagärningarna</book>
+    <book index="45" abbr="Rom">Romarbrevet</book>
+    <book index="46" abbr="1Kor">Första Korinthierbrevet</book>
+    <book index="47" abbr="2Kor">Andra Korinthierbrevet</book>
+    <book index="48" abbr="Gal">Galaterbrevet</book>
+    <book index="49" abbr="Ef">Efesierbrevet</book>
+    <book index="50" abbr="Fil">Filipperbrevet</book>
+    <book index="51" abbr="Kol">Kolosserbrevet</book>
+    <book index="52" abbr="1Thess">Första Thessalonikerbrevet</book>
+    <book index="53" abbr="2Thess">Andra Thessalonikerbrevet</book>
+    <book index="54" abbr="1Tim">Första Timotheosbrevet</book>
+    <book index="55" abbr="2Tim">Andra Timotheosbrevet</book>
+    <book index="56" abbr="Tit">Titusbrevet</book>
+    <book index="57" abbr="Filem">Filemonbrevet</book>
+    <book index="58" abbr="Hebr">Hebreerbrevet</book>
+    <book index="59" abbr="Jak">Jakobsbrevet</book>
+    <book index="60" abbr="1Pet">Första Petrusbrevet</book>
+    <book index="61" abbr="2Pet">Andra Petrusbrevet</book>
+    <book index="62" abbr="1Joh">Första Johannesbrevet</book>
+    <book index="63" abbr="2Joh">Andra Johannesbrevet</book>
+    <book index="64" abbr="3Joh">Tredje Johannesbrevet</book>
+    <book index="65" abbr="Jud">Judasbrevet</book>
+    <book index="66" abbr="Upp">Uppenbarelseboken</book>
+  </testament>
+</bible>
