@@ -3,6 +3,7 @@ import {Accordion, AccordionDetails, AccordionSummary, Box, Button, Checkbox, Fo
 
 // @ts-ignore
 import {useSocket, MediaSelect, RundownEditorActionBar} from '@web-lib';
+import {useTranslation} from '../i18n';
 
 interface RundownEntry {
     id: string;
@@ -23,22 +24,24 @@ interface PlayVideoEditorProps {
 interface VideoPickerProps {
     clip: any | null;
     onChange: (clip: any | null) => void;
+    clearLabel: string;
 }
 
-const VideoPicker: React.FC<VideoPickerProps> = ({clip, onChange}) => (
+const VideoPicker: React.FC<VideoPickerProps> = ({clip, onChange, clearLabel}) => (
     <Stack direction="row" spacing={1} alignItems="stretch">
         <Box sx={{flexGrow: 1, minWidth: 0}}>
             <MediaSelect clip={clip} onClipSelect={onChange} />
         </Box>
         {clip && (
             <Button variant="outlined" onClick={() => onChange(null)} sx={{flexShrink: 0}}>
-                Clear
+                {clearLabel}
             </Button>
         )}
     </Stack>
 );
 
 export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
+    const {t} = useTranslation('cg-overlay-plugin');
     const socket = useSocket();
 
     const [media, setMedia] = useState<any | null>(null);
@@ -51,7 +54,17 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
 
     useEffect(() => {
         if (!entry.data?.clip) return;
-        socket.caspar.getMedia().then(media => setMedia(media.get(entry.data.clip) || null));
+        const clip = entry.data.clip as string;
+
+        socket.caspar.getMedia().then((map: Map<string, any>) => {
+            if (map.has(clip)) setMedia(map.get(clip));
+        });
+
+        const onMedia = (key: string, value: any) => {
+            if (key === clip && value) setMedia(value);
+        };
+        socket.caspar.on('media', onMedia);
+        return () => socket.caspar.off('media', onMedia);
     }, [entry.data?.clip]);
 
     useEffect(() => {
@@ -63,16 +76,16 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
 
     return (
         <Stack spacing={2.5}>
-            <Typography variant="h6">Play video</Typography>
+            <Typography variant="h6">{t('playVideo.heading')}</Typography>
 
             <TextField
-                label="Title"
+                label={t('playVideo.titleLabel')}
                 value={title}
                 onChange={e => setTitle(e.target['value'])}
                 fullWidth
             />
 
-            <VideoPicker clip={media} onChange={setMedia} />
+            <VideoPicker clip={media} onChange={setMedia} clearLabel={t('playVideo.clearButton')} />
 
             <Accordion
                 defaultExpanded={additionalOptionsActive}
@@ -91,22 +104,22 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
                     sx={{minHeight: 40, '& .MuiAccordionSummary-content': {margin: '8px 0'}}}
                 >
                     <Typography variant="body2">
-                        Additional options{additionalOptionsActive && ' •'}
+                        {t('playVideo.additionalOptions')}{additionalOptionsActive && ' •'}
                     </Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                     <Stack spacing={2}>
                         <Box>
                             <Typography variant="caption" color="text.secondary" sx={{display: 'block', marginBottom: 0.5}}>
-                                Secondary video — plays simultaneously on the wall.
+                                {t('playVideo.secondaryVideoLabel')}
                             </Typography>
-                            <VideoPicker clip={secondaryMedia} onChange={setSecondaryMedia} />
+                            <VideoPicker clip={secondaryMedia} onChange={setSecondaryMedia} clearLabel={t('playVideo.clearButton')} />
                         </Box>
 
                         <FormGroup row sx={{gap: 2}}>
                             <FormControlLabel
-                                label="Play now"
-                                title="Stop the current video and clear the queue before playing this clip."
+                                label={t('playVideo.playNowLabel')}
+                                title={t('playVideo.playNowTitle')}
                                 control={
                                     <Checkbox
                                         size="small"
@@ -116,8 +129,8 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
                                 }
                             />
                             <FormControlLabel
-                                label="Skip intro"
-                                title="Skip the lead-in animation of the clip."
+                                label={t('playVideo.skipIntroLabel')}
+                                title={t('playVideo.skipIntroTitle')}
                                 control={
                                     <Checkbox
                                         size="small"
@@ -127,8 +140,8 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
                                 }
                             />
                             <FormControlLabel
-                                label="Loop"
-                                title="Loop the clip until manually stopped."
+                                label={t('playVideo.loopLabel')}
+                                title={t('playVideo.loopTitle')}
                                 control={
                                     <Checkbox
                                         size="small"

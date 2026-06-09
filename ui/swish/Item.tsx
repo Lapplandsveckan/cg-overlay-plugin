@@ -1,5 +1,6 @@
 import React from 'react';
 import {Stack, Typography} from '@mui/material';
+import {useTranslation} from '../i18n';
 
 interface RundownEntry {
     id: string;
@@ -14,6 +15,8 @@ interface SwishRundownItemProps {
 }
 
 export const SwishRundownItem: React.FC<SwishRundownItemProps> = ({entry}) => {
+    const {t} = useTranslation('cg-overlay-plugin');
+
     return (
         <Stack
             spacing={2}
@@ -32,7 +35,7 @@ export const SwishRundownItem: React.FC<SwishRundownItemProps> = ({entry}) => {
             {
                 entry.data.skipFirst && (
                     <Typography variant="body2">
-                        Skip first
+                        {t('swish.skipFirst')}
                     </Typography>
                 )
             }

@@ -3,6 +3,7 @@ import {Stack, TextField, Typography} from '@mui/material';
 
 // @ts-ignore
 import {RundownEditorActionBar} from '@web-lib';
+import {useTranslation} from '../i18n';
 
 interface RundownEntry {
     id: string;
@@ -21,19 +22,20 @@ interface NamnskyltEditorProps {
 }
 
 export const NamnskyltEditor: React.FC<NamnskyltEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
+    const {t} = useTranslation('cg-overlay-plugin');
     const [name, setName] = useState(entry?.data.name ?? '');
 
     return (
         <Stack spacing={2}>
-            <Typography variant="h6">Namnskylt</Typography>
+            <Typography variant="h6">{t('namnskylt.heading')}</Typography>
 
             <TextField
-                label="Namn"
+                label={t('namnskylt.nameLabel')}
                 value={name}
                 onChange={e => setName(e.target['value'])}
                 required
                 error={name === ''}
-                helperText={name === '' ? 'Required' : 'Name shown on the lower-third overlay.'}
+                helperText={name === '' ? t('namnskylt.nameRequired') : t('namnskylt.nameHelper')}
             />
 
             <RundownEditorActionBar

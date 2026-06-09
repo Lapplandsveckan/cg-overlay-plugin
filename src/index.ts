@@ -1,5 +1,5 @@
 import path from 'path';
-import {CasparPlugin, UI_INJECTION_ZONE} from '@lappis/cg-manager';
+import {CasparPlugin, RundownActionMetadata, UI_INJECTION_ZONE} from '@lappis/cg-manager';
 import {Templates} from './templates';
 import {SwishOverlayEffect, SwishOverlayEffectOptions} from './effects/overlay/swish';
 import {NamnskyltOverlayEffect, NamnskyltOverlayEffectOptions} from './effects/overlay/namnskylt';
@@ -33,6 +33,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public namnskyltPresets: NamnskyltPresetStore;
     public presentations: PresentationStore;
 
+    private reconnectHandler: () => void;
+
     public getLogger() {
         return this.logger;
     }
@@ -63,7 +65,9 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.namnskyltPresets = new NamnskyltPresetStore(this);
         this.presentations = new PresentationStore(this);
 
-        this.atem.connect(config.atem.ip);
+        if (config.atem.ip) {
+            this.atem.connect(config.atem.ip);
+        }
 
         this.registerEffectGroups();
         this.registerEffects();
@@ -74,9 +78,21 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.api.registerUI(UI_INJECTION_ZONE.RUNDOWN_BOTTOM_PANEL, path.join(__dirname, 'ui', 'panel'));
 
         this.registerRundownActions();
+
+        this.reconnectHandler = () => {
+            this.logger.info('Server reconnected — restoring effect groups and persistent effects');
+            this.registerEffectGroups();
+            this.overlay.initialize();
+        };
+        this.api.onReconnect(this.reconnectHandler);
     }
 
     protected onDisable() {
+        if (this.reconnectHandler) {
+            this.api.offReconnect(this.reconnectHandler);
+            this.reconnectHandler = null;
+        }
+
         this.overlay.dispose();
         this.overlay = null;
 
@@ -198,11 +214,11 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     protected registerRundownActions() {
-        const registerRundownAction = (key: string, action: (rundown: RundownItem) => void) => {
+        const registerRundownAction = (key: string, action: (rundown: RundownItem) => void, metadata?: RundownActionMetadata) => {
             this.api.registerUI(this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_ITEM, key), path.join(__dirname, 'ui', key, 'Item'));
             this.api.registerUI(this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_EDITOR, key), path.join(__dirname, 'ui', key, 'Editor'));
 
-            this.api.registerRundownAction(key, action);
+            this.api.registerRundownAction(key, action, metadata);
         };
 
         registerRundownAction('play-video', async (rundown) => {
@@ -211,6 +227,18 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
             if (rundown.data.options?.playNow) this.video.playVideo(video.id, rundown.data.options);
             else this.video.queueVideo(video.id, rundown.data.options);
+        }, {
+            accepts: {
+                fileTypes: ['video/*'],
+                match: file => {
+                    if (!file.type.startsWith('video/')) return null;
+                    return {
+                        type: 'play-video',
+                        title: stripExt(file.name),
+                        data: {clip: (file as unknown as {mediaId: string}).mediaId},
+                    };
+                },
+            },
         });
 
         registerRundownAction('namnskylt', async (rundown) => {
@@ -395,4 +423,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             return ok;
         }, 'DELETE');
     }
+}
+
+function stripExt(name: string): string {
+    return name.replace(/\.[^.]+$/, '');
 }
