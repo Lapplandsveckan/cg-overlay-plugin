@@ -146,6 +146,7 @@ export const RunModal: React.FC<RunModalProps> = ({
                             atStart={atStart}
                             atEnd={atEnd}
                             thumbnailRef={thumbnailRef}
+                            backgroundUrl={backgroundUrl}
                             onNext={handleNext}
                             onPrev={handlePrev}
                             onJump={onPlay}
@@ -165,13 +166,14 @@ interface PlayingViewProps {
     atStart: boolean;
     atEnd: boolean;
     thumbnailRef: React.RefObject<HTMLDivElement>;
+    backgroundUrl?: string | null;
     onNext: () => void;
     onPrev: () => void;
     onJump: (slideId: string) => void;
 }
 
 const PlayingView: React.FC<PlayingViewProps> = ({
-    slides, currentSlideId, current, atStart, atEnd, thumbnailRef, onNext, onPrev, onJump,
+    slides, currentSlideId, current, atStart, atEnd, thumbnailRef, backgroundUrl, onNext, onPrev, onJump,
 }) => (
     <Stack spacing={2}>
         <Stack direction="row" spacing={1.5} alignItems="stretch">
