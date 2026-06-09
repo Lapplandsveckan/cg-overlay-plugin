@@ -13,8 +13,8 @@ import {
 import {useSocket} from '@web-lib';
 
 import SlidePreview from './SlidePreview';
-import {Presentation, createPresentation, usePresentations} from './api';
-import {bibelEditorUrl} from './urls';
+import {Presentation, createPresentation, usePresentations, slideRef} from './api';
+import {slidesEditorUrl} from './urls';
 
 export const PresentationIndex: React.FC = () => {
     const conn = useSocket();
@@ -27,7 +27,7 @@ export const PresentationIndex: React.FC = () => {
         setError(null);
         try {
             const p = await createPresentation(conn, {title: 'Untitled', slides: []});
-            window.location.assign(bibelEditorUrl(p.id));
+            window.location.assign(slidesEditorUrl(p.id));
         } catch (err: any) {
             console.error(err);
             setError(err?.message ?? 'Failed to create presentation');
@@ -115,7 +115,7 @@ const PresentationTile: React.FC<{presentation: Presentation}> = ({presentation}
         <Stack
             spacing={1}
             component="a"
-            href={bibelEditorUrl(presentation.id)}
+            href={slidesEditorUrl(presentation.id)}
             sx={{
                 textDecoration: 'none',
                 color: 'inherit',
@@ -134,7 +134,7 @@ const PresentationTile: React.FC<{presentation: Presentation}> = ({presentation}
                 }}
             >
                 {firstSlide ? (
-                    <SlidePreview text={firstSlide.text} reference={firstSlide.reference} />
+                    <SlidePreview text={firstSlide.text} reference={slideRef(firstSlide)} />
                 ) : (
                     <Box
                         sx={{

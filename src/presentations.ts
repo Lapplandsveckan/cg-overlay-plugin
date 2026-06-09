@@ -4,10 +4,8 @@ import LappisOverlayPlugin from './index';
 
 const STORE_PATH = path.join(process.cwd(), 'plugin-data', 'lappis', 'presentations.json');
 
-// Designed for future expansion: `type` discriminates slide kinds.
-// For now only 'bibelord' exists; later we'll add 'text', 'image', etc.
-export interface BibelordSlide {
-    type: 'bibelord';
+export interface BibleSlide {
+    type: 'bible';
     id: string;
     text: string;
     reference: string;
@@ -17,7 +15,13 @@ export interface BibelordSlide {
     verse: number;
 }
 
-export type Slide = BibelordSlide;
+export interface TextSlide {
+    type: 'text';
+    id: string;
+    text: string;
+}
+
+export type Slide = BibleSlide | TextSlide;
 
 export interface Presentation {
     id: string;
@@ -73,7 +77,7 @@ export class PresentationStore {
         const presentation: Presentation = {
             id: makeId(),
             title: typeof input?.title === 'string' && input.title.trim() ? input.title.trim() : 'Untitled',
-            slides: Array.isArray(input?.slides) ? input.slides.map(sanitizeSlide).filter(isSlide) : [],
+            slides: Array.isArray(input?.slides) ? input.slides.map(sanitizeSlide).filter((s): s is Slide => s !== null) : [],
             createdAt: now,
             updatedAt: now,
         };
@@ -91,7 +95,7 @@ export class PresentationStore {
             ...current,
             ...(typeof patch.title === 'string' ? {title: patch.title.trim() || 'Untitled'} : {}),
             ...(Array.isArray(patch.slides)
-                ? {slides: patch.slides.map(sanitizeSlide).filter(isSlide)}
+                ? {slides: patch.slides.map(sanitizeSlide).filter((s): s is Slide => s !== null)}
                 : {}),
             updatedAt: Date.now(),
         };
@@ -121,7 +125,7 @@ function sanitize(input: unknown): Presentation[] {
         const i = item as any;
         if (typeof i.id !== 'string' || !i.id) continue;
         if (typeof i.title !== 'string') continue;
-        const slides = Array.isArray(i.slides) ? i.slides.map(sanitizeSlide).filter(isSlide) : [];
+        const slides = Array.isArray(i.slides) ? i.slides.map(sanitizeSlide).filter((s): s is Slide => s !== null) : [];
         out.push({
             id: i.id,
             title: i.title,
@@ -135,22 +139,26 @@ function sanitize(input: unknown): Presentation[] {
 
 function sanitizeSlide(raw: any): Slide | null {
     if (!raw || typeof raw !== 'object') return null;
-    // Default missing `type` to 'bibelord' for back-compat with the early format.
-    const type = typeof raw.type === 'string' ? raw.type : 'bibelord';
-    if (type !== 'bibelord') return null;
     if (typeof raw.id !== 'string' || !raw.id) return null;
-    return {
-        type: 'bibelord',
-        id: raw.id,
-        text: typeof raw.text === 'string' ? raw.text : '',
-        reference: typeof raw.reference === 'string' ? raw.reference : '',
-        translation: typeof raw.translation === 'string' ? raw.translation : '',
-        book: typeof raw.book === 'string' ? raw.book : '',
-        chapter: Number.isFinite(raw.chapter) ? raw.chapter : 0,
-        verse: Number.isFinite(raw.verse) ? raw.verse : 0,
-    };
-}
-
-function isSlide(slide: Slide | null): slide is Slide {
-    return slide !== null;
+    const type = typeof raw.type === 'string' ? raw.type : null;
+    if (type === 'bible') {
+        return {
+            type: 'bible',
+            id: raw.id,
+            text: typeof raw.text === 'string' ? raw.text : '',
+            reference: typeof raw.reference === 'string' ? raw.reference : '',
+            translation: typeof raw.translation === 'string' ? raw.translation : '',
+            book: typeof raw.book === 'string' ? raw.book : '',
+            chapter: Number.isFinite(raw.chapter) ? raw.chapter : 0,
+            verse: Number.isFinite(raw.verse) ? raw.verse : 0,
+        };
+    }
+    if (type === 'text') {
+        return {
+            type: 'text',
+            id: raw.id,
+            text: typeof raw.text === 'string' ? raw.text : '',
+        };
+    }
+    return null;
 }

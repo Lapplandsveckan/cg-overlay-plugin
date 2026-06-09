@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 
 import SlidePreview from './SlidePreview';
-import {Presentation, Slide, PlaybackState} from './api';
+import {Presentation, Slide, PlaybackState, slideRef, slideLabel} from './api';
 
 export interface RunModalProps {
     open: boolean;
@@ -99,7 +99,7 @@ export const RunModal: React.FC<RunModalProps> = ({
             <DialogTitle sx={{paddingBottom: 1}}>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
                     <Stack direction="row" spacing={1.5} alignItems="baseline">
-                        <Typography variant="h6">Bibel ord</Typography>
+                        <Typography variant="h6">Slides</Typography>
                         {presentation?.title && (
                             <Typography variant="body2" color="text.secondary">
                                 {presentation.title}
@@ -192,7 +192,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                 </span>
             </Tooltip>
             <Box sx={{flexGrow: 1}}>
-                <SlidePreview text={current.text} reference={current.reference} />
+                <SlidePreview text={current.text} reference={slideRef(current)} />
             </Box>
             <Tooltip title="Next (→ / Space)">
                 <span>
@@ -238,7 +238,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                     <Stack spacing={0.5}>
                         <SlidePreview
                             text={slide.text}
-                            reference={slide.reference}
+                            reference={slideRef(slide)}
                             selected={slide.id === currentSlideId}
                             dimmed={slide.id !== currentSlideId}
                         />
@@ -247,7 +247,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                             color={slide.id === currentSlideId ? 'text.primary' : 'text.secondary'}
                             sx={{textAlign: 'center'}}
                         >
-                            {idx + 1}. {slide.reference}
+                            {idx + 1}. {slideLabel(slide)}
                         </Typography>
                     </Stack>
                 </Box>
@@ -305,7 +305,7 @@ const PickerView: React.FC<PickerViewProps> = ({slides, onPlay}) => {
                 >
                     <Stack spacing={0.75}>
                         <Box sx={{position: 'relative'}}>
-                            <SlidePreview text={slide.text} reference={slide.reference} />
+                            <SlidePreview text={slide.text} reference={slideRef(slide)} />
                             <Box
                                 className="picker-overlay"
                                 sx={{
@@ -340,7 +340,7 @@ const PickerView: React.FC<PickerViewProps> = ({slides, onPlay}) => {
                             </Box>
                         </Box>
                         <Typography variant="body2" color="text.secondary" sx={{textAlign: 'center'}}>
-                            {idx + 1}. {slide.reference}
+                            {idx + 1}. {slideLabel(slide)}
                         </Typography>
                     </Stack>
                 </Box>

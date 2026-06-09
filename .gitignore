@@ -3,4 +3,5 @@ node_modules
 overlay-plugin
 templates/.next
 templates/out
+templates/tsconfig.tsbuildinfo
 lappis-plugin

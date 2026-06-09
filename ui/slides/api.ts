@@ -3,8 +3,8 @@ import {useEffect, useState} from 'react';
 // @ts-ignore
 import {useSocket} from '@web-lib';
 
-export interface BibelordSlide {
-    type: 'bibelord';
+export interface BibleSlide {
+    type: 'bible';
     id: string;
     text: string;
     reference: string;
@@ -14,7 +14,13 @@ export interface BibelordSlide {
     verse: number;
 }
 
-export type Slide = BibelordSlide;
+export interface TextSlide {
+    type: 'text';
+    id: string;
+    text: string;
+}
+
+export type Slide = BibleSlide | TextSlide;
 
 export interface Presentation {
     id: string;
@@ -34,6 +40,16 @@ export interface ArmEvent {
     presentationId: string;
     rundownId: string | null;
     ts: number;
+}
+
+/** Returns the reference string for a slide, or '' for non-bible slides. */
+export function slideRef(slide: Slide): string {
+    return slide.type === 'bible' ? slide.reference : '';
+}
+
+/** Short label for a slide: its reference for bible slides, 'Text' otherwise. */
+export function slideLabel(slide: Slide): string {
+    return slide.type === 'bible' ? slide.reference : 'Text';
 }
 
 const ROOT = '/api/plugin/lappis';
@@ -72,17 +88,17 @@ export function deletePresentation(conn: any, id: string): Promise<boolean> {
 // ---------- Playback ----------
 
 export function getPlaybackState(conn: any): Promise<PlaybackState> {
-    return conn.rawRequest(`${ROOT}/bibelord`, 'GET', {})
+    return conn.rawRequest(`${ROOT}/slides`, 'GET', {})
         .then((res: any) => res?.data ?? {playing: false, presentationId: null, slideId: null});
 }
 
 export function playSlide(conn: any, presentationId: string, slideId: string): Promise<PlaybackState | null> {
-    return conn.rawRequest(`${ROOT}/bibelord`, 'ACTION', {action: 'play', presentationId, slideId})
+    return conn.rawRequest(`${ROOT}/slides`, 'ACTION', {action: 'play', presentationId, slideId})
         .then((res: any) => res?.data ?? null);
 }
 
 export function stopPlayback(conn: any): Promise<PlaybackState | null> {
-    return conn.rawRequest(`${ROOT}/bibelord`, 'ACTION', {action: 'stop'})
+    return conn.rawRequest(`${ROOT}/slides`, 'ACTION', {action: 'stop'})
         .then((res: any) => res?.data ?? null);
 }
 
@@ -152,7 +168,7 @@ export function usePlaybackState(): PlaybackState | null {
         getPlaybackState(conn).then(setState).catch(console.error);
 
         const listener = {
-            path: 'plugin/lappis/bibelord',
+            path: 'plugin/lappis/slides',
             method: 'UPDATE',
             handler: (req: any) => setState(req.data ?? null),
         };
@@ -168,7 +184,7 @@ export function useArmEvents(handler: (event: ArmEvent) => void) {
 
     useEffect(() => {
         const listener = {
-            path: 'plugin/lappis/bibelord-arm',
+            path: 'plugin/lappis/slides-arm',
             method: 'UPDATE',
             handler: (req: any) => {
                 if (req.data && typeof req.data === 'object') handler(req.data);

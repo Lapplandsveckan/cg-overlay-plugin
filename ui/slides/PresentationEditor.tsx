@@ -21,9 +21,9 @@ import {
 import {useSocket} from '@web-lib';
 
 import SlidePreview from './SlidePreview';
-import {Presentation, Slide, updatePresentation, deletePresentation, usePresentation} from './api';
+import {BibleSlide, Presentation, Slide, TextSlide, slideLabel, updatePresentation, deletePresentation, usePresentation} from './api';
 import {fetchVerses, formatReference, TRANSLATIONS} from './bible-api';
-import {bibelIndexUrl} from './urls';
+import {slidesIndexUrl} from './urls';
 
 interface Props {
     id: string;
@@ -39,8 +39,6 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
     const conn = useSocket();
     const remote = usePresentation(id);
 
-    // Local edit buffer for the title (debounced save). For slides we save
-    // immediately on each mutation since they're discrete actions.
     const [localTitle, setLocalTitle] = useState<string | null>(null);
     const [savingTitle, setSavingTitle] = useState(false);
     const [addOpen, setAddOpen] = useState(false);
@@ -48,7 +46,6 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // When remote loads, seed the local title once.
     useEffect(() => {
         if (remote && localTitle === null) setLocalTitle(remote.title);
     }, [remote, localTitle]);
@@ -80,7 +77,7 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
             <CenteredMessage>
                 <Stack spacing={1.5} alignItems="center">
                     <Typography variant="body1">Presentation not found.</Typography>
-                    <Link href={bibelIndexUrl()}>← Back to presentations</Link>
+                    <Link href={slidesIndexUrl()}>← Back to presentations</Link>
                 </Stack>
             </CenteredMessage>
         );
@@ -114,7 +111,7 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
         setConfirmDelete(false);
         try {
             await deletePresentation(conn, id);
-            window.location.assign(bibelIndexUrl());
+            window.location.assign(slidesIndexUrl());
         } catch (err) {
             console.error(err);
             setError('Failed to delete presentation');
@@ -125,7 +122,7 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
         <Box sx={{maxWidth: 1400, margin: '0 auto', padding: {xs: 2, md: 3}}}>
             <Stack spacing={3}>
                 <Stack direction="row" spacing={2} alignItems="center">
-                    <Link href={bibelIndexUrl()} sx={{fontSize: 14}}>← Presentations</Link>
+                    <Link href={slidesIndexUrl()} sx={{fontSize: 14}}>← Presentations</Link>
                     <Box sx={{flexGrow: 1}} />
                     {savingTitle && (
                         <Typography variant="caption" color="text.secondary">Saving…</Typography>
@@ -240,7 +237,7 @@ const EmptyState: React.FC<{onAdd: () => void}> = ({onAdd}) => (
         <Stack spacing={1.5} alignItems="center">
             <Typography variant="body1">No slides yet.</Typography>
             <Typography variant="body2">
-                Add a verse range to generate one slide per verse.
+                Add Bible verses or a text slide to get started.
             </Typography>
             <Button variant="contained" size="small" onClick={onAdd}>+ Add slides</Button>
         </Stack>
@@ -257,7 +254,10 @@ interface SlideCardProps {
 const SlideCard: React.FC<SlideCardProps> = ({slide, index, onEdit, onDelete}) => (
     <Stack spacing={1}>
         <Box sx={{position: 'relative', '&:hover .slide-overlay': {opacity: 1}}}>
-            <SlidePreview text={slide.text} reference={slide.reference} />
+            <SlidePreview
+                text={slide.text}
+                reference={slide.type === 'bible' ? slide.reference : ''}
+            />
             <Stack
                 className="slide-overlay"
                 direction="row"
@@ -299,7 +299,7 @@ const SlideCard: React.FC<SlideCardProps> = ({slide, index, onEdit, onDelete}) =
             </Stack>
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{paddingLeft: 0.25}}>
-            {index}. {slide.reference}
+            {index}. {slideLabel(slide)}
         </Typography>
     </Stack>
 );
@@ -311,6 +311,9 @@ interface AddSlidesDialogProps {
 }
 
 const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd}) => {
+    const [mode, setMode] = useState<'bible' | 'text'>('bible');
+
+    // Bible state
     const [translation, setTranslation] = useState(TRANSLATIONS[0].id);
     const [book, setBook] = useState('Joh');
     const [chapter, setChapter] = useState('3');
@@ -318,13 +321,15 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Text state
+    const [textContent, setTextContent] = useState('');
+
     const {verseStart, verseEnd, rangeError} = useMemo(() => parseVerseRange(verseRange), [verseRange]);
-
     const parsedChapter = Number(chapter);
-    const valid = book.trim() && Number.isFinite(parsedChapter) && parsedChapter > 0 && !rangeError;
+    const bibleValid = book.trim() && Number.isFinite(parsedChapter) && parsedChapter > 0 && !rangeError;
 
-    const handleSubmit = async () => {
-        if (!valid) return;
+    const handleSubmitBible = async () => {
+        if (!bibleValid) return;
         setLoading(true);
         setError(null);
         try {
@@ -335,8 +340,8 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
                 verseStart,
                 verseEnd,
             });
-            const slides: Slide[] = verses.map(v => ({
-                type: 'bibelord',
+            const slides: BibleSlide[] = verses.map(v => ({
+                type: 'bible',
                 id: makeSlideId(),
                 text: v.text,
                 reference: formatReference(v.book, v.chapter, v.verse),
@@ -354,62 +359,112 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
         }
     };
 
+    const handleSubmitText = () => {
+        const slide: TextSlide = {
+            type: 'text',
+            id: makeSlideId(),
+            text: textContent.trim(),
+        };
+        onAdd([slide]);
+        setTextContent('');
+    };
+
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
             <DialogTitle>Add slides</DialogTitle>
             <DialogContent>
                 <Stack spacing={2} sx={{marginTop: 1}}>
-                    <TextField
-                        select
-                        label="Translation"
-                        value={translation}
-                        onChange={e => setTranslation(e.target.value)}
-                        fullWidth
-                    >
-                        {TRANSLATIONS.map(t => (
-                            <MenuItem key={t.id} value={t.id}>{t.label}</MenuItem>
-                        ))}
-                    </TextField>
-
-                    <TextField
-                        label="Book"
-                        value={book}
-                        onChange={e => setBook(e.target.value)}
-                        placeholder="Joh"
-                        helperText="e.g. Joh, Rom, Ps"
-                        inputProps={{list: 'presentation-book-list'}}
-                    />
-                    <datalist id="presentation-book-list">
-                        {COMMON_BOOKS.map(b => <option key={b} value={b} />)}
-                    </datalist>
-
                     <Stack direction="row" spacing={1}>
-                        <TextField
-                            label="Chapter"
-                            type="number"
-                            value={chapter}
-                            onChange={e => setChapter(e.target.value)}
-                            sx={{flex: 1}}
-                        />
-                        <TextField
-                            label="Verses"
-                            value={verseRange}
-                            onChange={e => setVerseRange(e.target.value)}
-                            placeholder="16 or 16-17"
-                            error={!!rangeError}
-                            helperText={rangeError ?? `${verseEnd - verseStart + 1} slide${verseEnd === verseStart ? '' : 's'}`}
-                            sx={{flex: 1}}
-                        />
+                        <Button
+                            size="small"
+                            variant={mode === 'bible' ? 'contained' : 'outlined'}
+                            onClick={() => setMode('bible')}
+                        >
+                            Bible verse
+                        </Button>
+                        <Button
+                            size="small"
+                            variant={mode === 'text' ? 'contained' : 'outlined'}
+                            onClick={() => setMode('text')}
+                        >
+                            Text slide
+                        </Button>
                     </Stack>
+
+                    {mode === 'bible' && (
+                        <>
+                            <TextField
+                                select
+                                label="Translation"
+                                value={translation}
+                                onChange={e => setTranslation(e.target.value)}
+                                fullWidth
+                            >
+                                {TRANSLATIONS.map(t => (
+                                    <MenuItem key={t.id} value={t.id}>{t.label}</MenuItem>
+                                ))}
+                            </TextField>
+
+                            <TextField
+                                label="Book"
+                                value={book}
+                                onChange={e => setBook(e.target.value)}
+                                placeholder="Joh"
+                                helperText="e.g. Joh, Rom, Ps"
+                                inputProps={{list: 'presentation-book-list'}}
+                            />
+                            <datalist id="presentation-book-list">
+                                {COMMON_BOOKS.map(b => <option key={b} value={b} />)}
+                            </datalist>
+
+                            <Stack direction="row" spacing={1}>
+                                <TextField
+                                    label="Chapter"
+                                    type="number"
+                                    value={chapter}
+                                    onChange={e => setChapter(e.target.value)}
+                                    sx={{flex: 1}}
+                                />
+                                <TextField
+                                    label="Verses"
+                                    value={verseRange}
+                                    onChange={e => setVerseRange(e.target.value)}
+                                    placeholder="16 or 16-17"
+                                    error={!!rangeError}
+                                    helperText={rangeError ?? `${verseEnd - verseStart + 1} slide${verseEnd === verseStart ? '' : 's'}`}
+                                    sx={{flex: 1}}
+                                />
+                            </Stack>
+                        </>
+                    )}
+
+                    {mode === 'text' && (
+                        <TextField
+                            label="Text"
+                            value={textContent}
+                            onChange={e => setTextContent(e.target.value)}
+                            multiline
+                            minRows={4}
+                            fullWidth
+                            autoFocus
+                            placeholder="Enter slide text…"
+                        />
+                    )}
 
                     {error && <Alert severity="error">{error}</Alert>}
                 </Stack>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose} disabled={loading}>Cancel</Button>
-                <Button variant="contained" onClick={handleSubmit} disabled={!valid || loading}>
-                    {loading ? 'Fetching…' : 'Add'}
-                </Button>
+                {mode === 'bible' ? (
+                    <Button variant="contained" onClick={handleSubmitBible} disabled={!bibleValid || loading}>
+                        {loading ? 'Fetching…' : 'Add'}
+                    </Button>
+                ) : (
+                    <Button variant="contained" onClick={handleSubmitText} disabled={!textContent.trim()}>
+                        Add
+                    </Button>
+                )}
             </DialogActions>
         </Dialog>
     );
@@ -428,10 +483,18 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({slide, onClose, onSave
     useEffect(() => {
         if (!slide) return;
         setText(slide.text);
-        setReference(slide.reference);
+        setReference(slide.type === 'bible' ? slide.reference : '');
     }, [slide?.id]);
 
     if (!slide) return null;
+
+    const handleSave = () => {
+        if (slide.type === 'bible') {
+            onSave({...slide, text, reference});
+        } else {
+            onSave({...slide, text});
+        }
+    };
 
     return (
         <Dialog
@@ -446,12 +509,14 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({slide, onClose, onSave
                 <Stack spacing={2.5} sx={{marginTop: 1}}>
                     <SlidePreview text={text} reference={reference} />
 
-                    <TextField
-                        label="Reference"
-                        value={reference}
-                        onChange={e => setReference(e.target.value)}
-                        fullWidth
-                    />
+                    {slide.type === 'bible' && (
+                        <TextField
+                            label="Reference"
+                            value={reference}
+                            onChange={e => setReference(e.target.value)}
+                            fullWidth
+                        />
+                    )}
 
                     <TextField
                         label="Text"
@@ -465,7 +530,7 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({slide, onClose, onSave
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
-                <Button variant="contained" onClick={() => onSave({...slide, text, reference})}>
+                <Button variant="contained" onClick={handleSave}>
                     Save
                 </Button>
             </DialogActions>

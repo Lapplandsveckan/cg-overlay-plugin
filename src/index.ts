@@ -9,7 +9,7 @@ import {NamnskyltWallEffect, NamnskyltWallEffectOptions} from './effects/wall/na
 import {VideoTransitionWallEffect, VideoTransitionWallEffectOptions} from './effects/wall/videotransition';
 import {BarsOverlayEffect, BarsOverlayEffectOptions} from './effects/overlay/bars';
 import {InsamlingOverlayEffect, InsamlingOverlayEffectOptions} from './effects/overlay/insamling';
-import {BibelordOverlayEffect, BibelordOverlayEffectOptions} from './effects/overlay/bibelord';
+import {PresentationOverlayEffect, PresentationOverlayEffectOptions} from './effects/overlay/presentation';
 import {VideoEffect, VideoEffectOptions} from './effects/misc/video';
 import VideoManager from './video';
 import {RouteEffect, RouteEffectOptions} from './effects/misc/route';
@@ -148,11 +148,11 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
 
         this.api.registerEffect(
-            'overlay-bibelord',
-            (group, options) => new BibelordOverlayEffect(
+            'overlay-presentation',
+            (group, options) => new PresentationOverlayEffect(
                 group,
-                options as BibelordOverlayEffectOptions,
-                this.templates.getFilePath('overlay/bibelord'),
+                options as PresentationOverlayEffectOptions,
+                this.templates.getFilePath('overlay/presentation'),
             ),
         );
 
@@ -269,16 +269,16 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             this.overlay.setText(rundown.data.text);
         });
 
-        registerRundownAction('bibelord', async (rundown) => {
+        registerRundownAction('slides', async (rundown) => {
             const presentationId = rundown.data?.presentationId;
             if (typeof presentationId !== 'string' || !presentationId) {
-                this.logger.warn('bibelord rundown action: no presentationId on entry');
+                this.logger.warn('slides rundown action: no presentationId on entry');
                 return;
             }
 
             await this.presentations.ready;
             if (!this.presentations.get(presentationId)) {
-                this.logger.warn(`bibelord rundown action: presentation ${presentationId} not found`);
+                this.logger.warn(`slides rundown action: presentation ${presentationId} not found`);
                 return;
             }
 
@@ -353,9 +353,9 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             return this.namnskyltPresets.replace(req.data);
         }, 'UPDATE');
 
-        this.api.registerRoute('bibelord', async req => this.overlay.getBibelordState(), 'GET');
+        this.api.registerRoute('slides', async req => this.overlay.getPresentationState(), 'GET');
 
-        this.api.registerRoute('bibelord', async req => {
+        this.api.registerRoute('slides', async req => {
             if (!req.data || typeof req.data !== 'object') return null;
 
             const data = req.data as {action: string, presentationId?: string, slideId?: string};
@@ -367,19 +367,19 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                     if (!presentation) return null;
                     const slide = presentation.slides.find(s => s.id === data.slideId);
                     if (!slide) return null;
-                    this.overlay.playBibelordSlide(
+                    this.overlay.playSlide(
                         presentation.id,
                         slide.id,
-                        {text: slide.text, reference: slide.reference},
+                        {text: slide.text, reference: slide.type === 'bible' ? slide.reference : ''},
                     );
                     break;
                 }
                 case 'stop':
-                    this.overlay.stopBibelordPlayback();
+                    this.overlay.stopPlayback();
                     break;
             }
 
-            return this.overlay.getBibelordState();
+            return this.overlay.getPresentationState();
         }, 'ACTION');
 
         // Presentations CRUD
@@ -414,9 +414,9 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             const ok = await this.presentations.remove(req.params.id);
             if (ok) {
                 // If the deleted presentation is currently playing, stop the overlay.
-                const state = this.overlay.getBibelordState();
+                const state = this.overlay.getPresentationState();
                 if (state.playing && state.presentationId === req.params.id) {
-                    this.overlay.stopBibelordPlayback();
+                    this.overlay.stopPlayback();
                 }
                 this.api.broadcast('presentations', 'UPDATE', this.presentations.list());
             }

@@ -3,7 +3,7 @@ import {Box, Typography} from '@mui/material';
 
 export interface SlidePreviewProps {
     text: string;
-    reference: string;
+    reference?: string;
 
     aspectRatio?: string;
     minWidth?: number | string;
@@ -16,7 +16,7 @@ export interface SlidePreviewProps {
 // vw/vh and the layout is pixel-proportional to the live render.
 export const SlidePreview: React.FC<SlidePreviewProps> = ({
     text,
-    reference,
+    reference = '',
     aspectRatio = '16/9',
     minWidth,
     selected,
@@ -62,21 +62,23 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
                 {text || <Box component="span" sx={{opacity: 0.4, fontStyle: 'italic'}}>(empty)</Box>}
             </Typography>
         </Box>
-        <Box
-            sx={{
-                position: 'absolute',
-                left: '5cqw',
-                bottom: '5cqh',
-                fontFamily: '"Georgia", "Times New Roman", serif',
-                fontSize: '2.8cqh',
-                fontWeight: 300,
-                letterSpacing: '0.05em',
-                color: 'rgba(255, 255, 255, 0.75)',
-                lineHeight: 1,
-            }}
-        >
-            {reference}
-        </Box>
+        {reference && (
+            <Box
+                sx={{
+                    position: 'absolute',
+                    left: '5cqw',
+                    bottom: '5cqh',
+                    fontFamily: '"Georgia", "Times New Roman", serif',
+                    fontSize: '2.8cqh',
+                    fontWeight: 300,
+                    letterSpacing: '0.05em',
+                    color: 'rgba(255, 255, 255, 0.75)',
+                    lineHeight: 1,
+                }}
+            >
+                {reference}
+            </Box>
+        )}
     </Box>
 );
 

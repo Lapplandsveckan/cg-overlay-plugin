@@ -6,7 +6,7 @@ export function handleState(tl: gsap.core.Timeline, state: number, prevState: nu
 function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
     tl.clear();
 
-    tl.to(styles.bibelord__main, {
+    tl.to(styles.presentation__main, {
         opacity: 1,
         duration: 0.4,
         ease: 'power2.out',
@@ -16,7 +16,7 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
 function handleHide(tl: gsap.core.Timeline, styles: Record<string, string>) {
     tl.clear();
 
-    tl.to(styles.bibelord__main, {
+    tl.to(styles.presentation__main, {
         opacity: 0,
         duration: 0.4,
         ease: 'power2.in',

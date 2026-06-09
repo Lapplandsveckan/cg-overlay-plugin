@@ -2,13 +2,13 @@ import {Box, Button, Stack, Typography} from '@mui/material';
 // @ts-ignore
 import {MotionControl} from './motion';
 import VideoQueue from './video';
-import PresentationIndex from './bibelord/PresentationIndex';
-import PresentationEditor from './bibelord/PresentationEditor';
+import PresentationIndex from './slides/PresentationIndex';
+import PresentationEditor from './slides/PresentationEditor';
 
 const OverlayTest = ({ path }) => {
     if (path && path[0] === 'motion') return <MotionControl />;
 
-    if (path && path[0] === 'bibel') {
+    if (path && path[0] === 'slides') {
         const id = path[1];
         if (id) return <PresentationEditor id={id} />;
         return <PresentationIndex />;
@@ -26,8 +26,8 @@ const OverlayTest = ({ path }) => {
                     <Button component="a" href="lappis/motion" variant="outlined" fullWidth>
                         Motion
                     </Button>
-                    <Button component="a" href="lappis/bibel" variant="outlined" fullWidth>
-                        Bibel ord
+                    <Button component="a" href="lappis/slides" variant="outlined" fullWidth>
+                        Slides
                     </Button>
                 </Stack>
             </Box>

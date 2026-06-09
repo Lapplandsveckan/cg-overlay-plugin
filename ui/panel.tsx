@@ -5,20 +5,21 @@ import {Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTi
 import {MediaDropZone, useSocket} from '@web-lib';
 import {useTranslation} from './i18n';
 
-import SlidePreview from './bibelord/SlidePreview';
-import RunModal from './bibelord/RunModal';
+import SlidePreview from './slides/SlidePreview';
+import RunModal from './slides/RunModal';
 import {
     ArmEvent,
     createPresentation,
     playSlide,
     Presentation,
+    slideRef,
     stopPlayback,
     useArmEvents,
     usePlaybackState,
     usePresentation,
     usePresentations,
-} from './bibelord/api';
-import {bibelEditorUrl, bibelIndexUrl} from './bibelord/urls';
+} from './slides/api';
+import {slidesEditorUrl, slidesIndexUrl} from './slides/urls';
 
 const RUNDOWN_ITEM_MIME = 'application/x-cg-rundown-item';
 
@@ -491,7 +492,7 @@ const NamnskyltarTab: React.FC = () => {
 };
 
 // ============================================================
-// Bibel tab + global run modal
+// Slides tab + global run modal
 // ============================================================
 
 interface PresentationCardProps {
@@ -504,28 +505,28 @@ const PresentationCard: React.FC<PresentationCardProps> = ({presentation}) => {
         <Box
             draggable
             onDragStart={e => setRundownDragPayload(e, {
-                type: 'bibelord',
+                type: 'slides',
                 data: {presentationId: presentation.id},
                 title: presentation.title,
             })}
-            onClick={() => window.location.assign(bibelEditorUrl(presentation.id))}
+            onClick={() => window.location.assign(slidesEditorUrl(presentation.id))}
             role="button"
             tabIndex={0}
             onKeyDown={e => {
-                if (e.key === 'Enter') window.location.assign(bibelEditorUrl(presentation.id));
+                if (e.key === 'Enter') window.location.assign(slidesEditorUrl(presentation.id));
             }}
             sx={{
                 cursor: 'grab',
                 userSelect: 'none',
                 outline: 'none',
                 '&:active': {cursor: 'grabbing'},
-                '&:hover .bibel-title': {color: '#4a90e2'},
-                '&:hover .bibel-thumb': {borderColor: '#4a90e2'},
+                '&:hover .pres-title': {color: '#4a90e2'},
+                '&:hover .pres-thumb': {borderColor: '#4a90e2'},
             }}
         >
             <Stack spacing={0.75}>
                 <Box
-                    className="bibel-thumb"
+                    className="pres-thumb"
                     sx={{
                         border: '1px solid rgba(255,255,255,0.08)',
                         borderRadius: 1,
@@ -534,7 +535,7 @@ const PresentationCard: React.FC<PresentationCardProps> = ({presentation}) => {
                     }}
                 >
                     {firstSlide ? (
-                        <SlidePreview text={firstSlide.text} reference={firstSlide.reference} />
+                        <SlidePreview text={firstSlide.text} reference={slideRef(firstSlide)} />
                     ) : (
                         <Box
                             sx={{
@@ -554,7 +555,7 @@ const PresentationCard: React.FC<PresentationCardProps> = ({presentation}) => {
                 </Box>
                 <Stack direction="row" spacing={0.5} alignItems="center" sx={{paddingLeft: 0.25}}>
                     <Typography
-                        className="bibel-title"
+                        className="pres-title"
                         variant="body2"
                         sx={{flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#e8eaed'}}
                     >
@@ -569,7 +570,7 @@ const PresentationCard: React.FC<PresentationCardProps> = ({presentation}) => {
     );
 };
 
-const BibelTab: React.FC = () => {
+const SlidesTab: React.FC = () => {
     const conn = useSocket();
     const {presentations} = usePresentations();
     const [creating, setCreating] = useState(false);
@@ -578,7 +579,7 @@ const BibelTab: React.FC = () => {
         setCreating(true);
         try {
             const p = await createPresentation(conn, {title: 'Untitled', slides: []});
-            window.location.assign(bibelEditorUrl(p.id));
+            window.location.assign(slidesEditorUrl(p.id));
         } catch (err) {
             console.error(err);
             setCreating(false);
@@ -596,7 +597,7 @@ const BibelTab: React.FC = () => {
                         variant="outlined"
                         size="small"
                         component="a"
-                        href={bibelIndexUrl()}
+                        href={slidesIndexUrl()}
                     >
                         Open all
                     </Button>
@@ -702,7 +703,7 @@ const GlobalRunModal: React.FC = () => {
 
 const BottomPanel: React.FC = () => {
     const {t} = useTranslation('cg-overlay-plugin');
-    const [tab, setTab] = useState<'media' | 'namnskyltar' | 'bibel'>('media');
+    const [tab, setTab] = useState<'media' | 'namnskyltar' | 'slides'>('media');
 
     return (
         <Stack direction="column" sx={{height: '100%'}}>
@@ -717,12 +718,12 @@ const BottomPanel: React.FC = () => {
             >
                 <Tab label={t('panel.mediaTab')} value="media" />
                 <Tab label={t('panel.namnskyltarTab')} value="namnskyltar" />
-                <Tab label={t('panel.bibelTab')} value="bibel" />
+                <Tab label={t('panel.slidesTab')} value="slides" />
             </Tabs>
             <Box sx={{flexGrow: 1, minHeight: 0}}>
                 {tab === 'media' && <MediaTab />}
                 {tab === 'namnskyltar' && <NamnskyltarTab />}
-                {tab === 'bibel' && <BibelTab />}
+                {tab === 'slides' && <SlidesTab />}
             </Box>
 
             <GlobalRunModal />

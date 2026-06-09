@@ -13,7 +13,7 @@ import {
 // @ts-ignore
 import {RundownEditorActionBar} from '@web-lib';
 import {usePresentations, createPresentation, Presentation} from './api';
-import {bibelEditorUrl} from './urls';
+import {slidesEditorUrl} from './urls';
 // @ts-ignore
 import {useSocket} from '@web-lib';
 
@@ -24,14 +24,14 @@ interface RundownEntry {
     type?: string;
 }
 
-interface BibelordEditorProps {
+interface SlidesEditorProps {
     creating?: boolean;
     entry: RundownEntry;
     updateEntry: (entry: RundownEntry) => void;
     deleteEntry: (entry: RundownEntry) => void;
 }
 
-export const BibelordEditor: React.FC<BibelordEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
+export const SlidesEditor: React.FC<SlidesEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
     const conn = useSocket();
     const {presentations} = usePresentations();
 
@@ -59,8 +59,6 @@ export const BibelordEditor: React.FC<BibelordEditorProps> = ({entry, updateEntr
         try {
             const created = await createPresentation(conn, {title: 'Untitled', slides: []});
             handleSelect(created.id);
-            // Open the editor for the new presentation in a new tab so the user
-            // can fill it in, while keeping their rundown editor context.
             openPresentationEditor(created.id);
         } catch (err: any) {
             console.error(err);
@@ -75,7 +73,7 @@ export const BibelordEditor: React.FC<BibelordEditorProps> = ({entry, updateEntr
 
     return (
         <Stack spacing={2}>
-            <Typography variant="h6">Bibel ord</Typography>
+            <Typography variant="h6">Slides</Typography>
 
             <TextField
                 label="Title"
@@ -160,7 +158,7 @@ export const BibelordEditor: React.FC<BibelordEditorProps> = ({entry, updateEntr
 function openPresentationEditor(id: string) {
     // Use an absolute URL — the rundown editor isn't mounted under the plugin
     // page, so relative paths would resolve against the rundown URL.
-    const url = bibelEditorUrl(id);
+    const url = slidesEditorUrl(id);
     try {
         window.open(url, '_blank', 'noopener');
     } catch {
@@ -168,4 +166,4 @@ function openPresentationEditor(id: string) {
     }
 }
 
-export default BibelordEditor;
+export default SlidesEditor;

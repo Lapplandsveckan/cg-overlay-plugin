@@ -1,14 +1,14 @@
 import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
 
-export interface BibelordOverlayEffectOptions {
+export interface PresentationOverlayEffectOptions {
     text: string;
     reference: string;
 }
 
-export class BibelordOverlayEffect extends Effect {
-    private options: BibelordOverlayEffectOptions;
+export class PresentationOverlayEffect extends Effect {
+    private options: PresentationOverlayEffectOptions;
 
-    public constructor(group: EffectGroup, options: BibelordOverlayEffectOptions, template: string) {
+    public constructor(group: EffectGroup, options: PresentationOverlayEffectOptions, template: string) {
         super(group);
 
         this.options = options;
@@ -25,7 +25,7 @@ export class BibelordOverlayEffect extends Effect {
         return this.layers[0];
     }
 
-    public update(options: Partial<BibelordOverlayEffectOptions>) {
+    public update(options: Partial<PresentationOverlayEffectOptions>) {
         this.options = {...this.options, ...options};
         return this.executor.execute(
             CgCommand

@@ -1,4 +1,4 @@
-.bibelord__main {
+.presentation__main {
     position: absolute;
     left: 0;
     top: 0;
@@ -16,7 +16,7 @@
     opacity: 0;
 }
 
-.bibelord__text {
+.presentation__text {
     max-width: 78vw;
 
     font-family: 'Georgia', 'Times New Roman', serif;
@@ -30,7 +30,7 @@
     color: #fff;
 }
 
-.bibelord__reference {
+.presentation__reference {
     position: absolute;
     left: 5vw;
     bottom: 5vh;
