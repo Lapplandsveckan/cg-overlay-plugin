@@ -1,7 +1,10 @@
-import React from 'react';
+import React, {useCallback, useState} from 'react';
 import {Chip, Stack, Typography} from '@mui/material';
+// @ts-ignore
+import {useSocket} from '@web-lib';
 
-import {usePresentation, usePlaybackState, slideRef} from './api';
+import {ArmEvent, playSlide, slideRef, stopPlayback, useArmEvents, usePlaybackState, usePresentation} from './api';
+import RunModal from './RunModal';
 
 interface RundownEntry {
     id: string;
@@ -15,9 +18,11 @@ interface SlidesRundownItemProps {
 }
 
 export const SlidesRundownItem: React.FC<SlidesRundownItemProps> = ({entry}) => {
+    const conn = useSocket();
     const presentationId: string | null = entry.data?.presentationId ?? null;
     const presentation = usePresentation(presentationId);
     const playback = usePlaybackState();
+    const [armed, setArmed] = useState(false);
 
     const playingHere = !!(
         playback?.playing
@@ -25,39 +30,66 @@ export const SlidesRundownItem: React.FC<SlidesRundownItemProps> = ({entry}) => 
         && playback.presentationId === presentationId
     );
 
-    if (!presentationId) {
-        return <Chip label="No presentation" size="small" color="warning" variant="outlined" />;
-    }
+    const onArm = useCallback((event: ArmEvent) => {
+        // Arming any entry closes other entries' modals so only one is open.
+        setArmed(event.rundownId === entry.id);
+    }, [entry.id]);
+    useArmEvents(onArm);
 
-    if (presentation === undefined) {
-        return <Typography variant="caption" color="text.secondary">Loading…</Typography>;
-    }
+    const displayContent = (() => {
+        if (!presentationId) {
+            return <Chip label="No presentation" size="small" color="warning" variant="outlined" />;
+        }
+        if (presentation === undefined) {
+            return <Typography variant="caption" color="text.secondary">Loading…</Typography>;
+        }
+        if (presentation === null) {
+            return <Chip label="Presentation missing" size="small" color="error" variant="outlined" />;
+        }
 
-    if (presentation === null) {
-        return <Chip label="Presentation missing" size="small" color="error" variant="outlined" />;
-    }
+        const slideCount = presentation.slides.length;
+        const firstRef = slideCount > 0 ? slideRef(presentation.slides[0]) : '';
+        const lastRef = slideCount > 1 ? slideRef(presentation.slides[slideCount - 1]) : '';
 
-    const slideCount = presentation.slides.length;
-    const firstRef = slideCount > 0 ? slideRef(presentation.slides[0]) : '';
-    const lastRef = slideCount > 1 ? slideRef(presentation.slides[slideCount - 1]) : '';
+        return (
+            <Stack spacing={0.5}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                    <Chip
+                        label={`${slideCount} slide${slideCount === 1 ? '' : 's'}`}
+                        size="small"
+                        variant="outlined"
+                    />
+                    {playingHere && <Chip label="Live" size="small" color="error" />}
+                </Stack>
+                {firstRef && (
+                    <Typography variant="caption" color="text.secondary">
+                        {firstRef}
+                        {lastRef && lastRef !== firstRef && <> — {lastRef}</>}
+                    </Typography>
+                )}
+            </Stack>
+        );
+    })();
 
     return (
-        <Stack spacing={0.5}>
-            <Stack direction="row" spacing={1} alignItems="center">
-                <Chip
-                    label={`${slideCount} slide${slideCount === 1 ? '' : 's'}`}
-                    size="small"
-                    variant="outlined"
-                />
-                {playingHere && <Chip label="Live" size="small" color="error" />}
-            </Stack>
-            {firstRef && (
-                <Typography variant="caption" color="text.secondary">
-                    {firstRef}
-                    {lastRef && lastRef !== firstRef && <> — {lastRef}</>}
-                </Typography>
-            )}
-        </Stack>
+        <>
+            {displayContent}
+            <RunModal
+                open={armed}
+                presentation={presentation ?? null}
+                playback={playback}
+                onClose={() => {
+                    setArmed(false);
+                }}
+                onStop={() => {
+                    stopPlayback(conn).catch(console.error);
+                }}
+                onPlay={(slideId) => {
+                    if (!presentationId) return;
+                    playSlide(conn, presentationId, slideId).catch(console.error);
+                }}
+            />
+        </>
     );
 };
 

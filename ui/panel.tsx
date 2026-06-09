@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, Link, Stack, Tab, Tabs, TextField, Tooltip, Typography} from '@mui/material';
 
 // @ts-ignore
@@ -6,17 +6,10 @@ import {MediaDropZone, useSocket} from '@web-lib';
 import {useTranslation} from './i18n';
 
 import SlidePreview from './slides/SlidePreview';
-import RunModal from './slides/RunModal';
 import {
-    ArmEvent,
     createPresentation,
-    playSlide,
     Presentation,
     slideRef,
-    stopPlayback,
-    useArmEvents,
-    usePlaybackState,
-    usePresentation,
     usePresentations,
 } from './slides/api';
 import {slidesEditorUrl, slidesIndexUrl} from './slides/urls';
@@ -637,67 +630,6 @@ const SlidesTab: React.FC = () => {
 };
 
 // ============================================================
-// Global run modal — listens for arm events, controls playback
-// ============================================================
-
-const GlobalRunModal: React.FC = () => {
-    const conn = useSocket();
-    const [armedPresentationId, setArmedPresentationId] = useState<string | null>(null);
-
-    const presentation = usePresentation(armedPresentationId);
-    const playback = usePlaybackState();
-
-    const onArm = useCallback((event: ArmEvent) => {
-        setArmedPresentationId(event.presentationId);
-    }, []);
-    useArmEvents(onArm);
-
-    // If a slide is playing and the modal is closed (no armed pres), open the
-    // modal pointed at the playing presentation so the operator can control it.
-    useEffect(() => {
-        if (!armedPresentationId && playback?.playing && playback.presentationId) {
-            setArmedPresentationId(playback.presentationId);
-        }
-    }, [armedPresentationId, playback?.playing, playback?.presentationId]);
-
-    const open = !!armedPresentationId;
-
-    return (
-        <RunModal
-            open={open}
-            presentation={presentation ?? null}
-            playback={playback}
-            onClose={async () => {
-                // If actively playing, also stop the overlay on close.
-                if (playback?.playing) {
-                    try {
-                        await stopPlayback(conn);
-                    } catch (err) {
-                        console.error(err);
-                    }
-                }
-                setArmedPresentationId(null);
-            }}
-            onStop={async () => {
-                try {
-                    await stopPlayback(conn);
-                } catch (err) {
-                    console.error(err);
-                }
-            }}
-            onPlay={async (slideId) => {
-                if (!armedPresentationId) return;
-                try {
-                    await playSlide(conn, armedPresentationId, slideId);
-                } catch (err) {
-                    console.error(err);
-                }
-            }}
-        />
-    );
-};
-
-// ============================================================
 // Container
 // ============================================================
 
@@ -725,8 +657,6 @@ const BottomPanel: React.FC = () => {
                 {tab === 'namnskyltar' && <NamnskyltarTab />}
                 {tab === 'slides' && <SlidesTab />}
             </Box>
-
-            <GlobalRunModal />
         </Stack>
     );
 };
