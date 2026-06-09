@@ -10,7 +10,7 @@ class PluginLoggerTransport extends TransportStream {
     private pluginLogger: Logger;
 
     public constructor(pluginLogger: Logger) {
-        super({level: 'debug'});
+        super({level: 'warn'});
         this.pluginLogger = pluginLogger;
     }
 
@@ -89,7 +89,7 @@ export default class MotionManager {
 
         const dmxnet = new dmxlib.dmxnet({
             log: {
-                level: 'debug',
+                level: 'warn',
                 transports: [new PluginLoggerTransport(this.plugin.getLogger().scope('dmxnet'))],
             },
         });
