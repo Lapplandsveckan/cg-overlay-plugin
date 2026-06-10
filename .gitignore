@@ -3,3 +3,5 @@ node_modules
 overlay-plugin
 templates/.next
 lappis-plugin
+cg-overlay-plugin
+*.cgplugin
