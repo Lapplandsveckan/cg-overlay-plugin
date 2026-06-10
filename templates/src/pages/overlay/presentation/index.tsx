@@ -11,6 +11,29 @@ interface PresentationAnimationProps {
     reference: string;
 }
 
+// Verse-number marker emitted by the server: ⟨N⟩<verse text…>
+const VERSE_NUM_RE = /⟨(\d+)⟩/g;
+
+function renderText(text: string): React.ReactNode {
+    if (!text.includes('⟨')) return text;
+
+    const parts: React.ReactNode[] = [];
+    let last = 0;
+    let match: RegExpExecArray | null;
+    VERSE_NUM_RE.lastIndex = 0;
+    while ((match = VERSE_NUM_RE.exec(text)) !== null) {
+        if (match.index > last) parts.push(text.slice(last, match.index));
+        parts.push(
+            <span key={match.index} className={styles['presentation__verse-number']}>
+                {match[1]}
+            </span>,
+        );
+        last = match.index + match[0].length;
+    }
+    if (last < text.length) parts.push(text.slice(last));
+    return <>{parts}</>;
+}
+
 export const PresentationAnimation: React.FC<PresentationAnimationProps> = ({state, text, reference}) => {
     return (
         <CG
@@ -21,7 +44,7 @@ export const PresentationAnimation: React.FC<PresentationAnimationProps> = ({sta
             styles={getStylesProxy(styles)}
         >
             <div className={styles.presentation__main}>
-                <div className={styles.presentation__text}>{text}</div>
+                <div className={styles.presentation__text}>{renderText(text)}</div>
                 <div className={styles.presentation__reference}>{reference}</div>
             </div>
         </CG>

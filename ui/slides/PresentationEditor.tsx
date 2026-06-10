@@ -280,22 +280,22 @@ const SlideCard: React.FC<SlideCardProps> = ({slide, index, backgroundUrl, onEdi
             >
                 <Tooltip title="Edit slide">
                     <IconButton
-                        size="small"
                         onClick={onEdit}
                         sx={{
+                            width: 28, height: 28, padding: 0,
                             backgroundColor: 'rgba(0,0,0,0.6)',
                             color: '#fff',
                             '&:hover': {backgroundColor: 'rgba(0,0,0,0.8)'},
                         }}
                     >
-                        <Box component="span" sx={{fontSize: 14}}>✎</Box>
+                        <Box component="span" sx={{fontSize: 14, lineHeight: 1}}>✎</Box>
                     </IconButton>
                 </Tooltip>
                 <Tooltip title="Delete slide">
                     <IconButton
-                        size="small"
                         onClick={onDelete}
                         sx={{
+                            width: 28, height: 28, padding: 0,
                             backgroundColor: 'rgba(0,0,0,0.6)',
                             color: '#e88c8c',
                             '&:hover': {backgroundColor: 'rgba(0,0,0,0.8)'},

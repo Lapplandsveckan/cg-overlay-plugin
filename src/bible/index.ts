@@ -113,7 +113,7 @@ function normalizeNotation(bookNum: number, chapterNum: number, verseNumbers: nu
         return ranges.join(',');
     };
 
-    return `${bookAbbr}${chapterNum}:${collapseRanges(verseNumbers)}`;
+    return `${bookAbbr} ${chapterNum}:${collapseRanges(verseNumbers)}`;
 }
 
 function smartSplitText(text: string, maxLength: number, threshold = 0.75): string[] {
@@ -138,7 +138,12 @@ function smartSplitText(text: string, maxLength: number, threshold = 0.75): stri
             buffer = buffer.slice(cut).trim();
         }
     }
-    addChunk(buffer);
+    // Fold a short trailing remainder into the previous chunk rather than
+    // leaving a one-word orphan slide.
+    if (buffer.trim() && chunks.length > 0 && buffer.length < threshold * targetLength)
+        chunks[chunks.length - 1] += ` ${buffer.trim()}`;
+    else
+        addChunk(buffer);
     return chunks;
 }
 
@@ -169,7 +174,7 @@ export function getVerseSlides(lookup: VerseLookup): VerseSlide[] {
 
     if (lookup.merge) {
         const mergedText = verses
-            .map(v => lookup.inlineNumbers ? `${v.verse} ${v.text}` : v.text)
+            .map(v => lookup.inlineNumbers ? `⟨${v.verse}⟩${v.text}` : v.text)
             .join(' ');
         const ref = normalizeNotation(bookNum, chapterNum, verseNumbers);
         return smartSplitText(mergedText, 100).map(chunk => ({
@@ -180,7 +185,7 @@ export function getVerseSlides(lookup: VerseLookup): VerseSlide[] {
     }
 
     return verses.flatMap(v => {
-        const text = lookup.inlineNumbers ? `${v.verse} ${v.text}` : v.text;
+        const text = lookup.inlineNumbers ? `⟨${v.verse}⟩${v.text}` : v.text;
         const ref = normalizeNotation(bookNum, chapterNum, [v.verse]);
         return smartSplitText(text, 100).map(chunk => ({
             text: chunk,
