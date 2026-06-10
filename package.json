@@ -4,8 +4,7 @@
   "author": "firecraftgaming <eliyah@sundstroem.com>",
   "license": "MIT",
   "version": "0.0.1",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "index.js",
   "devDependencies": {
     "@babel/core": "^7.19.3",
     "@babel/preset-env": "^7.19.3",
@@ -30,15 +29,24 @@
     "build": "webpack",
     "watch": "webpack --watch",
     "dev": "next ./templates dev",
-    "package": "node package.js",
+    "package": "cg-manager package",
     "serve": "node serve.js",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix"
   },
+  "cgplugin": {
+    "ui": "ui",
+    "steps": [
+      {
+        "name": "templates",
+        "run": "node scripts/package-templates.js"
+      }
+    ]
+  },
   "dependencies": {
     "@babel/preset-react": "^7.23.3",
     "@gsap/react": "^2.1.0",
-    "@lappis/cg-manager": "^0.0.35",
+    "@lappis/cg-manager": "^0.0.38",
     "@mui/material": "^5.15.11",
     "atem-connection": "^3.5.0",
     "babel-loader": "^8.2.5",
