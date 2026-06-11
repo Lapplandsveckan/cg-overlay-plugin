@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, Link, Stack, Tab, Tabs, TextField, Tooltip, Typography} from '@mui/material';
 
 // @ts-ignore
-import {MediaDropZone, useSocket} from '@web-lib';
+import {MediaDropZone, useSocket, useRundownLive} from '@web-lib';
 import {useTranslation} from './i18n';
 
 const RUNDOWN_ITEM_MIME = 'application/x-cg-rundown-item';
@@ -42,9 +42,10 @@ function formatDuration(seconds: number) {
 interface DraggableClipProps {
     item: MediaItem;
     displayName: string;
+    onInstantPlay?: () => void;
 }
 
-const DraggableClip: React.FC<DraggableClipProps> = ({item, displayName}) => (
+const DraggableClip: React.FC<DraggableClipProps> = ({item, displayName, onInstantPlay}) => (
     <Box
         draggable
         onDragStart={e => setRundownDragPayload(e, {
@@ -52,6 +53,7 @@ const DraggableClip: React.FC<DraggableClipProps> = ({item, displayName}) => (
             data: {clip: item.id, options: {}},
             title: displayName,
         })}
+        onClick={onInstantPlay}
         sx={{
             position: 'relative',
             aspectRatio: '16/9',
@@ -130,6 +132,7 @@ const FolderTile: React.FC<FolderTileProps> = ({name, onOpen}) => (
 const MediaTab: React.FC = () => {
     const {t} = useTranslation('cg-overlay-plugin');
     const socket = useSocket();
+    const isLive = useRundownLive();
     const [allMedia, setAllMedia] = useState<any[]>([]);
     const [query, setQuery] = useState('');
     const [path, setPath] = useState<string[]>([]);
@@ -272,7 +275,12 @@ const MediaTab: React.FC = () => {
                             />
                         ))}
                         {clips.map(({item, displayName}) => (
-                            <DraggableClip key={item.id} item={item} displayName={displayName} />
+                            <DraggableClip
+                                key={item.id}
+                                item={item}
+                                displayName={displayName}
+                                onInstantPlay={isLive ? () => socket.rawRequest('/api/plugin/lappis/video/play', 'ACTION', {clip: item.id, options: {playNow: true}}).catch(console.error) : undefined}
+                            />
                         ))}
                     </Box>
                 )}
