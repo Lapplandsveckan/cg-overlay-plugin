@@ -1,5 +1,5 @@
+import React from 'react';
 import {Box, Button, Stack, Typography} from '@mui/material';
-// @ts-ignore
 import {MotionControl} from './motion';
 import VideoQueue from './video';
 

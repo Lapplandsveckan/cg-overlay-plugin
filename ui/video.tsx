@@ -1,7 +1,6 @@
 import {Box, Chip, IconButton, LinearProgress, Stack, Tooltip, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 
-// @ts-ignore
 import {useSocket} from '@web-lib';
 import {useTranslation} from './i18n';
 
