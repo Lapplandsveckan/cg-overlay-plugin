@@ -1,7 +1,6 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, Link, Stack, Tab, Tabs, TextField, Tooltip, Typography} from '@mui/material';
 
-// @ts-ignore
 import {MediaDropZone, useSocket, useRundownLive} from '@web-lib';
 import {useTranslation} from './i18n';
 

@@ -1,7 +1,6 @@
 import React, {useState} from 'react';
 import {Stack, TextField, Typography} from '@mui/material';
 
-// @ts-ignore
 import {RundownEditorActionBar} from '@web-lib';
 import {useTranslation} from '../i18n';
 
