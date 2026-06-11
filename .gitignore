@@ -1,7 +1,11 @@
 dist
 node_modules
+
 overlay-plugin
+lappis-plugin
+cg-overlay-plugin
+*.cgplugin
+
 templates/.next
 templates/out
 templates/tsconfig.tsbuildinfo
-lappis-plugin

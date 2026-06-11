@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Accordion, AccordionDetails, AccordionSummary, Box, Button, Checkbox, FormControlLabel, FormGroup, Stack, TextField, Typography} from '@mui/material';
 
-// @ts-ignore
 import {useSocket, MediaSelect, RundownEditorActionBar} from '@web-lib';
 import {useTranslation} from '../i18n';
 
@@ -64,7 +63,9 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
             if (key === clip && value) setMedia(value);
         };
         socket.caspar.on('media', onMedia);
-        return () => socket.caspar.off('media', onMedia);
+        return () => {
+            socket.caspar.off('media', onMedia);
+        };
     }, [entry.data?.clip]);
 
     useEffect(() => {

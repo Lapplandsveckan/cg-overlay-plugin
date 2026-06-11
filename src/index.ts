@@ -352,6 +352,13 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.api.registerRoute('videos', async req => this.video.clearQueue(), 'DELETE');
         this.api.registerRoute('video', async req => this.video.stopVideo(typeof req.data === 'object' && req.data['clear']), 'DELETE');
 
+        this.api.registerRoute('video/play', async req => {
+            const {clip, options} = req.data as any;
+            const video = this.api.getFileDatabase().get(clip);
+            if (!video) return null;
+            this.video.playVideo(video.id, options);
+        }, 'ACTION');
+
         this.api.registerRoute('namnskylt-presets', async req => {
             await this.namnskyltPresets.ready;
             return this.namnskyltPresets.get();

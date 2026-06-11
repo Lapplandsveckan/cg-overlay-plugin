@@ -1,7 +1,6 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Chip, Stack, Typography} from '@mui/material';
 
-// @ts-ignore
 import {useSocket, MediaCard} from '@web-lib';
 import {useTranslation} from '../i18n';
 

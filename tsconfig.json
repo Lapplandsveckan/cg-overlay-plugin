@@ -9,8 +9,14 @@
     "declarationDir": "./dist",
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
     "jsx": "react",
+    "baseUrl": ".",
+    "paths": {
+      "@web-lib": ["node_modules/@lappis/cg-manager/web-lib"]
+    },
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "ui/**/*.ts", "ui/**/*.tsx"],
   "exclude": ["node_modules"]
 }
