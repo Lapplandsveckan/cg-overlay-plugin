@@ -288,7 +288,7 @@ const MediaTab: React.FC = () => {
                                 key={item.id}
                                 item={item}
                                 displayName={displayName}
-                                onInstantPlay={isLive ? () => socket.rawRequest('/api/plugin/lappis/video/play', 'ACTION', {clip: item.id, options: {playNow: true}}).catch(console.error) : undefined}
+                                onInstantPlay={isLive ? () => socket.rawRequest('/api/plugin/lappis/video/play', 'ACTION', {clip: item.id}).catch(console.error) : undefined}
                             />
                         ))}
                     </Box>

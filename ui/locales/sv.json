@@ -37,11 +37,12 @@
     },
     "playVideo": {
         "heading": "Spela video",
+        "headingInstant": "Direktuppspelning",
         "titleLabel": "Titel",
         "clearButton": "Rensa",
         "additionalOptions": "Ytterligare alternativ",
-        "playNowLabel": "Spela nu",
-        "playNowTitle": "Stoppa den aktuella videon och rensa kön innan detta klipp spelas.",
+        "playNowLabel": "Hoppa över kön",
+        "playNowTitle": "Rensa kön och spela detta klipp direkt istället för att lägga till det sist.",
         "skipIntroLabel": "Hoppa över intro",
         "skipIntroTitle": "Hoppa över klippets intro-animering.",
         "loopLabel": "Loop",
@@ -49,7 +50,7 @@
         "secondaryVideoLabel": "Sekundär video — spelas samtidigt på väggen.",
         "wallChip": "+ vägg",
         "label": "Spela video",
-        "playNowChip": "Spela nu",
+        "playNowChip": "Hoppa över kön",
         "noClip": "Inget klipp valt"
     },
     "text": {
