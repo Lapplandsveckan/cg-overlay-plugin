@@ -4,6 +4,23 @@ import {BarsOverlayEffect} from './effects/overlay/bars';
 import {InsamlingOverlayEffect, InsamlingOverlayEffectOptions} from './effects/overlay/insamling';
 import {VideoEffect} from './effects/misc/video';
 import LappisOverlayPlugin from './index';
+import {PresentationOverlayEffect} from './effects/overlay/presentation';
+
+// Re-export the canonical slide type from the store; OverlayManager
+// stays narrow and only cares about (presentationId, slideId).
+export type {Slide} from './presentations';
+
+export interface PresentationPlaybackState {
+    playing: boolean;
+    presentationId: string | null;
+    slideId: string | null;
+}
+
+export interface PresentationArmEvent {
+    presentationId: string;
+    rundownId: string | null;
+    ts: number;
+}
 
 export const CHANNELS = {
     MAIN: 1,
@@ -41,6 +58,13 @@ export default class OverlayManager {
 
     private videoTransitionState = 0;
 
+    private presentationEffect: PresentationOverlayEffect = null;
+    private presentationState: PresentationPlaybackState = {
+        playing: false,
+        presentationId: null,
+        slideId: null,
+    };
+
     public initialize() {
         this.swish = this.api.createEffect('overlay-swish', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {
             number: '123 607 27 97',
@@ -64,6 +88,11 @@ export default class OverlayManager {
         if (this.insamling) {
             this.insamling.dispose();
             this.insamling = null;
+        }
+
+        if (this.presentationEffect) {
+            this.presentationEffect.dispose();
+            this.presentationEffect = null;
         }
     }
 
@@ -239,5 +268,66 @@ export default class OverlayManager {
                     });
                 break;
         }
+    }
+
+    public getPresentationState(): PresentationPlaybackState {
+        return {...this.presentationState};
+    }
+
+    private broadcastPresentation() {
+        this.api.broadcast('slides', 'UPDATE', this.getPresentationState());
+    }
+
+    public broadcastArmEvent(presentationId: string, rundownId: string | null) {
+        const event: PresentationArmEvent = {presentationId, rundownId, ts: Date.now()};
+        this.api.broadcast('slides-arm', 'UPDATE', event);
+    }
+
+    public playSlide(
+        presentationId: string,
+        slideId: string,
+        render: {text: string, reference: string},
+    ) {
+        const wasPlaying = this.presentationState.playing;
+
+        this.presentationState = {playing: true, presentationId, slideId};
+
+        if (!this.presentationEffect) {
+            this.presentationEffect = this.api.createEffect(
+                'overlay-presentation',
+                getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION),
+                render,
+            ) as PresentationOverlayEffect;
+        } else {
+            this.presentationEffect.update(render);
+        }
+
+        if (!wasPlaying) {
+            this.presentationEffect
+                .activate()
+                ?.catch(err => {
+                    this.logger.error('Failed to activate presentation effect');
+                    this.logger.error(err);
+                });
+        }
+
+        this.broadcastPresentation();
+    }
+
+    public stopPlayback() {
+        if (!this.presentationState.playing) return;
+
+        this.presentationState = {playing: false, presentationId: null, slideId: null};
+
+        if (this.presentationEffect) {
+            this.presentationEffect
+                .deactivate()
+                ?.catch(err => {
+                    this.logger.error('Failed to deactivate presentation effect');
+                    this.logger.error(err);
+                });
+        }
+
+        this.broadcastPresentation();
     }
 }

@@ -84,6 +84,7 @@
         "add": "Add",
         "removePreset": "Remove preset",
         "mediaTab": "Media",
-        "namnskyltarTab": "Namnskyltar"
+        "namnskyltarTab": "Namnskyltar",
+        "slidesTab": "Slides"
     }
 }

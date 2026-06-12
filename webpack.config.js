@@ -1,4 +1,5 @@
 const path = require('path');
+const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
     entry: path.resolve(__dirname, 'src', 'index.ts'),
@@ -33,6 +34,16 @@ module.exports = {
         'i18next': 'i18n',
         'react-i18next': 'ReactI18next',
     },
+    plugins: [
+        new CopyPlugin({
+            patterns: [
+                {
+                    from: path.resolve(__dirname, 'src', 'bible', 'data'),
+                    to: path.resolve(__dirname, 'dist', 'bible', 'data'),
+                },
+            ],
+        }),
+    ],
     mode: 'production',
     target: 'node',
 };

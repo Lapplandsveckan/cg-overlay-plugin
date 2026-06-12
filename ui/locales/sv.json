@@ -84,6 +84,7 @@
         "add": "Lägg till",
         "removePreset": "Ta bort förinställning",
         "mediaTab": "Media",
-        "namnskyltarTab": "Namnskyltar"
+        "namnskyltarTab": "Namnskyltar",
+        "slidesTab": "Slides"
     }
 }

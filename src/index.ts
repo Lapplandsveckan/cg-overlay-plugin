@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import {CasparPlugin, RundownActionMetadata, UI_INJECTION_ZONE} from '@lappis/cg-manager';
 import {Templates} from './templates';
 import {SwishOverlayEffect, SwishOverlayEffectOptions} from './effects/overlay/swish';
@@ -6,14 +7,17 @@ import {NamnskyltOverlayEffect, NamnskyltOverlayEffectOptions} from './effects/o
 import {VideoTransitionOverlayEffect, VideoTransitionOverlayEffectOptions} from './effects/overlay/videotransition';
 import {BarsOverlayEffect, BarsOverlayEffectOptions} from './effects/overlay/bars';
 import {InsamlingOverlayEffect, InsamlingOverlayEffectOptions} from './effects/overlay/insamling';
+import {PresentationOverlayEffect, PresentationOverlayEffectOptions} from './effects/overlay/presentation';
 import {VideoEffect, VideoEffectOptions} from './effects/misc/video';
 import VideoManager from './video';
 import {RouteEffect, RouteEffectOptions} from './effects/misc/route';
 import OverlayManager, {CHANNELS, getGroup, GROUPS} from './overlay';
 import {RundownItem} from '@lappis/cg-manager/dist/types/rundown';
+import {getVerseSlides, VerseLookup} from './bible';
 import {AtemManager} from './atem';
 import {config} from './config';
 import {NamnskyltPresetStore} from './namnskylt-presets';
+import {PresentationStore} from './presentations';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -21,6 +25,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public overlay: OverlayManager;
     public atem: AtemManager;
     public namnskyltPresets: NamnskyltPresetStore;
+    public presentations: PresentationStore;
 
     private reconnectHandler: () => void;
 
@@ -51,6 +56,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.overlay = new OverlayManager(this);
         this.atem = new AtemManager();
         this.namnskyltPresets = new NamnskyltPresetStore(this);
+        this.presentations = new PresentationStore(this);
 
         if (config.atem.ip) {
             this.atem.connect(config.atem.ip);
@@ -135,6 +141,15 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
 
         this.api.registerEffect(
+            'overlay-presentation',
+            (group, options) => new PresentationOverlayEffect(
+                group,
+                options as PresentationOverlayEffectOptions,
+                this.templates.getFilePath('overlay/presentation'),
+            ),
+        );
+
+        this.api.registerEffect(
             'lappis-video',
             (group, options) => new VideoEffect(group, options as VideoEffectOptions),
         );
@@ -192,6 +207,24 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         registerRundownAction('insamling', async (rundown) => {
             this.overlay.toggleInsamling(rundown.data);
         });
+
+        registerRundownAction('slides', async (rundown) => {
+            const presentationId = rundown.data?.presentationId;
+            if (typeof presentationId !== 'string' || !presentationId) {
+                this.logger.warn('slides rundown action: no presentationId on entry');
+                return;
+            }
+
+            await this.presentations.ready;
+            if (!this.presentations.get(presentationId)) {
+                this.logger.warn(`slides rundown action: presentation ${presentationId} not found`);
+                return;
+            }
+
+            // Single broadcast — the UI opens the run modal in response.
+            // Playback itself is triggered by the UI when the operator clicks a slide.
+            this.overlay.broadcastArmEvent(presentationId, rundown.id);
+        });
     }
 
     public registerEffectGroups() {
@@ -205,6 +238,13 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     public registerRoutes() {
+        const bgPath = path.join(__dirname, 'templates', 'images', 'banner1.png');
+        let bgCache: string | null = null;
+        this.api.registerRoute('assets/background', async () => {
+            bgCache ??= fs.readFileSync(bgPath).toString('base64');
+            return {data: bgCache, mimeType: 'image/png'};
+        }, 'GET');
+
         this.api.registerRoute('bars', async req => {
             this.overlay.toggleBars();
         }, 'ACTION');
@@ -242,6 +282,85 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             await this.namnskyltPresets.ready;
             return this.namnskyltPresets.replace(req.data);
         }, 'UPDATE');
+
+        this.api.registerRoute('slides', async req => this.overlay.getPresentationState(), 'GET');
+
+        this.api.registerRoute('bible', async req => {
+            try {
+                const lookup = req.data as VerseLookup;
+                return getVerseSlides(lookup);
+            } catch (e: any) {
+                return {error: e?.message ?? 'Bible lookup failed'};
+            }
+        }, 'ACTION');
+
+        this.api.registerRoute('slides', async req => {
+            if (!req.data || typeof req.data !== 'object') return null;
+
+            const data = req.data as {action: string, presentationId?: string, slideId?: string};
+            switch (data.action) {
+                case 'play': {
+                    if (!data.presentationId || !data.slideId) return null;
+                    await this.presentations.ready;
+                    const presentation = this.presentations.get(data.presentationId);
+                    if (!presentation) return null;
+                    const slide = presentation.slides.find(s => s.id === data.slideId);
+                    if (!slide) return null;
+                    this.overlay.playSlide(
+                        presentation.id,
+                        slide.id,
+                        {text: slide.text, reference: slide.type === 'bible' ? slide.reference : ''},
+                    );
+                    break;
+                }
+                case 'stop':
+                    this.overlay.stopPlayback();
+                    break;
+            }
+
+            return this.overlay.getPresentationState();
+        }, 'ACTION');
+
+        // Presentations CRUD
+        this.api.registerRoute('presentations', async req => {
+            await this.presentations.ready;
+            return this.presentations.list();
+        }, 'GET');
+
+        this.api.registerRoute('presentations/:id', async req => {
+            await this.presentations.ready;
+            return this.presentations.get(req.params.id);
+        }, 'GET');
+
+        this.api.registerRoute('presentations', async req => {
+            await this.presentations.ready;
+            const input = (req.data && typeof req.data === 'object') ? req.data as any : {};
+            const created = await this.presentations.create(input);
+            this.api.broadcast('presentations', 'UPDATE', this.presentations.list());
+            return created;
+        }, 'ACTION');
+
+        this.api.registerRoute('presentations/:id', async req => {
+            await this.presentations.ready;
+            const patch = (req.data && typeof req.data === 'object') ? req.data as any : {};
+            const updated = await this.presentations.update(req.params.id, patch);
+            if (updated) this.api.broadcast('presentations', 'UPDATE', this.presentations.list());
+            return updated;
+        }, 'UPDATE');
+
+        this.api.registerRoute('presentations/:id', async req => {
+            await this.presentations.ready;
+            const ok = await this.presentations.remove(req.params.id);
+            if (ok) {
+                // If the deleted presentation is currently playing, stop the overlay.
+                const state = this.overlay.getPresentationState();
+                if (state.playing && state.presentationId === req.params.id) {
+                    this.overlay.stopPlayback();
+                }
+                this.api.broadcast('presentations', 'UPDATE', this.presentations.list());
+            }
+            return ok;
+        }, 'DELETE');
     }
 }
 
