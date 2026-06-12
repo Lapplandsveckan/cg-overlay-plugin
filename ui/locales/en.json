@@ -37,11 +37,12 @@
     },
     "playVideo": {
         "heading": "Play video",
+        "headingInstant": "Instant playback",
         "titleLabel": "Title",
         "clearButton": "Clear",
         "additionalOptions": "Additional options",
-        "playNowLabel": "Play now",
-        "playNowTitle": "Stop the current video and clear the queue before playing this clip.",
+        "playNowLabel": "Skip queue",
+        "playNowTitle": "Clear the queue and play this clip immediately instead of appending it.",
         "skipIntroLabel": "Skip intro",
         "skipIntroTitle": "Skip the lead-in animation of the clip.",
         "loopLabel": "Loop",
@@ -49,7 +50,7 @@
         "secondaryVideoLabel": "Secondary video — plays simultaneously on the wall.",
         "wallChip": "+ wall",
         "label": "Play video",
-        "playNowChip": "Play now",
+        "playNowChip": "Skip queue",
         "noClip": "No clip selected"
     },
     "text": {

@@ -14,6 +14,7 @@ interface RundownEntry {
 
 interface PlayVideoEditorProps {
     creating?: boolean;
+    instant?: boolean;
 
     entry: RundownEntry;
     updateEntry: (entry: RundownEntry) => void;
@@ -39,7 +40,7 @@ const VideoPicker: React.FC<VideoPickerProps> = ({clip, onChange, clearLabel}) =
     </Stack>
 );
 
-export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
+export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEntry, deleteEntry, creating, instant}) => {
     const {t} = useTranslation('cg-overlay-plugin');
     const socket = useSocket();
 
@@ -47,9 +48,9 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
     const [secondaryMedia, setSecondaryMedia] = useState<any | null>(null);
     const [title, setTitle] = useState(entry.title);
 
-    const [skipIntro, setSkipIntro] = useState(entry.data.options?.skipIntro ?? false);
-    const [loop, setLoop] = useState(entry.data.options?.loop ?? false);
-    const [playNow, setPlayNow] = useState(entry.data.options?.playNow ?? false);
+    const [skipIntro, setSkipIntro] = useState(entry.data?.options?.skipIntro ?? false);
+    const [loop, setLoop] = useState(entry.data?.options?.loop ?? false);
+    const [playNow, setPlayNow] = useState(entry.data?.options?.playNow ?? false);
 
     useEffect(() => {
         if (!entry.data?.clip) return;
@@ -77,14 +78,16 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
 
     return (
         <Stack spacing={2.5}>
-            <Typography variant="h6">{t('playVideo.heading')}</Typography>
+            <Typography variant="h6">{t(instant ? 'playVideo.headingInstant' : 'playVideo.heading')}</Typography>
 
-            <TextField
-                label={t('playVideo.titleLabel')}
-                value={title}
-                onChange={e => setTitle(e.target['value'])}
-                fullWidth
-            />
+            {!instant && (
+                <TextField
+                    label={t('playVideo.titleLabel')}
+                    value={title}
+                    onChange={e => setTitle(e.target['value'])}
+                    fullWidth
+                />
+            )}
 
             <VideoPicker clip={media} onChange={setMedia} clearLabel={t('playVideo.clearButton')} />
 
@@ -173,7 +176,7 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({entry, updateEn
                                 secondaryVideo: secondaryMedia?.id,
                             }
                         },
-                        title,
+                        ...(instant ? {} : {title}),
                     });
                 }}
             />
