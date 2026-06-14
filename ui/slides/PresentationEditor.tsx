@@ -40,7 +40,7 @@ import {
     fetchBibleSlides,
 } from './api';
 import { BOOKS, TRANSLATIONS } from './bible-api';
-import { pluginHomeUrl } from './urls';
+import { pluginHomeUrl, backTargetFromSearch } from './urls';
 
 interface Props {
     id: string;
@@ -53,6 +53,9 @@ function makeSlideId(): string {
 export const PresentationEditor: React.FC<Props> = ({ id }) => {
     const conn = useSocket();
     const remote = usePresentation(id);
+    const backFrom = backTargetFromSearch(window.location.search);
+    const backHref = backFrom ?? pluginHomeUrl();
+    const backLabel = backFrom ? '← Back' : '← Home';
     const backgroundUrl = useBackgroundImage();
 
     const [renameOpen, setRenameOpen] = useState(false);
@@ -82,7 +85,7 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                     <Typography variant="body1">
                         Presentation not found.
                     </Typography>
-                    <Link href={pluginHomeUrl()}>← Back to home</Link>
+                    <Link href={backHref}>{backLabel}</Link>
                 </Stack>
             </CenteredMessage>
         );
@@ -134,12 +137,12 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                 <Stack direction="row" spacing={2} alignItems="center">
                     <Button
                         component="a"
-                        href={pluginHomeUrl()}
+                        href={backHref}
                         variant="outlined"
                         size="small"
                         sx={{ textTransform: 'none', fontWeight: 600 }}
                     >
-                        ← Home
+                        {backLabel}
                     </Button>
                     <Box sx={{ flexGrow: 1 }} />
                     <Button
