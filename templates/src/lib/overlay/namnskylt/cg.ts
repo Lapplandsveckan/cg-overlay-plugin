@@ -1,4 +1,4 @@
-import {offCGEvent, onCGEvent} from '../../cg';
+import { offCGEvent, onCGEvent } from '../../cg';
 
 // state
 // 0: hidden
@@ -7,14 +7,13 @@ import {offCGEvent, onCGEvent} from '../../cg';
 
 // do not play if state is 2 ???
 
-export function register(setState: (state: number) => void, setName: (name: string) => void) {
-    const states = [
-        () => setState(0),
-        () => setState(1),
-        () => setState(2),
-    ];
+export function register(
+    setState: (state: number) => void,
+    setName: (name: string) => void,
+) {
+    const states = [() => setState(0), () => setState(1), () => setState(2)];
 
-    const name = (params) => params.name && setName(params.name);
+    const name = params => params.name && setName(params.name);
     onCGEvent('update', name);
 
     onCGEvent('stop', states[0]);
@@ -29,6 +28,5 @@ export function register(setState: (state: number) => void, setName: (name: stri
         offCGEvent('next', states[2]);
     };
 }
-
 
 export {};

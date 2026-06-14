@@ -1,7 +1,7 @@
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
 
 // @ts-ignore
-import {useSocket} from '@web-lib';
+import { useSocket } from '@web-lib';
 
 export interface BibleSlide {
     type: 'bible';
@@ -60,10 +60,13 @@ export function useBackgroundImage(): string | null {
     const conn = useSocket();
     const [url, setUrl] = useState<string | null>(null);
     useEffect(() => {
-        backgroundCache ??= conn.rawRequest(`${ROOT}/assets/background`, 'GET', {})
+        backgroundCache ??= conn
+            .rawRequest(`${ROOT}/assets/background`, 'GET', {})
             .then((res: any) => {
-                const {data, mimeType} = res?.data ?? {};
-                return data && mimeType ? `data:${mimeType};base64,${data}` : null;
+                const { data, mimeType } = res?.data ?? {};
+                return data && mimeType
+                    ? `data:${mimeType};base64,${data}`
+                    : null;
             })
             .catch((e: any) => {
                 console.error(e);
@@ -78,17 +81,26 @@ export function useBackgroundImage(): string | null {
 // ---------- CRUD ----------
 
 export function listPresentations(conn: any): Promise<Presentation[]> {
-    return conn.rawRequest(`${ROOT}/presentations`, 'GET', {})
-        .then((res: any) => Array.isArray(res?.data) ? res.data : []);
+    return conn
+        .rawRequest(`${ROOT}/presentations`, 'GET', {})
+        .then((res: any) => (Array.isArray(res?.data) ? res.data : []));
 }
 
-export function getPresentation(conn: any, id: string): Promise<Presentation | null> {
-    return conn.rawRequest(`${ROOT}/presentations/${id}`, 'GET', {})
+export function getPresentation(
+    conn: any,
+    id: string,
+): Promise<Presentation | null> {
+    return conn
+        .rawRequest(`${ROOT}/presentations/${id}`, 'GET', {})
         .then((res: any) => res?.data ?? null);
 }
 
-export function createPresentation(conn: any, input: Partial<Pick<Presentation, 'title' | 'slides'>>): Promise<Presentation> {
-    return conn.rawRequest(`${ROOT}/presentations`, 'ACTION', input)
+export function createPresentation(
+    conn: any,
+    input: Partial<Pick<Presentation, 'title' | 'slides'>>,
+): Promise<Presentation> {
+    return conn
+        .rawRequest(`${ROOT}/presentations`, 'ACTION', input)
         .then((res: any) => res?.data);
 }
 
@@ -97,24 +109,43 @@ export function updatePresentation(
     id: string,
     patch: Partial<Pick<Presentation, 'title' | 'slides'>>,
 ): Promise<Presentation | null> {
-    return conn.rawRequest(`${ROOT}/presentations/${id}`, 'UPDATE', patch)
+    return conn
+        .rawRequest(`${ROOT}/presentations/${id}`, 'UPDATE', patch)
         .then((res: any) => res?.data ?? null);
 }
 
 export function deletePresentation(conn: any, id: string): Promise<boolean> {
-    return conn.rawRequest(`${ROOT}/presentations/${id}`, 'DELETE', null)
+    return conn
+        .rawRequest(`${ROOT}/presentations/${id}`, 'DELETE', null)
         .then((res: any) => !!res?.data);
 }
 
 // ---------- Playback ----------
 
 export function getPlaybackState(conn: any): Promise<PlaybackState> {
-    return conn.rawRequest(`${ROOT}/slides`, 'GET', {})
-        .then((res: any) => res?.data ?? {playing: false, presentationId: null, slideId: null});
+    return conn
+        .rawRequest(`${ROOT}/slides`, 'GET', {})
+        .then(
+            (res: any) =>
+                res?.data ?? {
+                    playing: false,
+                    presentationId: null,
+                    slideId: null,
+                },
+        );
 }
 
-export function playSlide(conn: any, presentationId: string, slideId: string): Promise<PlaybackState | null> {
-    return conn.rawRequest(`${ROOT}/slides`, 'ACTION', {action: 'play', presentationId, slideId})
+export function playSlide(
+    conn: any,
+    presentationId: string,
+    slideId: string,
+): Promise<PlaybackState | null> {
+    return conn
+        .rawRequest(`${ROOT}/slides`, 'ACTION', {
+            action: 'play',
+            presentationId,
+            slideId,
+        })
         .then((res: any) => res?.data ?? null);
 }
 
@@ -134,8 +165,12 @@ export interface FetchedVerse {
     verse: number;
 }
 
-export function fetchBibleSlides(conn: any, lookup: BibleLookup): Promise<FetchedVerse[]> {
-    return conn.rawRequest(`${ROOT}/bible`, 'ACTION', lookup)
+export function fetchBibleSlides(
+    conn: any,
+    lookup: BibleLookup,
+): Promise<FetchedVerse[]> {
+    return conn
+        .rawRequest(`${ROOT}/bible`, 'ACTION', lookup)
         .then((res: any) => {
             if (res?.data?.error) throw new Error(res.data.error);
             return Array.isArray(res?.data) ? res.data : [];
@@ -143,15 +178,21 @@ export function fetchBibleSlides(conn: any, lookup: BibleLookup): Promise<Fetche
 }
 
 export function stopPlayback(conn: any): Promise<PlaybackState | null> {
-    return conn.rawRequest(`${ROOT}/slides`, 'ACTION', {action: 'stop'})
+    return conn
+        .rawRequest(`${ROOT}/slides`, 'ACTION', { action: 'stop' })
         .then((res: any) => res?.data ?? null);
 }
 
 // ---------- Hooks ----------
 
-export function usePresentations(): {presentations: Presentation[] | null, refresh: () => void} {
+export function usePresentations(): {
+    presentations: Presentation[] | null;
+    refresh: () => void;
+} {
     const conn = useSocket();
-    const [presentations, setPresentations] = useState<Presentation[] | null>(null);
+    const [presentations, setPresentations] = useState<Presentation[] | null>(
+        null,
+    );
 
     const refresh = () => {
         listPresentations(conn).then(setPresentations).catch(console.error);
@@ -171,13 +212,17 @@ export function usePresentations(): {presentations: Presentation[] | null, refre
         return () => conn.routes.unregister(listener);
     }, []);
 
-    return {presentations, refresh};
+    return { presentations, refresh };
 }
 
-export function usePresentation(id: string | null): Presentation | null | undefined {
+export function usePresentation(
+    id: string | null,
+): Presentation | null | undefined {
     // undefined = loading, null = not found
     const conn = useSocket();
-    const [presentation, setPresentation] = useState<Presentation | null | undefined>(undefined);
+    const [presentation, setPresentation] = useState<
+        Presentation | null | undefined
+    >(undefined);
 
     useEffect(() => {
         if (!id) {
@@ -185,17 +230,21 @@ export function usePresentation(id: string | null): Presentation | null | undefi
             return;
         }
         setPresentation(undefined);
-        getPresentation(conn, id).then(setPresentation).catch(err => {
-            console.error(err);
-            setPresentation(null);
-        });
+        getPresentation(conn, id)
+            .then(setPresentation)
+            .catch(err => {
+                console.error(err);
+                setPresentation(null);
+            });
 
         // Refresh on broadcast of any presentation change
         const listener = {
             path: 'plugin/lappis/presentations',
             method: 'UPDATE',
             handler: () => {
-                getPresentation(conn, id).then(setPresentation).catch(console.error);
+                getPresentation(conn, id)
+                    .then(setPresentation)
+                    .catch(console.error);
             },
         };
         conn.routes.register(listener);

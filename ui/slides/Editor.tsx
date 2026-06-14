@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     Alert,
     Box,
@@ -11,11 +11,11 @@ import {
 } from '@mui/material';
 
 // @ts-ignore
-import {RundownEditorActionBar} from '@web-lib';
-import {usePresentations, createPresentation, Presentation} from './api';
-import {slidesEditorUrl} from './urls';
+import { RundownEditorActionBar } from '@web-lib';
+import { usePresentations, createPresentation, Presentation } from './api';
+import { slidesEditorUrl } from './urls';
 // @ts-ignore
-import {useSocket} from '@web-lib';
+import { useSocket } from '@web-lib';
 
 interface RundownEntry {
     id: string;
@@ -31,11 +31,18 @@ interface SlidesEditorProps {
     deleteEntry: (entry: RundownEntry) => void;
 }
 
-export const SlidesEditor: React.FC<SlidesEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
+export const SlidesEditor: React.FC<SlidesEditorProps> = ({
+    entry,
+    updateEntry,
+    deleteEntry,
+    creating,
+}) => {
     const conn = useSocket();
-    const {presentations} = usePresentations();
+    const { presentations } = usePresentations();
 
-    const [presentationId, setPresentationId] = useState<string>(entry?.data?.presentationId ?? '');
+    const [presentationId, setPresentationId] = useState<string>(
+        entry?.data?.presentationId ?? '',
+    );
     const [title, setTitle] = useState<string>(entry?.title ?? '');
     const [titleTouched, setTitleTouched] = useState<boolean>(!!entry?.title);
     const [creatingNew, setCreatingNew] = useState(false);
@@ -57,7 +64,10 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({entry, updateEntry, d
         setCreatingNew(true);
         setError(null);
         try {
-            const created = await createPresentation(conn, {title: 'Untitled', slides: []});
+            const created = await createPresentation(conn, {
+                title: 'Untitled',
+                slides: [],
+            });
             handleSelect(created.id);
             openPresentationEditor(created.id);
         } catch (err: any) {
@@ -85,7 +95,11 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({entry, updateEntry, d
                 helperText="Shown in the rundown."
             />
 
-            {loading && <Typography variant="body2" color="text.secondary">Loading presentations…</Typography>}
+            {loading && (
+                <Typography variant="body2" color="text.secondary">
+                    Loading presentations…
+                </Typography>
+            )}
 
             {!loading && (
                 <TextField
@@ -93,18 +107,31 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({entry, updateEntry, d
                     label="Presentation"
                     value={presentationId}
                     onChange={e => handleSelect(e.target.value)}
-                    helperText={empty
-                        ? 'No presentations yet. Create one to get started.'
-                        : selected
-                            ? `${selected.slides.length} slide${selected.slides.length === 1 ? '' : 's'}`
-                            : 'Select which presentation this entry plays.'
+                    helperText={
+                        empty
+                            ? 'No presentations yet. Create one to get started.'
+                            : selected
+                              ? `${selected.slides.length} slide${selected.slides.length === 1 ? '' : 's'}`
+                              : 'Select which presentation this entry plays.'
                     }
                     fullWidth
                 >
                     {(presentations ?? []).map(p => (
                         <MenuItem key={p.id} value={p.id}>
-                            <Stack direction="row" spacing={1} alignItems="center" sx={{width: '100%'}}>
-                                <Box sx={{flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                            <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                                sx={{ width: '100%' }}
+                            >
+                                <Box
+                                    sx={{
+                                        flexGrow: 1,
+                                        minWidth: 0,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                    }}
+                                >
                                     {p.title}
                                 </Box>
                                 <Chip
@@ -146,7 +173,7 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({entry, updateEntry, d
                 onSave={() => {
                     updateEntry({
                         ...entry,
-                        data: {presentationId},
+                        data: { presentationId },
                         title,
                     });
                 }}

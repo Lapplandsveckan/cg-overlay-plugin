@@ -1,5 +1,5 @@
-import {config} from './config';
-import {Atem} from 'atem-connection';
+import { config } from './config';
+import { Atem } from 'atem-connection';
 
 export class AtemManager {
     private connection: Atem = null;
@@ -10,8 +10,8 @@ export class AtemManager {
         this.connection.on('info', console.log);
         this.connection.on('error', console.error);
 
-        this.connection.on('connected', () => this.connected = true);
-        this.connection.on('disconnected', () => this.connected = false);
+        this.connection.on('connected', () => (this.connected = true));
+        this.connection.on('disconnected', () => (this.connected = false));
 
         this.connection.connect(ip);
     }
@@ -24,7 +24,8 @@ export class AtemManager {
 
     public setVideoProgram() {
         if (!this.connected) return console.error('ATEM not connected');
-        if (config.atem.videoInput < 0) return console.error('No video input selected');
+        if (config.atem.videoInput < 0)
+            return console.error('No video input selected');
 
         const { programInput } = this.state;
 
@@ -34,7 +35,7 @@ export class AtemManager {
 
     public returnToPreview() {
         if (!this.connected) return console.error('ATEM not connected');
-        const {programInput, previewInput} = this.state;
+        const { programInput, previewInput } = this.state;
         if (programInput !== config.atem.videoInput) return;
 
         this.connection.changePreviewInput(programInput);

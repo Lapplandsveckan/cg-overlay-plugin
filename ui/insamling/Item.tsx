@@ -1,6 +1,6 @@
 import React from 'react';
-import {Box, LinearProgress, Stack, Typography} from '@mui/material';
-import {useTranslation} from '../i18n';
+import { Box, LinearProgress, Stack, Typography } from '@mui/material';
+import { useTranslation } from '../i18n';
 
 interface RundownEntry {
     id: string;
@@ -19,15 +19,21 @@ function formatKr(value: number) {
     return `${Math.round(value).toLocaleString('sv-SE')} kr`;
 }
 
-export const InsamlingRundownItem: React.FC<InsamlingRundownItemProps> = ({entry}) => {
-    const {t} = useTranslation('cg-overlay-plugin');
+export const InsamlingRundownItem: React.FC<InsamlingRundownItemProps> = ({
+    entry,
+}) => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const now = Number(entry.data?.now) || 0;
     const goal = Number(entry.data?.goal) || 0;
     const pct = goal > 0 ? Math.min(100, (now / goal) * 100) : 0;
 
     return (
         <Stack spacing={0.5}>
-            <Stack direction="row" justifyContent="space-between" alignItems="baseline">
+            <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="baseline"
+            >
                 <Typography variant="body1">{t('insamling.label')}</Typography>
                 <Typography variant="caption" color="text.secondary">
                     {formatKr(now)} / {formatKr(goal)}
@@ -35,7 +41,11 @@ export const InsamlingRundownItem: React.FC<InsamlingRundownItemProps> = ({entry
             </Stack>
             {goal > 0 && (
                 <Box>
-                    <LinearProgress variant="determinate" value={pct} sx={{height: 4, borderRadius: 2}} />
+                    <LinearProgress
+                        variant="determinate"
+                        value={pct}
+                        sx={{ height: 4, borderRadius: 2 }}
+                    />
                 </Box>
             )}
         </Stack>

@@ -35,8 +35,7 @@ export class MotionEffect extends Effect {
 
         const cmds: Command[] = [];
         if (!this.color) {
-            const mixerCmd = MixerCommand
-                .create()
+            const mixerCmd = MixerCommand.create()
                 .keyer(1)
                 .brightness(4)
                 .saturation(0)
@@ -45,8 +44,7 @@ export class MotionEffect extends Effect {
 
             cmds.push(mixerCmd);
         } else if (!color) {
-            const mixerCmd = MixerCommand
-                .create()
+            const mixerCmd = MixerCommand.create()
                 .keyer(0)
                 .brightness(1)
                 .saturation(1)
@@ -56,12 +54,8 @@ export class MotionEffect extends Effect {
         }
 
         if (color)
-            cmds.push(PlayCommand
-                .color(color)
-                .allocate(this.colorLayer));
-        else
-            cmds.push(
-                new ClearCommand(this.colorLayer));
+            cmds.push(PlayCommand.color(color).allocate(this.colorLayer));
+        else cmds.push(new ClearCommand(this.colorLayer));
 
         this.color = color;
 
@@ -81,36 +75,33 @@ export class MotionEffect extends Effect {
         if (!super.activate()) return;
 
         const cmds = [
-            PlayCommand
-                .video(this.options.clip, { loop: true })
-                .allocate(this.videoLayer),
+            PlayCommand.video(this.options.clip, { loop: true }).allocate(
+                this.videoLayer,
+            ),
         ];
 
         if (this.color) {
-            const mixerCmd = MixerCommand
-                .create()
+            const mixerCmd = MixerCommand.create()
                 .keyer(1)
                 .brightness(4)
                 .saturation(0)
                 .contrast(2)
                 .allocate(this.videoLayer);
 
-            const colorCmd = PlayCommand
-                .color(this.color)
-                .allocate(this.colorLayer);
+            const colorCmd = PlayCommand.color(this.color).allocate(
+                this.colorLayer,
+            );
 
             cmds.push(mixerCmd);
             cmds.push(colorCmd);
         }
 
         if (this.transitionDuration > 0) {
-            const videoMixCmd = MixerCommand
-                .create()
+            const videoMixCmd = MixerCommand.create()
                 .opacity(0)
                 .allocate(this.videoLayer);
 
-            const colorMixCmd = MixerCommand
-                .create()
+            const colorMixCmd = MixerCommand.create()
                 .opacity(0)
                 .allocate(this.colorLayer);
 
@@ -118,13 +109,11 @@ export class MotionEffect extends Effect {
             cmds.push(colorMixCmd);
 
             setTimeout(() => {
-                const videoMixCmd = MixerCommand
-                    .create()
+                const videoMixCmd = MixerCommand.create()
                     .opacity(1, this.transitionDuration * this.FPS)
                     .allocate(this.videoLayer);
 
-                const colorMixCmd = MixerCommand
-                    .create()
+                const colorMixCmd = MixerCommand.create()
                     .opacity(1, this.transitionDuration * this.FPS)
                     .allocate(this.colorLayer);
 
@@ -149,13 +138,11 @@ export class MotionEffect extends Effect {
         if (!super.deactivate()) return;
         if (this.transitionDuration <= 0) return this._deactivate();
 
-        const videoMixCmd = MixerCommand
-            .create()
+        const videoMixCmd = MixerCommand.create()
             .opacity(0, this.transitionDuration * this.FPS)
             .allocate(this.videoLayer);
 
-        const colorMixCmd = MixerCommand
-            .create()
+        const colorMixCmd = MixerCommand.create()
             .opacity(0, this.transitionDuration * this.FPS)
             .allocate(this.colorLayer);
 
@@ -166,16 +153,18 @@ export class MotionEffect extends Effect {
     }
 
     private _deactivate() {
-        const cmd = new CommandGroup([new ClearCommand(this.videoLayer), new ClearCommand(this.colorLayer)]);
+        const cmd = new CommandGroup([
+            new ClearCommand(this.videoLayer),
+            new ClearCommand(this.colorLayer),
+        ]);
         const result = this.executor.execute(cmd);
-        if (this.options.disposeOnStop) result.then(() => !this.active && this.dispose());
+        if (this.options.disposeOnStop)
+            result.then(() => !this.active && this.dispose());
 
         return result;
     }
 
     public getMetadata(): {} {
-        return {
-
-        };
+        return {};
     }
 }

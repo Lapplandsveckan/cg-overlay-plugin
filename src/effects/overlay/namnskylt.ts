@@ -1,4 +1,4 @@
-import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
+import { CgCommand, Effect, EffectGroup } from '@lappis/cg-manager';
 
 export interface NamnskyltOverlayEffectOptions {
     name: string;
@@ -10,13 +10,20 @@ export interface NamnskyltOverlayEffectOptions {
 export class NamnskyltOverlayEffect extends Effect {
     private options: NamnskyltOverlayEffectOptions;
 
-    public constructor(group: EffectGroup, options: NamnskyltOverlayEffectOptions, template: string) {
+    public constructor(
+        group: EffectGroup,
+        options: NamnskyltOverlayEffectOptions,
+        template: string,
+    ) {
         super(group);
 
-        this.options = Object.assign({
-            totalDuration: 10000,
-            largeDuration: 3000,
-        }, options);
+        this.options = Object.assign(
+            {
+                totalDuration: 10000,
+                largeDuration: 3000,
+            },
+            options,
+        );
         this.allocateLayers(1);
         this.executor.executeAllocations();
 
@@ -38,22 +45,17 @@ export class NamnskyltOverlayEffect extends Effect {
             if (!this.active) return;
             this.minimize();
 
-            setTimeout(() => this.deactivate(), this.options.totalDuration - this.options.largeDuration);
+            setTimeout(
+                () => this.deactivate(),
+                this.options.totalDuration - this.options.largeDuration,
+            );
         }, this.options.largeDuration);
 
-        return this.executor.execute(
-            CgCommand
-                .play()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.play().allocate(this.layer));
     }
 
     private minimize() {
-        return this.executor.execute(
-            CgCommand
-                .next()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.next().allocate(this.layer));
     }
 
     public deactivate() {
@@ -64,11 +66,7 @@ export class NamnskyltOverlayEffect extends Effect {
             this.dispose();
         }, 1000);
 
-        return this.executor.execute(
-            CgCommand
-                .stop()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 
     public getMetadata(): {} {

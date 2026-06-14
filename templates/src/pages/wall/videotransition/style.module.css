@@ -24,7 +24,7 @@
 
 .container .banner-logo {
     position: absolute;
-    color: #FFF;
+    color: #fff;
 
     width: 50%;
 
@@ -32,5 +32,7 @@
     transform: translateY(-50%);
 }
 
-.banner-logo-1 {}
-.banner-logo-2 {}
+.banner-logo-1 {
+}
+.banner-logo-2 {
+}

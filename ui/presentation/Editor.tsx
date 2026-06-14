@@ -1,8 +1,15 @@
-import React, {useState} from 'react';
-import {Checkbox, FormControlLabel, FormHelperText, Stack, TextField, Typography} from '@mui/material';
+import React, { useState } from 'react';
+import {
+    Checkbox,
+    FormControlLabel,
+    FormHelperText,
+    Stack,
+    TextField,
+    Typography,
+} from '@mui/material';
 
 // @ts-ignore
-import {RundownEditorActionBar} from '@web-lib';
+import { RundownEditorActionBar } from '@web-lib';
 
 interface RundownEntry {
     id: string;
@@ -20,7 +27,12 @@ interface PresentationEditorProps {
     deleteEntry: (entry: RundownEntry) => void;
 }
 
-export const PresentationEditor: React.FC<PresentationEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
+export const PresentationEditor: React.FC<PresentationEditorProps> = ({
+    entry,
+    updateEntry,
+    deleteEntry,
+    creating,
+}) => {
     const [title, setTitle] = useState(entry?.title ?? '');
     const [atem, setAtem] = useState(entry?.data.atem ?? false);
 
@@ -45,14 +57,14 @@ export const PresentationEditor: React.FC<PresentationEditorProps> = ({entry, up
                         />
                     }
                 />
-                <FormHelperText sx={{marginLeft: 4}}>
-                    Cut the ATEM to the presentation source when this entry plays.
+                <FormHelperText sx={{ marginLeft: 4 }}>
+                    Cut the ATEM to the presentation source when this entry
+                    plays.
                 </FormHelperText>
             </Stack>
 
             <RundownEditorActionBar
                 exists={!creating}
-
                 onDelete={() => deleteEntry(entry)}
                 onSave={() => {
                     updateEntry({

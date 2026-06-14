@@ -1,4 +1,4 @@
-import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
+import { CgCommand, Effect, EffectGroup } from '@lappis/cg-manager';
 
 export interface InsamlingOverlayEffectOptions {
     goal: number;
@@ -8,7 +8,11 @@ export interface InsamlingOverlayEffectOptions {
 export class InsamlingOverlayEffect extends Effect {
     private options: InsamlingOverlayEffectOptions;
 
-    public constructor(group: EffectGroup, options: InsamlingOverlayEffectOptions, template: string) {
+    public constructor(
+        group: EffectGroup,
+        options: InsamlingOverlayEffectOptions,
+        template: string,
+    ) {
         super(group);
 
         this.options = options;
@@ -23,11 +27,7 @@ export class InsamlingOverlayEffect extends Effect {
 
     public update(options: InsamlingOverlayEffectOptions) {
         this.options = options;
-        this.executor.execute(
-            CgCommand
-                .update(options)
-                .allocate(this.layer),
-        );
+        this.executor.execute(CgCommand.update(options).allocate(this.layer));
     }
 
     public get layer() {
@@ -37,26 +37,16 @@ export class InsamlingOverlayEffect extends Effect {
     public activate() {
         if (!super.activate()) return;
 
-        return this.executor.execute(
-            CgCommand
-                .play()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.play().allocate(this.layer));
     }
 
     public deactivate() {
         if (!super.deactivate()) return;
 
-        return this.executor.execute(
-            CgCommand
-                .stop()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 
     public getMetadata(): {} {
-        return {
-
-        };
+        return {};
     }
 }

@@ -1,8 +1,8 @@
-import React, {useState} from 'react';
-import {Stack, TextField, Typography} from '@mui/material';
+import React, { useState } from 'react';
+import { Stack, TextField, Typography } from '@mui/material';
 
-import {RundownEditorActionBar} from '@web-lib';
-import {useTranslation} from '../i18n';
+import { RundownEditorActionBar } from '@web-lib';
+import { useTranslation } from '../i18n';
 
 interface RundownEntry {
     id: string;
@@ -20,8 +20,13 @@ interface BarsEditorProps {
     deleteEntry: (entry: RundownEntry) => void;
 }
 
-export const BarsEditor: React.FC<BarsEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
-    const {t} = useTranslation('cg-overlay-plugin');
+export const BarsEditor: React.FC<BarsEditorProps> = ({
+    entry,
+    updateEntry,
+    deleteEntry,
+    creating,
+}) => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const [title, setTitle] = useState(entry?.title ?? '');
 
     return (
@@ -40,7 +45,6 @@ export const BarsEditor: React.FC<BarsEditorProps> = ({entry, updateEntry, delet
 
             <RundownEditorActionBar
                 exists={!creating}
-
                 onDelete={() => deleteEntry(entry)}
                 onSave={() => {
                     updateEntry({

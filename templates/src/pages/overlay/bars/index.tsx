@@ -1,16 +1,15 @@
 import styles from './style.module.css';
-import {useEffect, useState} from 'react';
-import {register} from '../../../lib/overlay/bars/cg';
-import {handleState} from '../../../lib/overlay/bars/animation';
-import {getStylesProxy} from '../../../lib/animation';
-import {CG} from '../../../components/CG';
+import { useEffect, useState } from 'react';
+import { register } from '../../../lib/overlay/bars/cg';
+import { handleState } from '../../../lib/overlay/bars/animation';
+import { getStylesProxy } from '../../../lib/animation';
+import { CG } from '../../../components/CG';
 
 export const BarsAnimation: React.FC<{ state: number }> = ({ state }) => {
     return (
         <CG
             state={state}
             handle={handleState}
-
             labels={['start', 'end']}
             styles={getStylesProxy(styles)}
         >

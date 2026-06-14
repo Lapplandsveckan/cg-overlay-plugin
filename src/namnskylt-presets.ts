@@ -2,7 +2,12 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import LappisOverlayPlugin from './index';
 
-const PRESETS_PATH = path.join(process.cwd(), 'plugin-data', 'lappis', 'namnskylt-presets.json');
+const PRESETS_PATH = path.join(
+    process.cwd(),
+    'plugin-data',
+    'lappis',
+    'namnskylt-presets.json',
+);
 
 export class NamnskyltPresetStore {
     private plugin: LappisOverlayPlugin;
@@ -21,7 +26,9 @@ export class NamnskyltPresetStore {
             this.presets = sanitize(parsed);
         } catch (err: any) {
             if (err?.code !== 'ENOENT') {
-                this.plugin.getLogger().warn(`Failed to read namnskylt presets: ${err.message}`);
+                this.plugin
+                    .getLogger()
+                    .warn(`Failed to read namnskylt presets: ${err.message}`);
             }
             this.presets = [];
         }
@@ -34,8 +41,12 @@ export class NamnskyltPresetStore {
     public async replace(next: unknown): Promise<string[]> {
         this.presets = sanitize(next);
 
-        await fs.mkdir(path.dirname(PRESETS_PATH), {recursive: true});
-        await fs.writeFile(PRESETS_PATH, JSON.stringify(this.presets, null, 2), 'utf8');
+        await fs.mkdir(path.dirname(PRESETS_PATH), { recursive: true });
+        await fs.writeFile(
+            PRESETS_PATH,
+            JSON.stringify(this.presets, null, 2),
+            'utf8',
+        );
 
         return this.get();
     }

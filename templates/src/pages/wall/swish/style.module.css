@@ -54,7 +54,7 @@
     width: 20vw;
 
     opacity: 0.6;
-    color: #FFF;
+    color: #fff;
 
     text-anchor: middle;
     alignment-baseline: middle;
@@ -75,7 +75,7 @@
     font-size: 200pt;
 
     width: 100vw;
-    color: #FFF;
+    color: #fff;
 
     text-anchor: middle;
     alignment-baseline: middle;
@@ -104,7 +104,7 @@
     font-size: 120pt;
 
     opacity: 0.6;
-    color: #FFF;
+    color: #fff;
 }
 
 /* Animation of the sliding swish texts */

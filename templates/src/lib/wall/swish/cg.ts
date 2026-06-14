@@ -1,4 +1,4 @@
-import {offCGEvent, onCGEvent} from '../../cg';
+import { offCGEvent, onCGEvent } from '../../cg';
 
 // state
 // 0: hidden
@@ -9,12 +9,9 @@ export function register(
     setNumber: (number: string) => void,
     setLabels: (labels: string) => void,
 ) {
-    const states = [
-        () => setState(0),
-        () => setState(1),
-    ];
+    const states = [() => setState(0), () => setState(1)];
 
-    const number = (params) => {
+    const number = params => {
         if (params.number) setNumber(params.number?.replace(/,/g, '\n'));
         setLabels(params.labels?.replace(/,/g, '\n') ?? '');
     };
@@ -31,6 +28,5 @@ export function register(
         offCGEvent('play', states[1]);
     };
 }
-
 
 export {};

@@ -1,23 +1,23 @@
-import React, {useState} from 'react';
-import {
-    Alert,
-    Box,
-    Chip,
-    Stack,
-    Typography,
-} from '@mui/material';
+import React, { useState } from 'react';
+import { Alert, Box, Chip, Stack, Typography } from '@mui/material';
 
 // @ts-ignore
-import {useSocket} from '@web-lib';
+import { useSocket } from '@web-lib';
 
 import SlidePreview from './SlidePreview';
-import {Presentation, createPresentation, usePresentations, useBackgroundImage, slideRef} from './api';
-import {slidesEditorUrl} from './urls';
+import {
+    Presentation,
+    createPresentation,
+    usePresentations,
+    useBackgroundImage,
+    slideRef,
+} from './api';
+import { slidesEditorUrl } from './urls';
 import NameDialog from './NameDialog';
 
 export const PresentationIndex: React.FC = () => {
     const conn = useSocket();
-    const {presentations} = usePresentations();
+    const { presentations } = usePresentations();
     const backgroundUrl = useBackgroundImage();
     const [creating, setCreating] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
@@ -28,7 +28,7 @@ export const PresentationIndex: React.FC = () => {
         setCreating(true);
         setError(null);
         try {
-            const p = await createPresentation(conn, {title, slides: []});
+            const p = await createPresentation(conn, { title, slides: [] });
             window.location.assign(slidesEditorUrl(p.id));
         } catch (err: any) {
             console.error(err);
@@ -39,12 +39,20 @@ export const PresentationIndex: React.FC = () => {
 
     return (
         <Stack spacing={3}>
-            <Typography variant="h5" fontWeight={600}>Presentations</Typography>
+            <Typography variant="h5" fontWeight={600}>
+                Presentations
+            </Typography>
 
-            {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
+            {error && (
+                <Alert severity="error" onClose={() => setError(null)}>
+                    {error}
+                </Alert>
+            )}
 
             {presentations === null ? (
-                <Typography variant="body2" color="text.secondary">Loading…</Typography>
+                <Typography variant="body2" color="text.secondary">
+                    Loading…
+                </Typography>
             ) : (
                 <Box
                     sx={{
@@ -57,9 +65,16 @@ export const PresentationIndex: React.FC = () => {
                         gap: 2.5,
                     }}
                 >
-                    <CreateTile onClick={() => setCreateOpen(true)} disabled={creating} />
+                    <CreateTile
+                        onClick={() => setCreateOpen(true)}
+                        disabled={creating}
+                    />
                     {presentations.map(p => (
-                        <PresentationTile key={p.id} presentation={p} backgroundUrl={backgroundUrl} />
+                        <PresentationTile
+                            key={p.id}
+                            presentation={p}
+                            backgroundUrl={backgroundUrl}
+                        />
                     ))}
                 </Box>
             )}
@@ -76,7 +91,10 @@ export const PresentationIndex: React.FC = () => {
     );
 };
 
-const CreateTile: React.FC<{onClick: () => void, disabled: boolean}> = ({onClick, disabled}) => (
+const CreateTile: React.FC<{ onClick: () => void; disabled: boolean }> = ({
+    onClick,
+    disabled,
+}) => (
     <Box
         onClick={disabled ? undefined : onClick}
         role="button"
@@ -102,19 +120,31 @@ const CreateTile: React.FC<{onClick: () => void, disabled: boolean}> = ({onClick
             gap: 1,
             color: 'text.secondary',
             transition: 'border-color 120ms, background-color 120ms',
-            '&:hover, &:focus-visible': disabled ? {} : {
-                borderColor: '#4a90e2',
-                backgroundColor: 'rgba(74,144,226,0.06)',
-                color: 'text.primary',
-            },
+            '&:hover, &:focus-visible': disabled
+                ? {}
+                : {
+                      borderColor: '#4a90e2',
+                      backgroundColor: 'rgba(74,144,226,0.06)',
+                      color: 'text.primary',
+                  },
         }}
     >
-        <Box component="span" sx={{fontSize: 36, lineHeight: 1, fontWeight: 300}}>+</Box>
-        <Typography variant="body2">{disabled ? 'Creating…' : 'New presentation'}</Typography>
+        <Box
+            component="span"
+            sx={{ fontSize: 36, lineHeight: 1, fontWeight: 300 }}
+        >
+            +
+        </Box>
+        <Typography variant="body2">
+            {disabled ? 'Creating…' : 'New presentation'}
+        </Typography>
     </Box>
 );
 
-const PresentationTile: React.FC<{presentation: Presentation, backgroundUrl?: string | null}> = ({presentation, backgroundUrl}) => {
+const PresentationTile: React.FC<{
+    presentation: Presentation;
+    backgroundUrl?: string | null;
+}> = ({ presentation, backgroundUrl }) => {
     const firstSlide = presentation.slides[0];
     return (
         <Stack
@@ -125,8 +155,8 @@ const PresentationTile: React.FC<{presentation: Presentation, backgroundUrl?: st
                 textDecoration: 'none',
                 color: 'inherit',
                 cursor: 'pointer',
-                '&:hover .pres-card-title': {color: '#4a90e2'},
-                '&:hover .pres-thumb': {borderColor: '#4a90e2'},
+                '&:hover .pres-card-title': { color: '#4a90e2' },
+                '&:hover .pres-thumb': { borderColor: '#4a90e2' },
             }}
         >
             <Box
@@ -139,7 +169,11 @@ const PresentationTile: React.FC<{presentation: Presentation, backgroundUrl?: st
                 }}
             >
                 {firstSlide ? (
-                    <SlidePreview text={firstSlide.text} reference={slideRef(firstSlide)} backgroundUrl={backgroundUrl} />
+                    <SlidePreview
+                        text={firstSlide.text}
+                        reference={slideRef(firstSlide)}
+                        backgroundUrl={backgroundUrl}
+                    />
                 ) : (
                     <Box
                         sx={{
@@ -157,11 +191,22 @@ const PresentationTile: React.FC<{presentation: Presentation, backgroundUrl?: st
                     </Box>
                 )}
             </Box>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{paddingLeft: 0.25}}>
+            <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ paddingLeft: 0.25 }}
+            >
                 <Typography
                     className="pres-card-title"
                     variant="body1"
-                    sx={{flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
+                    sx={{
+                        flexGrow: 1,
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                    }}
                 >
                     {presentation.title}
                 </Typography>

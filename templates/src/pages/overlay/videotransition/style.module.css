@@ -22,6 +22,6 @@
 .container .banner-logo {
     position: absolute;
     font-size: 250px;
-    color: #FFF;
+    color: #fff;
     transform: translate(-50px, 30px);
 }

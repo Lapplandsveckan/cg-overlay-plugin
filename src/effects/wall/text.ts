@@ -1,4 +1,4 @@
-import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
+import { CgCommand, Effect, EffectGroup } from '@lappis/cg-manager';
 
 export interface TextWallEffectOptions {
     text: string;
@@ -7,7 +7,11 @@ export interface TextWallEffectOptions {
 export class TextWallEffect extends Effect {
     private options: TextWallEffectOptions;
 
-    public constructor(group: EffectGroup, options: TextWallEffectOptions, template: string) {
+    public constructor(
+        group: EffectGroup,
+        options: TextWallEffectOptions,
+        template: string,
+    ) {
         super(group);
 
         this.allocateLayers(1);
@@ -26,20 +30,14 @@ export class TextWallEffect extends Effect {
 
     public update(data: TextWallEffectOptions) {
         return this.executor.execute(
-            CgCommand
-                .update(data)
-                .allocate(this.layer),
+            CgCommand.update(data).allocate(this.layer),
         );
     }
 
     public activate() {
         if (!super.activate()) return;
 
-        return this.executor.execute(
-            CgCommand
-                .play()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.play().allocate(this.layer));
     }
 
     public deactivate() {
@@ -50,11 +48,7 @@ export class TextWallEffect extends Effect {
             this.dispose();
         }, 1000);
 
-        return this.executor.execute(
-            CgCommand
-                .stop()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 
     public getMetadata(): {} {

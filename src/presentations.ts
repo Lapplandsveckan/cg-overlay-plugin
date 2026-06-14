@@ -2,7 +2,12 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import LappisOverlayPlugin from './index';
 
-const STORE_PATH = path.join(process.cwd(), 'plugin-data', 'lappis', 'presentations.json');
+const STORE_PATH = path.join(
+    process.cwd(),
+    'plugin-data',
+    'lappis',
+    'presentations.json',
+);
 
 export interface BibleSlide {
     type: 'bible';
@@ -52,15 +57,21 @@ export class PresentationStore {
             this.presentations = sanitize(parsed);
         } catch (err: any) {
             if (err?.code !== 'ENOENT') {
-                this.plugin.getLogger().warn(`Failed to read presentations: ${err.message}`);
+                this.plugin
+                    .getLogger()
+                    .warn(`Failed to read presentations: ${err.message}`);
             }
             this.presentations = [];
         }
     }
 
     private async persist() {
-        await fs.mkdir(path.dirname(STORE_PATH), {recursive: true});
-        await fs.writeFile(STORE_PATH, JSON.stringify(this.presentations, null, 2), 'utf8');
+        await fs.mkdir(path.dirname(STORE_PATH), { recursive: true });
+        await fs.writeFile(
+            STORE_PATH,
+            JSON.stringify(this.presentations, null, 2),
+            'utf8',
+        );
     }
 
     public list(): Presentation[] {
@@ -72,12 +83,21 @@ export class PresentationStore {
         return found ? clone(found) : null;
     }
 
-    public async create(input?: Partial<Pick<Presentation, 'title' | 'slides'>>): Promise<Presentation> {
+    public async create(
+        input?: Partial<Pick<Presentation, 'title' | 'slides'>>,
+    ): Promise<Presentation> {
         const now = Date.now();
         const presentation: Presentation = {
             id: makeId(),
-            title: typeof input?.title === 'string' && input.title.trim() ? input.title.trim() : 'Untitled',
-            slides: Array.isArray(input?.slides) ? input.slides.map(sanitizeSlide).filter((s): s is Slide => s !== null) : [],
+            title:
+                typeof input?.title === 'string' && input.title.trim()
+                    ? input.title.trim()
+                    : 'Untitled',
+            slides: Array.isArray(input?.slides)
+                ? input.slides
+                      .map(sanitizeSlide)
+                      .filter((s): s is Slide => s !== null)
+                : [],
             createdAt: now,
             updatedAt: now,
         };
@@ -86,16 +106,25 @@ export class PresentationStore {
         return clone(presentation);
     }
 
-    public async update(id: string, patch: Partial<Pick<Presentation, 'title' | 'slides'>>): Promise<Presentation | null> {
+    public async update(
+        id: string,
+        patch: Partial<Pick<Presentation, 'title' | 'slides'>>,
+    ): Promise<Presentation | null> {
         const idx = this.presentations.findIndex(p => p.id === id);
         if (idx === -1) return null;
 
         const current = this.presentations[idx];
         const next: Presentation = {
             ...current,
-            ...(typeof patch.title === 'string' ? {title: patch.title.trim() || 'Untitled'} : {}),
+            ...(typeof patch.title === 'string'
+                ? { title: patch.title.trim() || 'Untitled' }
+                : {}),
             ...(Array.isArray(patch.slides)
-                ? {slides: patch.slides.map(sanitizeSlide).filter((s): s is Slide => s !== null)}
+                ? {
+                      slides: patch.slides
+                          .map(sanitizeSlide)
+                          .filter((s): s is Slide => s !== null),
+                  }
                 : {}),
             updatedAt: Date.now(),
         };
@@ -125,7 +154,9 @@ function sanitize(input: unknown): Presentation[] {
         const i = item as any;
         if (typeof i.id !== 'string' || !i.id) continue;
         if (typeof i.title !== 'string') continue;
-        const slides = Array.isArray(i.slides) ? i.slides.map(sanitizeSlide).filter((s): s is Slide => s !== null) : [];
+        const slides = Array.isArray(i.slides)
+            ? i.slides.map(sanitizeSlide).filter((s): s is Slide => s !== null)
+            : [];
         out.push({
             id: i.id,
             title: i.title,
@@ -147,7 +178,8 @@ function sanitizeSlide(raw: any): Slide | null {
             id: raw.id,
             text: typeof raw.text === 'string' ? raw.text : '',
             reference: typeof raw.reference === 'string' ? raw.reference : '',
-            translation: typeof raw.translation === 'string' ? raw.translation : '',
+            translation:
+                typeof raw.translation === 'string' ? raw.translation : '',
             book: typeof raw.book === 'string' ? raw.book : '',
             chapter: Number.isFinite(raw.chapter) ? raw.chapter : 0,
             verse: Number.isFinite(raw.verse) ? raw.verse : 0,

@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, { useEffect } from 'react';
 import {
     Box,
     Button,
@@ -13,7 +13,14 @@ import {
 } from '@mui/material';
 
 import SlidePreview from './SlidePreview';
-import {Presentation, Slide, PlaybackState, slideRef, slideLabel, useBackgroundImage} from './api';
+import {
+    Presentation,
+    Slide,
+    PlaybackState,
+    slideRef,
+    slideLabel,
+    useBackgroundImage,
+} from './api';
 
 export interface RunModalProps {
     open: boolean;
@@ -26,7 +33,12 @@ export interface RunModalProps {
 }
 
 export const RunModal: React.FC<RunModalProps> = ({
-    open, presentation, playback, onClose, onStop, onPlay,
+    open,
+    presentation,
+    playback,
+    onClose,
+    onStop,
+    onPlay,
 }) => {
     const slides = presentation?.slides ?? [];
     const backgroundUrl = useBackgroundImage();
@@ -34,9 +46,9 @@ export const RunModal: React.FC<RunModalProps> = ({
     // "Playing here" = backend reports playing AND the playing presentation
     // matches the one this modal is currently controlling.
     const playingHere = !!(
-        playback?.playing
-        && presentation
-        && playback.presentationId === presentation.id
+        playback?.playing &&
+        presentation &&
+        playback.presentationId === presentation.id
     );
 
     const currentIndex = playingHere
@@ -63,7 +75,11 @@ export const RunModal: React.FC<RunModalProps> = ({
         if (!open) return;
 
         const handler = (e: KeyboardEvent) => {
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            if (
+                e.target instanceof HTMLInputElement ||
+                e.target instanceof HTMLTextAreaElement
+            )
+                return;
 
             if (e.key === 'Escape') {
                 e.preventDefault();
@@ -74,7 +90,11 @@ export const RunModal: React.FC<RunModalProps> = ({
 
             if (!playingHere) return;
 
-            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+            if (
+                e.key === 'ArrowRight' ||
+                e.key === ' ' ||
+                e.key === 'PageDown'
+            ) {
                 e.preventDefault();
                 if (!atEnd) handleNext();
             } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
@@ -87,7 +107,10 @@ export const RunModal: React.FC<RunModalProps> = ({
         return () => window.removeEventListener('keydown', handler);
     }, [open, playingHere, atStart, atEnd, currentIndex]);
 
-    const thumbnailRef = useThumbnailScroll(playingHere ? playback?.slideId ?? null : null, open);
+    const thumbnailRef = useThumbnailScroll(
+        playingHere ? (playback?.slideId ?? null) : null,
+        open,
+    );
 
     return (
         <Dialog
@@ -95,10 +118,14 @@ export const RunModal: React.FC<RunModalProps> = ({
             onClose={onClose}
             fullWidth
             maxWidth={false}
-            PaperProps={{sx: {width: 'min(92vw, 900px)', maxWidth: 'none'}}}
+            PaperProps={{ sx: { width: 'min(92vw, 900px)', maxWidth: 'none' } }}
         >
-            <DialogTitle sx={{paddingBottom: 1}}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <DialogTitle sx={{ paddingBottom: 1 }}>
+                <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                >
                     <Stack direction="row" spacing={1.5} alignItems="baseline">
                         <Typography variant="h6">Slides</Typography>
                         {presentation?.title && (
@@ -111,7 +138,7 @@ export const RunModal: React.FC<RunModalProps> = ({
                                 label="Click a slide to start"
                                 size="small"
                                 variant="outlined"
-                                sx={{borderStyle: 'dashed'}}
+                                sx={{ borderStyle: 'dashed' }}
                             />
                         )}
                     </Stack>
@@ -123,13 +150,25 @@ export const RunModal: React.FC<RunModalProps> = ({
                         )}
                         {playingHere && (
                             <Tooltip title="Stop playback, keep modal open (Esc)">
-                                <Button onClick={onStop} size="small" color="error" variant="outlined">
+                                <Button
+                                    onClick={onStop}
+                                    size="small"
+                                    color="error"
+                                    variant="outlined"
+                                >
                                     Stop
                                 </Button>
                             </Tooltip>
                         )}
-                        <Tooltip title={playingHere ? 'Close modal' : 'Close (Esc)'}>
-                            <Button onClick={onClose} size="small" color="inherit" variant="outlined">
+                        <Tooltip
+                            title={playingHere ? 'Close modal' : 'Close (Esc)'}
+                        >
+                            <Button
+                                onClick={onClose}
+                                size="small"
+                                color="inherit"
+                                variant="outlined"
+                            >
                                 Close
                             </Button>
                         </Tooltip>
@@ -137,23 +176,26 @@ export const RunModal: React.FC<RunModalProps> = ({
                 </Stack>
             </DialogTitle>
             <DialogContent>
-                {playingHere && current
-                    ? (
-                        <PlayingView
-                            slides={slides}
-                            currentSlideId={playback!.slideId}
-                            current={current}
-                            atStart={atStart}
-                            atEnd={atEnd}
-                            thumbnailRef={thumbnailRef}
-                            backgroundUrl={backgroundUrl}
-                            onNext={handleNext}
-                            onPrev={handlePrev}
-                            onJump={onPlay}
-                        />
-                    )
-                    : <PickerView slides={slides} onPlay={onPlay} backgroundUrl={backgroundUrl} />
-                }
+                {playingHere && current ? (
+                    <PlayingView
+                        slides={slides}
+                        currentSlideId={playback!.slideId}
+                        current={current}
+                        atStart={atStart}
+                        atEnd={atEnd}
+                        thumbnailRef={thumbnailRef}
+                        backgroundUrl={backgroundUrl}
+                        onNext={handleNext}
+                        onPrev={handlePrev}
+                        onJump={onPlay}
+                    />
+                ) : (
+                    <PickerView
+                        slides={slides}
+                        onPlay={onPlay}
+                        backgroundUrl={backgroundUrl}
+                    />
+                )}
             </DialogContent>
         </Dialog>
     );
@@ -173,7 +215,16 @@ interface PlayingViewProps {
 }
 
 const PlayingView: React.FC<PlayingViewProps> = ({
-    slides, currentSlideId, current, atStart, atEnd, thumbnailRef, backgroundUrl, onNext, onPrev, onJump,
+    slides,
+    currentSlideId,
+    current,
+    atStart,
+    atEnd,
+    thumbnailRef,
+    backgroundUrl,
+    onNext,
+    onPrev,
+    onJump,
 }) => (
     <Stack spacing={2}>
         <Stack direction="row" spacing={1.5} alignItems="stretch">
@@ -187,15 +238,26 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                             alignSelf: 'stretch',
                             borderRadius: 1,
                             backgroundColor: 'rgba(255,255,255,0.04)',
-                            '&:hover': {backgroundColor: 'rgba(255,255,255,0.08)'},
+                            '&:hover': {
+                                backgroundColor: 'rgba(255,255,255,0.08)',
+                            },
                         }}
                     >
-                        <Box component="span" sx={{fontSize: 28, lineHeight: 1}}>‹</Box>
+                        <Box
+                            component="span"
+                            sx={{ fontSize: 28, lineHeight: 1 }}
+                        >
+                            ‹
+                        </Box>
                     </IconButton>
                 </span>
             </Tooltip>
-            <Box sx={{flexGrow: 1}}>
-                <SlidePreview text={current.text} reference={slideRef(current)} backgroundUrl={backgroundUrl} />
+            <Box sx={{ flexGrow: 1 }}>
+                <SlidePreview
+                    text={current.text}
+                    reference={slideRef(current)}
+                    backgroundUrl={backgroundUrl}
+                />
             </Box>
             <Tooltip title="Next (→ / Space)">
                 <span>
@@ -207,10 +269,17 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                             alignSelf: 'stretch',
                             borderRadius: 1,
                             backgroundColor: 'rgba(255,255,255,0.04)',
-                            '&:hover': {backgroundColor: 'rgba(255,255,255,0.08)'},
+                            '&:hover': {
+                                backgroundColor: 'rgba(255,255,255,0.08)',
+                            },
                         }}
                     >
-                        <Box component="span" sx={{fontSize: 28, lineHeight: 1}}>›</Box>
+                        <Box
+                            component="span"
+                            sx={{ fontSize: 28, lineHeight: 1 }}
+                        >
+                            ›
+                        </Box>
                     </IconButton>
                 </span>
             </Tooltip>
@@ -248,8 +317,12 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                         />
                         <Typography
                             variant="caption"
-                            color={slide.id === currentSlideId ? 'text.primary' : 'text.secondary'}
-                            sx={{textAlign: 'center'}}
+                            color={
+                                slide.id === currentSlideId
+                                    ? 'text.primary'
+                                    : 'text.secondary'
+                            }
+                            sx={{ textAlign: 'center' }}
                         >
                             {idx + 1}. {slideLabel(slide)}
                         </Typography>
@@ -266,10 +339,20 @@ interface PickerViewProps {
     onPlay: (slideId: string) => void;
 }
 
-const PickerView: React.FC<PickerViewProps> = ({slides, backgroundUrl, onPlay}) => {
+const PickerView: React.FC<PickerViewProps> = ({
+    slides,
+    backgroundUrl,
+    onPlay,
+}) => {
     if (slides.length === 0) {
         return (
-            <Box sx={{padding: 6, textAlign: 'center', color: 'text.secondary'}}>
+            <Box
+                sx={{
+                    padding: 6,
+                    textAlign: 'center',
+                    color: 'text.secondary',
+                }}
+            >
                 <Typography variant="body2">No slides to play.</Typography>
             </Box>
         );
@@ -305,12 +388,17 @@ const PickerView: React.FC<PickerViewProps> = ({slides, backgroundUrl, onPlay}) 
                             transform: 'translateY(-2px)',
                             boxShadow: '0 6px 20px rgba(74,144,226,0.3)',
                         },
-                        '&:hover .picker-overlay, &:focus-visible .picker-overlay': {opacity: 1},
+                        '&:hover .picker-overlay, &:focus-visible .picker-overlay':
+                            { opacity: 1 },
                     }}
                 >
                     <Stack spacing={0.75}>
-                        <Box sx={{position: 'relative'}}>
-                            <SlidePreview text={slide.text} reference={slideRef(slide)} backgroundUrl={backgroundUrl} />
+                        <Box sx={{ position: 'relative' }}>
+                            <SlidePreview
+                                text={slide.text}
+                                reference={slideRef(slide)}
+                                backgroundUrl={backgroundUrl}
+                            />
                             <Box
                                 className="picker-overlay"
                                 sx={{
@@ -338,13 +426,23 @@ const PickerView: React.FC<PickerViewProps> = ({slides, backgroundUrl, onPlay}) 
                                     >
                                         ▶
                                     </Box>
-                                    <Typography variant="caption" sx={{color: '#fff', letterSpacing: '0.05em'}}>
+                                    <Typography
+                                        variant="caption"
+                                        sx={{
+                                            color: '#fff',
+                                            letterSpacing: '0.05em',
+                                        }}
+                                    >
                                         Start from here
                                     </Typography>
                                 </Stack>
                             </Box>
                         </Box>
-                        <Typography variant="body2" color="text.secondary" sx={{textAlign: 'center'}}>
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ textAlign: 'center' }}
+                        >
                             {idx + 1}. {slideLabel(slide)}
                         </Typography>
                     </Stack>
@@ -359,9 +457,15 @@ function useThumbnailScroll(currentSlideId: string | null, active: boolean) {
 
     useEffect(() => {
         if (!active || !ref.current || !currentSlideId) return;
-        const target = ref.current.querySelector(`[data-slide-thumb-id="${currentSlideId}"]`);
+        const target = ref.current.querySelector(
+            `[data-slide-thumb-id="${currentSlideId}"]`,
+        );
         if (target instanceof HTMLElement) {
-            target.scrollIntoView({behavior: 'smooth', inline: 'center', block: 'nearest'});
+            target.scrollIntoView({
+                behavior: 'smooth',
+                inline: 'center',
+                block: 'nearest',
+            });
         }
     }, [currentSlideId, active]);
 

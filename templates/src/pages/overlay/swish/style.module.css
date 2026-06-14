@@ -62,7 +62,7 @@
     width: 20vw;
 
     opacity: 0.6;
-    color: #FFF;
+    color: #fff;
 
     text-anchor: middle;
     alignment-baseline: middle;
@@ -83,7 +83,7 @@
     font-size: 120pt;
 
     width: 100vw;
-    color: #FFF;
+    color: #fff;
 
     text-anchor: middle;
     alignment-baseline: middle;
@@ -139,13 +139,15 @@
     width: 8vw;
 
     opacity: 0.6;
-    color: #FFF;
+    color: #fff;
 
     text-anchor: middle;
     alignment-baseline: middle;
 }
 
-.swish__sliding__top, .swish__sliding__bottom {}
+.swish__sliding__top,
+.swish__sliding__bottom {
+}
 
 /* Animation of the sliding swish texts */
 

@@ -1,17 +1,14 @@
-import {offCGEvent, onCGEvent} from '../../cg';
+import { offCGEvent, onCGEvent } from '../../cg';
 
 // state
 // 0: hidden
 // 1: shown
 
-type Handler = (value: number) => void
+type Handler = (value: number) => void;
 export function register(setState: Handler, setGoal: Handler, setNow: Handler) {
-    const states = [
-        () => setState(0),
-        () => setState(1),
-    ];
+    const states = [() => setState(0), () => setState(1)];
 
-    const numbers = (params) => {
+    const numbers = params => {
         if (params.goal) setGoal(params.goal);
         if (params.now) setNow(params.now);
     };
@@ -27,6 +24,5 @@ export function register(setState: Handler, setGoal: Handler, setNow: Handler) {
         offCGEvent('play', states[1]);
     };
 }
-
 
 export {};

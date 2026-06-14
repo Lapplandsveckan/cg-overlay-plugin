@@ -1,10 +1,18 @@
-import {Box, Button, Collapse, IconButton, Stack, Tooltip, Typography} from '@mui/material';
-import React, {useState} from 'react';
+import {
+    Box,
+    Button,
+    Collapse,
+    IconButton,
+    Stack,
+    Tooltip,
+    Typography,
+} from '@mui/material';
+import React, { useState } from 'react';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 // @ts-ignore
-import {MediaView, useSocket} from '@web-lib';
+import { MediaView, useSocket } from '@web-lib';
 
 export const MotionControl = () => {
     const conn = useSocket();
@@ -12,24 +20,53 @@ export const MotionControl = () => {
     const [colorOpen, setColorOpen] = useState(false);
 
     return (
-        <Stack direction="row" sx={{height: '100%', minHeight: 0}}>
-            <Box sx={{flexGrow: 1, minWidth: 0, overflowY: 'auto', padding: 1.5}}>
+        <Stack direction="row" sx={{ height: '100%', minHeight: 0 }}>
+            <Box
+                sx={{
+                    flexGrow: 1,
+                    minWidth: 0,
+                    overflowY: 'auto',
+                    padding: 1.5,
+                }}
+            >
                 <MediaView
                     prefix="MOTIONS/"
-                    onClipSelect={(clip) => conn.rawRequest('/api/plugin/lappis/motion/clip', 'ACTION', {clip: clip.id})}
+                    onClipSelect={clip =>
+                        conn.rawRequest(
+                            '/api/plugin/lappis/motion/clip',
+                            'ACTION',
+                            { clip: clip.id },
+                        )
+                    }
                 />
             </Box>
 
             <Stack
                 direction="row"
-                sx={{borderLeft: '1px solid rgba(255,255,255,0.08)', flexShrink: 0}}
+                sx={{
+                    borderLeft: '1px solid rgba(255,255,255,0.08)',
+                    flexShrink: 0,
+                }}
             >
                 <Collapse in={colorOpen} orientation="horizontal" unmountOnExit>
                     <Stack
                         spacing={1.5}
-                        sx={{width: 180, padding: 1.5, height: '100%', boxSizing: 'border-box'}}
+                        sx={{
+                            width: 180,
+                            padding: 1.5,
+                            height: '100%',
+                            boxSizing: 'border-box',
+                        }}
                     >
-                        <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{textTransform: 'uppercase', letterSpacing: '0.08em'}}>
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            fontWeight={600}
+                            sx={{
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.08em',
+                            }}
+                        >
                             Background color
                         </Typography>
                         <Box
@@ -55,10 +92,16 @@ export const MotionControl = () => {
                                     height: '100%',
                                     cursor: 'pointer',
                                 }}
-                                onChange={async (event) => {
-                                    const next = event.target['value'] as string;
+                                onChange={async event => {
+                                    const next = event.target[
+                                        'value'
+                                    ] as string;
                                     setColor(next);
-                                    await conn.rawRequest('/api/plugin/lappis/motion/color', 'ACTION', {color: next});
+                                    await conn.rawRequest(
+                                        '/api/plugin/lappis/motion/color',
+                                        'ACTION',
+                                        { color: next },
+                                    );
                                 }}
                                 value={color ?? '#000000'}
                             />
@@ -72,7 +115,11 @@ export const MotionControl = () => {
                             disabled={!color}
                             onClick={async () => {
                                 setColor(undefined);
-                                await conn.rawRequest('/api/plugin/lappis/motion/color', 'ACTION', {});
+                                await conn.rawRequest(
+                                    '/api/plugin/lappis/motion/color',
+                                    'ACTION',
+                                    {},
+                                );
                             }}
                         >
                             Clear
@@ -80,7 +127,10 @@ export const MotionControl = () => {
                     </Stack>
                 </Collapse>
 
-                <Tooltip title={colorOpen ? 'Hide color' : 'Background color'} placement="left">
+                <Tooltip
+                    title={colorOpen ? 'Hide color' : 'Background color'}
+                    placement="left"
+                >
                     <IconButton
                         size="small"
                         onClick={() => setColorOpen(v => !v)}
@@ -91,7 +141,11 @@ export const MotionControl = () => {
                             color: color ? color : 'text.secondary',
                         }}
                     >
-                        {colorOpen ? <ChevronRightIcon fontSize="small" /> : <ChevronLeftIcon fontSize="small" />}
+                        {colorOpen ? (
+                            <ChevronRightIcon fontSize="small" />
+                        ) : (
+                            <ChevronLeftIcon fontSize="small" />
+                        )}
                     </IconButton>
                 </Tooltip>
             </Stack>

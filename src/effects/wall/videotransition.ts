@@ -1,4 +1,4 @@
-import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
+import { CgCommand, Effect, EffectGroup } from '@lappis/cg-manager';
 
 export interface VideoTransitionWallEffectOptions {
     skipIntro?: boolean;
@@ -7,7 +7,11 @@ export interface VideoTransitionWallEffectOptions {
 export class VideoTransitionWallEffect extends Effect {
     private options: VideoTransitionWallEffectOptions;
 
-    public constructor(group: EffectGroup, options: VideoTransitionWallEffectOptions, template: string) {
+    public constructor(
+        group: EffectGroup,
+        options: VideoTransitionWallEffectOptions,
+        template: string,
+    ) {
         super(group);
 
         this.options = options;
@@ -30,29 +34,17 @@ export class VideoTransitionWallEffect extends Effect {
 
         if (this.options.skipIntro) {
             this.emit('transition:ready');
-            return this.executor.execute(
-                CgCommand
-                    .next()
-                    .allocate(this.layer),
-            );
+            return this.executor.execute(CgCommand.next().allocate(this.layer));
         }
 
         setTimeout(() => {
             if (!this.active) return;
 
             this.emit('transition:ready');
-            this.executor.execute(
-                CgCommand
-                    .next()
-                    .allocate(this.layer),
-            );
+            this.executor.execute(CgCommand.next().allocate(this.layer));
         }, 2000);
 
-        return this.executor.execute(
-            CgCommand
-                .play()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.play().allocate(this.layer));
     }
 
     public deactivate() {
@@ -63,16 +55,10 @@ export class VideoTransitionWallEffect extends Effect {
             this.dispose();
         }, 1000);
 
-        return this.executor.execute(
-            CgCommand
-                .stop()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 
     public getMetadata(): {} {
-        return {
-
-        };
+        return {};
     }
 }

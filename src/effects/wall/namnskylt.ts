@@ -1,4 +1,4 @@
-import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
+import { CgCommand, Effect, EffectGroup } from '@lappis/cg-manager';
 
 export interface NamnskyltWallEffectOptions {
     name: string;
@@ -9,12 +9,19 @@ export interface NamnskyltWallEffectOptions {
 export class NamnskyltWallEffect extends Effect {
     private options: NamnskyltWallEffectOptions;
 
-    public constructor(group: EffectGroup, options: NamnskyltWallEffectOptions, template: string) {
+    public constructor(
+        group: EffectGroup,
+        options: NamnskyltWallEffectOptions,
+        template: string,
+    ) {
         super(group);
 
-        this.options = Object.assign({
-            totalDuration: 10000,
-        }, options);
+        this.options = Object.assign(
+            {
+                totalDuration: 10000,
+            },
+            options,
+        );
         this.allocateLayers(1);
         this.executor.executeAllocations();
 
@@ -33,11 +40,7 @@ export class NamnskyltWallEffect extends Effect {
         if (!super.activate()) return;
         setTimeout(() => this.deactivate(), this.options.totalDuration);
 
-        return this.executor.execute(
-            CgCommand
-                .play()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.play().allocate(this.layer));
     }
 
     public deactivate() {
@@ -48,11 +51,7 @@ export class NamnskyltWallEffect extends Effect {
             this.dispose();
         }, 1000);
 
-        return this.executor.execute(
-            CgCommand
-                .stop()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 
     public getMetadata(): {} {

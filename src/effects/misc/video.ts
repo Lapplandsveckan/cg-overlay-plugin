@@ -12,9 +12,14 @@ import {
 } from '@lappis/cg-manager';
 import { MediaDoc } from '@lappis/cg-manager/dist/types/scanner/db';
 
-
-type Tuple<T, N extends number> = N extends N ? number extends N ? T[] : _TupleOf<T, N, []> : never;
-type _TupleOf<T, N extends number, R extends unknown[]> = R['length'] extends N ? R : _TupleOf<T, N, [T, ...R]>;
+type Tuple<T, N extends number> = N extends N
+    ? number extends N
+        ? T[]
+        : _TupleOf<T, N, []>
+    : never;
+type _TupleOf<T, N extends number, R extends unknown[]> = R['length'] extends N
+    ? R
+    : _TupleOf<T, N, [T, ...R]>;
 
 export interface VideoEffectOptions {
     media: MediaDoc;
@@ -33,7 +38,8 @@ export class VideoEffect extends Effect {
         this.options = options;
         this.allocateLayers();
 
-        if (options.transform) this.setTransform(Transform.fromArray(options.transform));
+        if (options.transform)
+            this.setTransform(Transform.fromArray(options.transform));
     }
 
     protected playing: boolean = false;
@@ -50,7 +56,9 @@ export class VideoEffect extends Effect {
         let commandType = LoadBGCommand;
         if (play) commandType = PlayCommand;
 
-        const cmd = commandType.video(this.options.media.id, { loop: this.options.loop });
+        const cmd = commandType.video(this.options.media.id, {
+            loop: this.options.loop,
+        });
         cmd.allocate(this.layer);
 
         if (play) this.handlePlay();
@@ -66,7 +74,9 @@ export class VideoEffect extends Effect {
         if (this.playing) return;
         if (this.canceled) return;
 
-        const cmd = PlayCommand.video(this.options.media.id, { loop: this.options.loop });
+        const cmd = PlayCommand.video(this.options.media.id, {
+            loop: this.options.loop,
+        });
         cmd.allocate(this.layer);
 
         this.handlePlay();
@@ -104,7 +114,10 @@ export class VideoEffect extends Effect {
         this.clipDuration = duration;
         if (this.options.loop) return;
 
-        this.playTimeout = setTimeout(() => this.handleFinish(), duration * 1000);
+        this.playTimeout = setTimeout(
+            () => this.handleFinish(),
+            duration * 1000,
+        );
     }
 
     protected handleFinish() {
@@ -138,7 +151,8 @@ export class VideoEffect extends Effect {
         this.playing = true;
         this.paused = false;
 
-        const playTime = this.pausedTime - this.startedTime - this.pausedDuration;
+        const playTime =
+            this.pausedTime - this.startedTime - this.pausedDuration;
         this.pausedDuration += Date.now() - this.pausedTime;
         this.pausedTime = -1;
 
@@ -160,7 +174,8 @@ export class VideoEffect extends Effect {
 
         const cmd: Command = new ClearCommand(this.layer);
         const result = this.executor.execute(cmd);
-        if (this.options.disposeOnStop) result.then(() => !this.active && this.dispose());
+        if (this.options.disposeOnStop)
+            result.then(() => !this.active && this.dispose());
 
         return result;
     }
@@ -176,7 +191,9 @@ export class VideoEffect extends Effect {
             pausedDuration: this.pausedDuration,
             clipDuration: this.clipDuration * 1000,
 
-            playDuration: this.playing ? Date.now() - this.startedTime - this.pausedDuration : 0,
+            playDuration: this.playing
+                ? Date.now() - this.startedTime - this.pausedDuration
+                : 0,
             now: Date.now(),
         };
     }

@@ -1,8 +1,8 @@
-import {VideoEffect} from './effects/misc/video';
+import { VideoEffect } from './effects/misc/video';
 import LappisOverlayPlugin from './index';
-import {noTry, noTryAsync} from 'no-try';
-import {WallVideoEffect} from './effects/misc/wall_video';
-import {Effect} from '@lappis/cg-manager';
+import { noTry, noTryAsync } from 'no-try';
+import { WallVideoEffect } from './effects/misc/wall_video';
+import { Effect } from '@lappis/cg-manager';
 
 interface VideoInfo {
     id: string;
@@ -35,25 +35,47 @@ export default class VideoManager {
         if (clearQueue) this.queue = [];
         if (this.playing) {
             if (this.playing.extraEffects)
-                this.playing.extraEffects.forEach(effect => effect.deactivate());
+                this.playing.extraEffects.forEach(effect =>
+                    effect.deactivate(),
+                );
 
             this.playing.effect.cancel();
         }
     }
 
-    public queueVideo(video: string, options?: Omit<VideoInfo['metadata'], 'queueId'>) {
+    public queueVideo(
+        video: string,
+        options?: Omit<VideoInfo['metadata'], 'queueId'>,
+    ) {
         options = options || {};
 
-        this.queue.push({id: video, metadata: {...options, queueId: Math.random().toString(36).substring(7)}});
+        this.queue.push({
+            id: video,
+            metadata: {
+                ...options,
+                queueId: Math.random().toString(36).substring(7),
+            },
+        });
         if (this.playing) return this.plugin.sendVideoInformation();
 
         this.playNext();
     }
 
-    public playVideo(video: string, options?: Omit<VideoInfo['metadata'], 'queueId'>) {
+    public playVideo(
+        video: string,
+        options?: Omit<VideoInfo['metadata'], 'queueId'>,
+    ) {
         options = options || {};
 
-        this.queue = [{id: video, metadata: {...options, queueId: Math.random().toString(36).substring(7)}}];
+        this.queue = [
+            {
+                id: video,
+                metadata: {
+                    ...options,
+                    queueId: Math.random().toString(36).substring(7),
+                },
+            },
+        ];
         if (this.playing) return this.stopVideo();
 
         this.playNext();
@@ -67,7 +89,9 @@ export default class VideoManager {
             if (this.playing) {
                 this.playing.effect.deactivate();
                 if (this.playing.extraEffects)
-                    this.playing.extraEffects.forEach(effect => effect.deactivate());
+                    this.playing.extraEffects.forEach(effect =>
+                        effect.deactivate(),
+                    );
 
                 this.plugin.getOverlayManager().stopVideoSession(true);
             }
@@ -77,7 +101,11 @@ export default class VideoManager {
             return;
         }
 
-        const [err, effect] = noTry(() => this.plugin.getOverlayManager().playVideo(video.id, video.metadata.loop));
+        const [err, effect] = noTry(() =>
+            this.plugin
+                .getOverlayManager()
+                .playVideo(video.id, video.metadata.loop),
+        );
         if (err) {
             this.plugin.getLogger().error(`Failed to play video: ${err}`);
             return;
@@ -85,17 +113,33 @@ export default class VideoManager {
 
         let extraEffects: WallVideoEffect[] = [];
         if (video.metadata.secondaryVideo) {
-            const [err, effect] = noTry(() => this.plugin.getOverlayManager().playWallVideo(video.metadata.secondaryVideo, video.metadata.loop));
+            const [err, effect] = noTry(() =>
+                this.plugin
+                    .getOverlayManager()
+                    .playWallVideo(
+                        video.metadata.secondaryVideo,
+                        video.metadata.loop,
+                    ),
+            );
 
-            if (err) this.plugin.getLogger().error(`Failed to play wall video: ${err}`);
+            if (err)
+                this.plugin
+                    .getLogger()
+                    .error(`Failed to play wall video: ${err}`);
             else extraEffects.push(effect);
         }
 
-        this.playing = {video, effect, extraEffects};
+        this.playing = { video, effect, extraEffects };
 
-        const [error] = await noTryAsync(() => this.plugin.getOverlayManager().startVideoSession(true, video.metadata.skipIntro));
+        const [error] = await noTryAsync(() =>
+            this.plugin
+                .getOverlayManager()
+                .startVideoSession(true, video.metadata.skipIntro),
+        );
         if (error) {
-            this.plugin.getLogger().error(`Failed to start video session: ${error}`);
+            this.plugin
+                .getLogger()
+                .error(`Failed to start video session: ${error}`);
             return;
         }
 
@@ -103,14 +147,27 @@ export default class VideoManager {
 
         const session = this.plugin.overlay.getVideoSession();
         if (!video.metadata.secondaryVideo && !session.wall.active)
-            session.wall.activate().catch(err => this.plugin.getLogger().error(`Failed to activate wall: ${err}`));
+            session.wall
+                .activate()
+                .catch(err =>
+                    this.plugin
+                        .getLogger()
+                        .error(`Failed to activate wall: ${err}`),
+                );
 
         if (video.metadata.secondaryVideo && session.wall.active)
-            session.wall.deactivate().catch(err => this.plugin.getLogger().error(`Failed to deactivate wall: ${err}`));
+            session.wall
+                .deactivate()
+                .catch(err =>
+                    this.plugin
+                        .getLogger()
+                        .error(`Failed to deactivate wall: ${err}`),
+                );
 
         try {
             const promises: Promise<any>[] = [effect.play()];
-            for (const extraEffect of extraEffects) promises.push(extraEffect.play());
+            for (const extraEffect of extraEffects)
+                promises.push(extraEffect.play());
 
             await Promise.all(promises);
             await effect.waitForFinish();
@@ -168,7 +225,8 @@ export default class VideoManager {
 
     public removeItem(id: string) {
         this.queue = this.queue.filter(video => video.metadata.queueId !== id);
-        if (this.playing && this.playing.video.metadata.queueId === id) this.stopVideo();
+        if (this.playing && this.playing.video.metadata.queueId === id)
+            this.stopVideo();
 
         this.plugin.sendVideoInformation();
     }

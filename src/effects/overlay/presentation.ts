@@ -1,4 +1,4 @@
-import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
+import { CgCommand, Effect, EffectGroup } from '@lappis/cg-manager';
 
 export interface PresentationOverlayEffectOptions {
     text: string;
@@ -8,7 +8,11 @@ export interface PresentationOverlayEffectOptions {
 export class PresentationOverlayEffect extends Effect {
     private options: PresentationOverlayEffectOptions;
 
-    public constructor(group: EffectGroup, options: PresentationOverlayEffectOptions, template: string) {
+    public constructor(
+        group: EffectGroup,
+        options: PresentationOverlayEffectOptions,
+        template: string,
+    ) {
         super(group);
 
         this.options = options;
@@ -26,32 +30,22 @@ export class PresentationOverlayEffect extends Effect {
     }
 
     public update(options: Partial<PresentationOverlayEffectOptions>) {
-        this.options = {...this.options, ...options};
+        this.options = { ...this.options, ...options };
         return this.executor.execute(
-            CgCommand
-                .update(this.options)
-                .allocate(this.layer),
+            CgCommand.update(this.options).allocate(this.layer),
         );
     }
 
     public activate() {
         if (!super.activate()) return;
 
-        return this.executor.execute(
-            CgCommand
-                .play()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.play().allocate(this.layer));
     }
 
     public deactivate() {
         if (!super.deactivate()) return;
 
-        return this.executor.execute(
-            CgCommand
-                .stop()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 
     public getMetadata(): {} {

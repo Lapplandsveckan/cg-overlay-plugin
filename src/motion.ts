@@ -1,16 +1,16 @@
 import * as dmxlib from 'dmxnet';
 import TransportStream from 'winston-transport';
-import {Logger} from '@lappis/cg-manager';
+import { Logger } from '@lappis/cg-manager';
 import { config } from './config';
-import {MotionEffect} from './effects/misc/motion';
+import { MotionEffect } from './effects/misc/motion';
 import LappisOverlayPlugin from './index';
-import {CHANNELS, getGroup, GROUPS} from './overlay';
+import { CHANNELS, getGroup, GROUPS } from './overlay';
 
 class PluginLoggerTransport extends TransportStream {
     private pluginLogger: Logger;
 
     public constructor(pluginLogger: Logger) {
-        super({level: 'warn'});
+        super({ level: 'warn' });
         this.pluginLogger = pluginLogger;
     }
 
@@ -19,9 +19,15 @@ class PluginLoggerTransport extends TransportStream {
 
         const message = String(info.message ?? '');
         switch (info.level) {
-            case 'error': this.pluginLogger.error(message); break;
-            case 'warn': this.pluginLogger.warn(message); break;
-            default: this.pluginLogger.debug(message); break;
+            case 'error':
+                this.pluginLogger.error(message);
+                break;
+            case 'warn':
+                this.pluginLogger.warn(message);
+                break;
+            default:
+                this.pluginLogger.debug(message);
+                break;
         }
 
         callback();
@@ -50,11 +56,15 @@ export default class MotionManager {
         this.motion?.deactivate();
         if (!clip) return;
 
-        this.motion = this.plugin['api'].createEffect('motion', getGroup(CHANNELS.WALL, GROUPS.MOTION), {
-            clip,
-            disposeOnStop: true,
-            color: this.color,
-        }) as MotionEffect;
+        this.motion = this.plugin['api'].createEffect(
+            'motion',
+            getGroup(CHANNELS.WALL, GROUPS.MOTION),
+            {
+                clip,
+                disposeOnStop: true,
+                color: this.color,
+            },
+        ) as MotionEffect;
 
         this.motion.activate();
     }
@@ -74,8 +84,7 @@ export default class MotionManager {
             .slice(1)
             .map(v => parseInt(v, 16));
 
-        for (let i = 0; i < 512; i++)
-            sender.prepChannel(i, value[i % 3]);
+        for (let i = 0; i < 512; i++) sender.prepChannel(i, value[i % 3]);
     }
 
     private acceptIncoming = true;
@@ -83,14 +92,19 @@ export default class MotionManager {
 
     private artnetColor: string;
     private senders = [];
-    private async setupDMX(_config: ArtNetConfig) { // IDEA: Add support for closing the connection, eg when the user changes the config or it already exists
+    private async setupDMX(_config: ArtNetConfig) {
+        // IDEA: Add support for closing the connection, eg when the user changes the config or it already exists
         if (this.connection) return;
-        const { universe, net, subnet, channel } = this.connection = _config;
+        const { universe, net, subnet, channel } = (this.connection = _config);
 
         const dmxnet = new dmxlib.dmxnet({
             log: {
                 level: 'warn',
-                transports: [new PluginLoggerTransport(this.plugin.getLogger().scope('dmxnet'))],
+                transports: [
+                    new PluginLoggerTransport(
+                        this.plugin.getLogger().scope('dmxnet'),
+                    ),
+                ],
             },
         });
         const receiver = dmxnet.newReceiver({
@@ -100,14 +114,18 @@ export default class MotionManager {
         });
 
         for (let i = 0; i < config.artnet_send.count; i++) {
-            this.senders.push(dmxnet.newSender({
-                subuni: config.artnet_send.universe_start + i,
-                ip: config.artnet_send.ip.replace(
-                    'x',
-                    (config.artnet_send.subnet_start + i).toString().padStart(3, '0'),
-                ),
-                base_refresh_interval: 100,
-            }));
+            this.senders.push(
+                dmxnet.newSender({
+                    subuni: config.artnet_send.universe_start + i,
+                    ip: config.artnet_send.ip.replace(
+                        'x',
+                        (config.artnet_send.subnet_start + i)
+                            .toString()
+                            .padStart(3, '0'),
+                    ),
+                    base_refresh_interval: 100,
+                }),
+            );
 
             await new Promise(resolve => setTimeout(resolve, 5));
         }
@@ -138,7 +156,8 @@ export default class MotionManager {
     // Converts an array of numbers to a color string
     private channelsToColorString(channels: number[]) {
         let colorString = '#';
-        for (const channel of channels) colorString += channel.toString(16).padStart(2, '0');
+        for (const channel of channels)
+            colorString += channel.toString(16).padStart(2, '0');
 
         return colorString;
     }

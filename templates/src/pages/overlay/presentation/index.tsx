@@ -1,9 +1,9 @@
 import styles from './style.module.css';
-import {useEffect, useState} from 'react';
-import {register} from '../../../lib/overlay/presentation/cg';
-import {handleState} from '../../../lib/overlay/presentation/animation';
-import {getStylesProxy} from '../../../lib/animation';
-import {CG} from '../../../components/CG';
+import { useEffect, useState } from 'react';
+import { register } from '../../../lib/overlay/presentation/cg';
+import { handleState } from '../../../lib/overlay/presentation/animation';
+import { getStylesProxy } from '../../../lib/animation';
+import { CG } from '../../../components/CG';
 
 interface PresentationAnimationProps {
     state: number;
@@ -24,7 +24,10 @@ function renderText(text: string): React.ReactNode {
     while ((match = VERSE_NUM_RE.exec(text)) !== null) {
         if (match.index > last) parts.push(text.slice(last, match.index));
         parts.push(
-            <span key={match.index} className={styles['presentation__verse-number']}>
+            <span
+                key={match.index}
+                className={styles['presentation__verse-number']}
+            >
                 {match[1]}
             </span>,
         );
@@ -34,18 +37,25 @@ function renderText(text: string): React.ReactNode {
     return <>{parts}</>;
 }
 
-export const PresentationAnimation: React.FC<PresentationAnimationProps> = ({state, text, reference}) => {
+export const PresentationAnimation: React.FC<PresentationAnimationProps> = ({
+    state,
+    text,
+    reference,
+}) => {
     return (
         <CG
             state={state}
             handle={handleState}
-
             labels={['start', 'end']}
             styles={getStylesProxy(styles)}
         >
             <div className={styles.presentation__main}>
-                <div className={styles.presentation__text}>{renderText(text)}</div>
-                <div className={styles.presentation__reference}>{reference}</div>
+                <div className={styles.presentation__text}>
+                    {renderText(text)}
+                </div>
+                <div className={styles.presentation__reference}>
+                    {reference}
+                </div>
             </div>
         </CG>
     );
@@ -57,7 +67,13 @@ const Page = () => {
     const [reference, setReference] = useState('');
     useEffect(() => register(setState, setText, setReference), []);
 
-    return <PresentationAnimation state={state} text={text} reference={reference}/>;
+    return (
+        <PresentationAnimation
+            state={state}
+            text={text}
+            reference={reference}
+        />
+    );
 };
 
 export default Page;

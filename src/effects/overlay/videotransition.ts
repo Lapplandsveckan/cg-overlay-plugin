@@ -1,13 +1,15 @@
-import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
+import { CgCommand, Effect, EffectGroup } from '@lappis/cg-manager';
 
-export interface VideoTransitionOverlayEffectOptions {
-
-}
+export interface VideoTransitionOverlayEffectOptions {}
 
 export class VideoTransitionOverlayEffect extends Effect {
     private options: VideoTransitionOverlayEffectOptions;
 
-    public constructor(group: EffectGroup, options: VideoTransitionOverlayEffectOptions, template: string) {
+    public constructor(
+        group: EffectGroup,
+        options: VideoTransitionOverlayEffectOptions,
+        template: string,
+    ) {
         super(group);
 
         this.options = options;
@@ -33,11 +35,7 @@ export class VideoTransitionOverlayEffect extends Effect {
             this.deactivate();
         }, 3000);
 
-        return this.executor.execute(
-            CgCommand
-                .play()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.play().allocate(this.layer));
     }
 
     public deactivate() {
@@ -48,16 +46,10 @@ export class VideoTransitionOverlayEffect extends Effect {
             this.dispose();
         }, 500);
 
-        return this.executor.execute(
-            CgCommand
-                .stop()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 
     public getMetadata(): {} {
-        return {
-
-        };
+        return {};
     }
 }

@@ -1,5 +1,5 @@
 const sizeMultiplier = 50; // Multiplier for the size of the coins
-const size = 100 * 0.4 / sizeMultiplier;
+const size = (100 * 0.4) / sizeMultiplier;
 
 const WIDTH = 1920;
 const HEIGHT = 1080;
@@ -29,7 +29,7 @@ export class Coin {
 
     public static create() {
         const x = Math.random() * (WIDTH - 200) + 100 - offsetX;
-        const y = Math.random() * (500) + offsetY;
+        const y = Math.random() * 500 + offsetY;
 
         const vx = Math.random() * 10 - 5;
         const vy = Math.random() * 10 - 5;
@@ -47,12 +47,14 @@ export class Coin {
         this.x = this.x + this.vx * dt;
         this.y = this.y + this.vy * dt;
 
-        if (this.x - size / 2 <= -offsetX / sizeMultiplier) { // If the coin is outside the canvas (left)
+        if (this.x - size / 2 <= -offsetX / sizeMultiplier) {
+            // If the coin is outside the canvas (left)
             this.x = -offsetX / sizeMultiplier + size / 2;
             this.vx = -this.vx * 0.4;
         }
 
-        if (this.x + size / 2 >= offsetX / sizeMultiplier) { // If the coin is outside the canvas (right)
+        if (this.x + size / 2 >= offsetX / sizeMultiplier) {
+            // If the coin is outside the canvas (right)
             this.x = offsetX / sizeMultiplier - size / 2;
             this.vx = -this.vx * 0.4;
         }
@@ -67,7 +69,10 @@ export class Coin {
 
     public render(ctx: CanvasRenderingContext2D) {
         ctx.save();
-        ctx.translate(this.x * sizeMultiplier + offsetX, -this.y * sizeMultiplier + offsetY);
+        ctx.translate(
+            this.x * sizeMultiplier + offsetX,
+            -this.y * sizeMultiplier + offsetY,
+        );
         ctx.rotate(this.rot);
         ctx.scale(0.4, 0.4);
         ctx.drawImage(Coin.coin, -Coin.coin.width / 2, -Coin.coin.height / 2);
@@ -99,8 +104,7 @@ export class InsamlingCanvas {
     }
 
     public fillCoins() {
-        for (let i = 0; i < 150; i++)
-            this.coins.push(Coin.create());
+        for (let i = 0; i < 150; i++) this.coins.push(Coin.create());
     }
 
     public calculate() {
@@ -111,11 +115,10 @@ export class InsamlingCanvas {
             return;
         }
 
-        for (const coin of this.coins)
-            coin.calculate(this.delta);
+        for (const coin of this.coins) coin.calculate(this.delta);
 
         // Remove coins that are outside the canvas
-        this.coins = this.coins.filter((c) => c.y + size / 2 > 0);
+        this.coins = this.coins.filter(c => c.y + size / 2 > 0);
     }
 
     private renderPadding() {
@@ -132,8 +135,7 @@ export class InsamlingCanvas {
         if (!this.ctx) return;
 
         this.ctx.clearRect(0, 0, WIDTH, HEIGHT);
-        for (const coin of this.coins)
-            coin.render(this.ctx);
+        for (const coin of this.coins) coin.render(this.ctx);
 
         this.renderPadding();
     }

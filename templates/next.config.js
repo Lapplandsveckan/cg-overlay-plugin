@@ -13,4 +13,4 @@ if (!dev) {
     nextConfig.distDir = 'out';
 }
 
-module.exports = nextConfig
+module.exports = nextConfig;

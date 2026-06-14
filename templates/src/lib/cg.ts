@@ -14,7 +14,7 @@ export function offCGEvent(event: CGEvent, callback: (...args: any[]) => void) {
 if (typeof window !== 'undefined') {
     window['__cg'](events.emit);
 
-    window['update'] = (params) => {
+    window['update'] = params => {
         try {
             events.emit('update', JSON.parse(params));
         } catch (e) {}

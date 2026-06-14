@@ -1,5 +1,5 @@
 import React from 'react';
-import {Box, Typography} from '@mui/material';
+import { Box, Typography } from '@mui/material';
 
 export interface SlidePreviewProps {
     text: string;
@@ -20,7 +20,12 @@ export interface SlidePreviewProps {
 const VERSE_NUM_RE = /⟨(\d+)⟩/g;
 
 function renderText(text: string): React.ReactNode {
-    if (!text) return <Box component="span" sx={{opacity: 0.4, fontStyle: 'italic'}}>(empty)</Box>;
+    if (!text)
+        return (
+            <Box component="span" sx={{ opacity: 0.4, fontStyle: 'italic' }}>
+                (empty)
+            </Box>
+        );
     if (!text.includes('⟨')) return text;
 
     const parts: React.ReactNode[] = [];
@@ -66,11 +71,15 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
             width: '100%',
             minWidth,
             backgroundColor: '#1a1c22',
-            backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : undefined,
+            backgroundImage: backgroundUrl
+                ? `url(${backgroundUrl})`
+                : undefined,
             backgroundSize: 'cover',
             borderRadius: 1,
             overflow: 'hidden',
-            border: selected ? '2px solid #4a90e2' : '1px solid rgba(255,255,255,0.08)',
+            border: selected
+                ? '2px solid #4a90e2'
+                : '1px solid rgba(255,255,255,0.08)',
             transition: 'border-color 80ms, opacity 80ms',
             opacity: dimmed ? 0.55 : 1,
             containerType: 'size',
