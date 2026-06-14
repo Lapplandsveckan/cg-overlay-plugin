@@ -62,7 +62,7 @@ export class SwishOverlayEffect extends Effect {
         );
     }
 
-    public getMetadata(): object {
+    public getMetadata(): Record<string, unknown> {
         return {
             number: this.options.number,
         };

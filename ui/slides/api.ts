@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 
-// @ts-expect-error -- no type declarations for @web-lib
 import { useSocket } from '@web-lib';
 
 export interface BibleSlide {

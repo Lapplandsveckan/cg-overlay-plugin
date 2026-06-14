@@ -61,7 +61,7 @@ export class RouteEffect extends Effect {
         return result;
     }
 
-    public getMetadata(): object {
+    public getMetadata(): Record<string, unknown> {
         return {};
     }
 

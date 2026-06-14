@@ -18,8 +18,9 @@
     window.update = params => {
         try {
             buffer.push(['update', JSON.parse(params)]);
-            // eslint-disable-next-line no-empty
-        } catch {}
+        } catch {
+            // intentionally empty
+        }
     };
 
     window.play = () => buffer.push(['play']);

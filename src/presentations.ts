@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { noTryAsync } from 'no-try';
+import { noTry, noTryAsync } from 'no-try';
 import type LappisOverlayPlugin from './index';
 
 const STORE_PATH = path.join(
@@ -52,22 +52,20 @@ export class PresentationStore {
     }
 
     private async load() {
-        const [err, result] = await noTryAsync(async () => {
-            const raw = await fs.readFile(STORE_PATH, 'utf8');
-            return sanitize(JSON.parse(raw));
-        });
-        if (err) {
-            if ((err as any)?.code !== 'ENOENT') {
+        const [readErr, raw] = await noTryAsync(() =>
+            fs.readFile(STORE_PATH, 'utf8'),
+        );
+        if (readErr) {
+            if ((readErr as any)?.code !== 'ENOENT')
                 this.plugin
                     .getLogger()
                     .warn(
-                        `Failed to read presentations: ${(err as any).message}`,
+                        `Failed to read presentations: ${(readErr as any).message}`,
                     );
-            }
-            this.presentations = [];
             return;
         }
-        this.presentations = result;
+        const [, parsed] = noTry(() => JSON.parse(raw!));
+        if (parsed) this.presentations = sanitize(parsed);
     }
 
     private async persist() {

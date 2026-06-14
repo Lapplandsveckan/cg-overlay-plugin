@@ -8,7 +8,6 @@ import {
     Typography,
 } from '@mui/material';
 
-// @ts-expect-error -- no type declarations for @web-lib
 import { RundownEditorActionBar } from '@web-lib';
 
 interface RundownEntry {

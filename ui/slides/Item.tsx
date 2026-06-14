@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from 'react';
 import { Chip, Stack, Typography } from '@mui/material';
-// @ts-expect-error -- no type declarations for @web-lib
 import { useSocket } from '@web-lib';
 
 import {

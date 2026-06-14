@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { noTry, noTryAsync } from 'no-try';
 import {
     Alert,
     Box,
@@ -11,7 +10,7 @@ import {
     Typography,
 } from '@mui/material';
 
-// @ts-expect-error -- no type declarations for @web-lib
+import { noTry, noTryAsync } from 'no-try';
 import { RundownEditorActionBar, useSocket } from '@web-lib';
 import { usePresentations, createPresentation } from './api';
 import { slidesEditorUrl } from './urls';
@@ -65,14 +64,14 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
         const [err, created] = await noTryAsync(() =>
             createPresentation(conn, { title: 'Untitled', slides: [] }),
         );
-        setCreatingNew(false);
         if (err) {
             console.error(err);
             setError((err as any)?.message ?? 'Failed to create presentation');
-            return;
+        } else {
+            handleSelect(created!.id);
+            openPresentationEditor(created!.id);
         }
-        handleSelect(created.id);
-        openPresentationEditor(created.id);
+        setCreatingNew(false);
     };
 
     const loading = presentations === null;

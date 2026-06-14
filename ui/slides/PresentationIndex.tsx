@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { noTryAsync } from 'no-try';
 import { Alert, Box, Chip, Stack, Typography } from '@mui/material';
 
-// @ts-expect-error -- no type declarations for @web-lib
+import { noTryAsync } from 'no-try';
 import { useSocket } from '@web-lib';
 
 import SlidePreview from './SlidePreview';
@@ -37,7 +36,7 @@ export const PresentationIndex: React.FC = () => {
             setCreating(false);
             return;
         }
-        window.location.assign(slidesEditorUrl(p.id));
+        window.location.assign(slidesEditorUrl(p!.id));
     };
 
     return (

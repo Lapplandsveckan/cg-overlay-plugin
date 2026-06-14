@@ -46,7 +46,7 @@ export class InsamlingOverlayEffect extends Effect {
         return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 
-    public getMetadata(): object {
+    public getMetadata(): Record<string, unknown> {
         return {};
     }
 }

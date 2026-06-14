@@ -179,7 +179,7 @@ export class VideoEffect extends Effect {
         return result;
     }
 
-    public getMetadata(): object {
+    public getMetadata(): Record<string, unknown> {
         return {
             playing: this.playing,
             loop: this.options.loop ?? false,
