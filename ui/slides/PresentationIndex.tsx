@@ -2,9 +2,7 @@ import React, {useState} from 'react';
 import {
     Alert,
     Box,
-    Button,
     Chip,
-    Link,
     Stack,
     Typography,
 } from '@mui/material';
@@ -40,47 +38,41 @@ export const PresentationIndex: React.FC = () => {
     };
 
     return (
-        <Box sx={{maxWidth: 1400, margin: '0 auto', padding: {xs: 2, md: 3}}}>
-            <Stack spacing={3}>
-                <Stack direction="row" spacing={2} alignItems="center">
-                    <Typography variant="h5" fontWeight={600}>Presentations</Typography>
-                    <Box sx={{flexGrow: 1}} />
-                    <Link href="lappis" sx={{fontSize: 14}}>← Plugin home</Link>
-                </Stack>
+        <Stack spacing={3}>
+            <Typography variant="h5" fontWeight={600}>Presentations</Typography>
 
-                {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
+            {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
 
-                {presentations === null ? (
-                    <Typography variant="body2" color="text.secondary">Loading…</Typography>
-                ) : (
-                    <Box
-                        sx={{
-                            display: 'grid',
-                            gridTemplateColumns: {
-                                xs: 'repeat(2, 1fr)',
-                                md: 'repeat(3, 1fr)',
-                                lg: 'repeat(4, 1fr)',
-                            },
-                            gap: 2.5,
-                        }}
-                    >
-                        <CreateTile onClick={() => setCreateOpen(true)} disabled={creating} />
-                        {presentations.map(p => (
-                            <PresentationTile key={p.id} presentation={p} backgroundUrl={backgroundUrl} />
-                        ))}
-                    </Box>
-                )}
+            {presentations === null ? (
+                <Typography variant="body2" color="text.secondary">Loading…</Typography>
+            ) : (
+                <Box
+                    sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                            xs: 'repeat(2, 1fr)',
+                            md: 'repeat(3, 1fr)',
+                            lg: 'repeat(4, 1fr)',
+                        },
+                        gap: 2.5,
+                    }}
+                >
+                    <CreateTile onClick={() => setCreateOpen(true)} disabled={creating} />
+                    {presentations.map(p => (
+                        <PresentationTile key={p.id} presentation={p} backgroundUrl={backgroundUrl} />
+                    ))}
+                </Box>
+            )}
 
-                <NameDialog
-                    open={createOpen}
-                    title="New presentation"
-                    initialName=""
-                    confirmLabel="Create"
-                    onClose={() => setCreateOpen(false)}
-                    onSubmit={handleCreate}
-                />
-            </Stack>
-        </Box>
+            <NameDialog
+                open={createOpen}
+                title="New presentation"
+                initialName=""
+                confirmLabel="Create"
+                onClose={() => setCreateOpen(false)}
+                onSubmit={handleCreate}
+            />
+        </Stack>
     );
 };
 

@@ -12,7 +12,7 @@ import {
     useBackgroundImage,
     usePresentations,
 } from './slides/api';
-import {slidesEditorUrl, slidesIndexUrl} from './slides/urls';
+import {slidesEditorUrl, pluginHomeUrl} from './slides/urls';
 
 const RUNDOWN_ITEM_MIME = 'application/x-cg-rundown-item';
 
@@ -599,7 +599,7 @@ const SlidesTab: React.FC = () => {
                         variant="outlined"
                         size="small"
                         component="a"
-                        href={slidesIndexUrl()}
+                        href={pluginHomeUrl()}
                     >
                         Open all
                     </Button>
