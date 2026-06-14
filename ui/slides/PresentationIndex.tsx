@@ -15,19 +15,22 @@ import {useSocket} from '@web-lib';
 import SlidePreview from './SlidePreview';
 import {Presentation, createPresentation, usePresentations, useBackgroundImage, slideRef} from './api';
 import {slidesEditorUrl} from './urls';
+import NameDialog from './NameDialog';
 
 export const PresentationIndex: React.FC = () => {
     const conn = useSocket();
     const {presentations} = usePresentations();
     const backgroundUrl = useBackgroundImage();
     const [creating, setCreating] = useState(false);
+    const [createOpen, setCreateOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleCreate = async () => {
+    const handleCreate = async (title: string) => {
+        setCreateOpen(false);
         setCreating(true);
         setError(null);
         try {
-            const p = await createPresentation(conn, {title: 'Untitled', slides: []});
+            const p = await createPresentation(conn, {title, slides: []});
             window.location.assign(slidesEditorUrl(p.id));
         } catch (err: any) {
             console.error(err);
@@ -61,12 +64,21 @@ export const PresentationIndex: React.FC = () => {
                             gap: 2.5,
                         }}
                     >
-                        <CreateTile onClick={handleCreate} disabled={creating} />
+                        <CreateTile onClick={() => setCreateOpen(true)} disabled={creating} />
                         {presentations.map(p => (
                             <PresentationTile key={p.id} presentation={p} backgroundUrl={backgroundUrl} />
                         ))}
                     </Box>
                 )}
+
+                <NameDialog
+                    open={createOpen}
+                    title="New presentation"
+                    initialName=""
+                    confirmLabel="Create"
+                    onClose={() => setCreateOpen(false)}
+                    onSubmit={handleCreate}
+                />
             </Stack>
         </Box>
     );

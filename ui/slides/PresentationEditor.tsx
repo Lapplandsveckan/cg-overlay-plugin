@@ -22,6 +22,8 @@ import {
     Typography,
 } from '@mui/material';
 
+import NameDialog from './NameDialog';
+
 // @ts-ignore
 import {useSocket} from '@web-lib';
 
@@ -44,35 +46,21 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
     const remote = usePresentation(id);
     const backgroundUrl = useBackgroundImage();
 
-    const [localTitle, setLocalTitle] = useState<string | null>(null);
-    const [savingTitle, setSavingTitle] = useState(false);
+    const [renameOpen, setRenameOpen] = useState(false);
     const [addOpen, setAddOpen] = useState(false);
     const [editing, setEditing] = useState<Slide | null>(null);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (remote && localTitle === null) setLocalTitle(remote.title);
-    }, [remote, localTitle]);
-
-    // Debounced title save.
-    useEffect(() => {
-        if (localTitle === null || !remote) return;
-        if (localTitle === remote.title) return;
-
-        const handle = setTimeout(async () => {
-            setSavingTitle(true);
-            try {
-                await updatePresentation(conn, id, {title: localTitle});
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setSavingTitle(false);
-            }
-        }, 600);
-
-        return () => clearTimeout(handle);
-    }, [localTitle, remote, id]);
+    const handleRename = async (title: string) => {
+        setRenameOpen(false);
+        try {
+            await updatePresentation(conn, id, {title});
+        } catch (err) {
+            console.error(err);
+            setError('Failed to rename presentation');
+        }
+    };
 
     if (remote === undefined) {
         return <CenteredMessage>Loading…</CenteredMessage>;
@@ -129,9 +117,6 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
                 <Stack direction="row" spacing={2} alignItems="center">
                     <Link href={slidesIndexUrl()} sx={{fontSize: 14}}>← Presentations</Link>
                     <Box sx={{flexGrow: 1}} />
-                    {savingTitle && (
-                        <Typography variant="caption" color="text.secondary">Saving…</Typography>
-                    )}
                     <Button
                         size="small"
                         color="error"
@@ -142,22 +127,40 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
                     </Button>
                 </Stack>
 
-                <Stack direction="row" spacing={2} alignItems="center">
-                    <TextField
-                        value={localTitle ?? ''}
-                        onChange={e => setLocalTitle(e.target.value)}
-                        variant="standard"
-                        placeholder="Untitled"
-                        InputProps={{
-                            sx: {fontSize: 32, fontWeight: 500},
-                        }}
-                        sx={{flexGrow: 1}}
-                    />
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Typography
+                        variant="h2"
+                        fontWeight={600}
+                        sx={!remote.title ? {color: 'text.disabled', fontStyle: 'italic'} : undefined}
+                    >
+                        {remote.title || 'Untitled'}
+                    </Typography>
+                    <Tooltip title="Rename">
+                        <IconButton
+                            onClick={() => setRenameOpen(true)}
+                            sx={{
+                                width: 32, height: 32, padding: 0,
+                                color: 'text.secondary',
+                                '&:hover': {color: 'text.primary'},
+                            }}
+                        >
+                            <Box component="span" sx={{fontSize: 19, lineHeight: 1, fontWeight: 700}}>✎</Box>
+                        </IconButton>
+                    </Tooltip>
+                    <Box sx={{flexGrow: 1}} />
                     <Chip
                         label={`${remote.slides.length} slide${remote.slides.length === 1 ? '' : 's'}`}
                         variant="outlined"
                     />
                 </Stack>
+
+                <NameDialog
+                    open={renameOpen}
+                    title="Rename presentation"
+                    initialName={remote.title}
+                    onClose={() => setRenameOpen(false)}
+                    onSubmit={handleRename}
+                />
 
                 {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
 
