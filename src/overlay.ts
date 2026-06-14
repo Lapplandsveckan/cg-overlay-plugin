@@ -24,7 +24,7 @@ export interface PresentationArmEvent {
 
 export const CHANNELS = {
     MAIN: 1,
-    VIDEO: 3,
+    VIDEO: 2,
 };
 
 export const GROUPS = {
