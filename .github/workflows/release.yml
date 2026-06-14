@@ -1,0 +1,40 @@
+name: Release Plugin
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Build & Release plugin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone codebase
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+
+      - name: Install project dependencies
+        run: yarn install --prefer-offline
+
+      - name: Package plugin
+        run: yarn package
+
+      - name: Release asset
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.run_number }}
+          draft: false
+          prerelease: false
+          files: |
+            ./cg-overlay-plugin.cgplugin
