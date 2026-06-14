@@ -1,9 +1,9 @@
 import * as dmxlib from 'dmxnet';
 import TransportStream from 'winston-transport';
-import { Logger } from '@lappis/cg-manager';
+import { type Logger } from '@lappis/cg-manager';
 import { config } from './config';
-import { MotionEffect } from './effects/misc/motion';
-import LappisOverlayPlugin from './index';
+import { type MotionEffect } from './effects/misc/motion';
+import type LappisOverlayPlugin from './index';
 import { CHANNELS, getGroup, GROUPS } from './overlay';
 
 class PluginLoggerTransport extends TransportStream {
@@ -113,16 +113,17 @@ export default class MotionManager {
             subnet,
         });
 
-        for (let i = 0; i < config.artnet_send.count; i++) {
+        for (let i = 0; i < config.artnetSend.count; i++) {
             this.senders.push(
                 dmxnet.newSender({
-                    subuni: config.artnet_send.universe_start + i,
-                    ip: config.artnet_send.ip.replace(
+                    subuni: config.artnetSend.universeStart + i,
+                    ip: config.artnetSend.ip.replace(
                         'x',
-                        (config.artnet_send.subnet_start + i)
+                        (config.artnetSend.subnetStart + i)
                             .toString()
                             .padStart(3, '0'),
                     ),
+                    // eslint-disable-next-line camelcase
                     base_refresh_interval: 100,
                 }),
             );

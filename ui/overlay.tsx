@@ -5,7 +5,7 @@ import PresentationIndex from './slides/PresentationIndex';
 import PresentationEditor from './slides/PresentationEditor';
 
 const OverlayTest = ({ path }) => {
-    if (path && path[0] === 'slides' && path[1]) {
+    if (path?.[0] === 'slides' && path[1]) {
         return <PresentationEditor id={path[1]} />;
     }
 

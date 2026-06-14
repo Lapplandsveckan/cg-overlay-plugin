@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
+import { noTryAsync } from 'no-try';
 import { Alert, Box, Chip, Stack, Typography } from '@mui/material';
 
-// @ts-ignore
+// @ts-expect-error -- no type declarations for @web-lib
 import { useSocket } from '@web-lib';
 
 import SlidePreview from './SlidePreview';
 import {
-    Presentation,
+    type Presentation,
     createPresentation,
     usePresentations,
     useBackgroundImage,
@@ -27,14 +28,16 @@ export const PresentationIndex: React.FC = () => {
         setCreateOpen(false);
         setCreating(true);
         setError(null);
-        try {
-            const p = await createPresentation(conn, { title, slides: [] });
-            window.location.assign(slidesEditorUrl(p.id));
-        } catch (err: any) {
+        const [err, p] = await noTryAsync(() =>
+            createPresentation(conn, { title, slides: [] }),
+        );
+        if (err) {
             console.error(err);
-            setError(err?.message ?? 'Failed to create presentation');
+            setError((err as any)?.message ?? 'Failed to create presentation');
             setCreating(false);
+            return;
         }
+        window.location.assign(slidesEditorUrl(p.id));
     };
 
     return (

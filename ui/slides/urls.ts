@@ -23,6 +23,6 @@ export function backTargetFromSearch(search: string): string | null {
     const raw = new URLSearchParams(search).get('from');
     // Must start with exactly one '/' and not be protocol-relative (//) or
     // backslash-bypass (/\) — some browsers normalise /\evil.com to //evil.com.
-    if (!raw || raw[0] !== '/' || raw[1] === '/' || raw[1] === '\\') return null;
+    if (raw?.[0] !== '/' || raw[1] === '/' || raw[1] === '\\') return null;
     return raw;
 }

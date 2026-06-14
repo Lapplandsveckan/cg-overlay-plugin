@@ -1,9 +1,9 @@
 import {
     ClearCommand,
-    Command,
+    type Command,
     CommandGroup,
     Effect,
-    EffectGroup,
+    type EffectGroup,
     MixerCommand,
     PlayCommand,
 } from '@lappis/cg-manager';
@@ -164,7 +164,7 @@ export class MotionEffect extends Effect {
         return result;
     }
 
-    public getMetadata(): {} {
+    public getMetadata(): object {
         return {};
     }
 }

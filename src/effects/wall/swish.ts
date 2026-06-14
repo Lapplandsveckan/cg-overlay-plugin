@@ -1,4 +1,4 @@
-import { CgCommand, Effect, EffectGroup } from '@lappis/cg-manager';
+import { CgCommand, Effect, type EffectGroup } from '@lappis/cg-manager';
 
 export interface SwishWallEffectOptions {
     number: string;
@@ -54,7 +54,7 @@ export class SwishWallEffect extends Effect {
         );
     }
 
-    public getMetadata(): {} {
+    public getMetadata(): object {
         return {
             number: this.options.number,
         };

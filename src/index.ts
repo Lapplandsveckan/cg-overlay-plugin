@@ -1,58 +1,66 @@
+/* eslint-disable max-lines */
 import path from 'path';
 import fs from 'fs';
+import { noTry } from 'no-try';
 import {
     CasparPlugin,
-    RundownActionMetadata,
+    type RundownActionMetadata,
     UI_INJECTION_ZONE,
 } from '@lappis/cg-manager';
+import { type RundownItem } from '@lappis/cg-manager/dist/types/rundown';
 import { Templates } from './templates';
 import {
     SwishOverlayEffect,
-    SwishOverlayEffectOptions,
+    type SwishOverlayEffectOptions,
 } from './effects/overlay/swish';
 import {
     NamnskyltOverlayEffect,
-    NamnskyltOverlayEffectOptions,
+    type NamnskyltOverlayEffectOptions,
 } from './effects/overlay/namnskylt';
 import {
     VideoTransitionOverlayEffect,
-    VideoTransitionOverlayEffectOptions,
+    type VideoTransitionOverlayEffectOptions,
 } from './effects/overlay/videotransition';
-import { SwishWallEffect, SwishWallEffectOptions } from './effects/wall/swish';
+import {
+    SwishWallEffect,
+    type SwishWallEffectOptions,
+} from './effects/wall/swish';
 import {
     NamnskyltWallEffect,
-    NamnskyltWallEffectOptions,
+    type NamnskyltWallEffectOptions,
 } from './effects/wall/namnskylt';
 import {
     VideoTransitionWallEffect,
-    VideoTransitionWallEffectOptions,
+    type VideoTransitionWallEffectOptions,
 } from './effects/wall/videotransition';
 import {
     BarsOverlayEffect,
-    BarsOverlayEffectOptions,
+    type BarsOverlayEffectOptions,
 } from './effects/overlay/bars';
 import {
     InsamlingOverlayEffect,
-    InsamlingOverlayEffectOptions,
+    type InsamlingOverlayEffectOptions,
 } from './effects/overlay/insamling';
 import {
     PresentationOverlayEffect,
-    PresentationOverlayEffectOptions,
+    type PresentationOverlayEffectOptions,
 } from './effects/overlay/presentation';
-import { VideoEffect, VideoEffectOptions } from './effects/misc/video';
+import { VideoEffect, type VideoEffectOptions } from './effects/misc/video';
 import VideoManager from './video';
-import { RouteEffect, RouteEffectOptions } from './effects/misc/route';
+import { RouteEffect, type RouteEffectOptions } from './effects/misc/route';
 import OverlayManager, { CHANNELS, getGroup, GROUPS } from './overlay';
-import { RundownItem } from '@lappis/cg-manager/dist/types/rundown';
-import { MotionEffect, MotionEffectOptions } from './effects/misc/motion';
+import { MotionEffect, type MotionEffectOptions } from './effects/misc/motion';
 import MotionManager from './motion';
-import { getVerseSlides, VerseLookup } from './bible';
+import { getVerseSlides, type VerseLookup } from './bible';
 import { AtemManager } from './atem';
 import { config } from './config';
-import { TextWallEffect, TextWallEffectOptions } from './effects/wall/text';
+import {
+    TextWallEffect,
+    type TextWallEffectOptions,
+} from './effects/wall/text';
 import {
     WallVideoEffect,
-    WallVideoEffectOptions,
+    type WallVideoEffectOptions,
 } from './effects/misc/wall_video';
 import { NamnskyltPresetStore } from './namnskylt-presets';
 import { PresentationStore } from './presentations';
@@ -346,7 +354,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             this.overlay.toggleSwish(number, labels, skipFirst);
         });
 
-        registerRundownAction('bars', async rundown => {
+        registerRundownAction('bars', async () => {
             this.overlay.toggleBars();
         });
 
@@ -419,7 +427,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.api.registerRoute(
             'bars',
-            async req => {
+            async () => {
                 this.overlay.toggleBars();
             },
             'ACTION',
@@ -480,7 +488,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.api.registerRoute(
             'videos',
-            async req => this.video.getInformation(),
+            async () => this.video.getInformation(),
             'GET',
         );
         this.api.registerRoute(
@@ -491,7 +499,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.api.registerRoute(
             'videos',
-            async req => this.video.clearQueue(),
+            async () => this.video.clearQueue(),
             'DELETE',
         );
         this.api.registerRoute(
@@ -516,7 +524,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.api.registerRoute(
             'namnskylt-presets',
-            async req => {
+            async () => {
                 await this.namnskyltPresets.ready;
                 return this.namnskyltPresets.get();
             },
@@ -534,19 +542,21 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.api.registerRoute(
             'slides',
-            async req => this.overlay.getPresentationState(),
+            async () => this.overlay.getPresentationState(),
             'GET',
         );
 
         this.api.registerRoute(
             'bible',
             async req => {
-                try {
-                    const lookup = req.data as VerseLookup;
-                    return getVerseSlides(lookup);
-                } catch (e: any) {
-                    return { error: e?.message ?? 'Bible lookup failed' };
-                }
+                const [err, result] = noTry(() =>
+                    getVerseSlides(req.data as VerseLookup),
+                );
+                if (err)
+                    return {
+                        error: (err as any)?.message ?? 'Bible lookup failed',
+                    };
+                return result;
             },
             'ACTION',
         );
@@ -593,7 +603,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         // Presentations CRUD
         this.api.registerRoute(
             'presentations',
-            async req => {
+            async () => {
                 await this.presentations.ready;
                 return this.presentations.list();
             },

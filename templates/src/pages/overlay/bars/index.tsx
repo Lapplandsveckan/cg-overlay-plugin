@@ -1,23 +1,21 @@
-import styles from './style.module.css';
 import { useEffect, useState } from 'react';
+import styles from './style.module.css';
 import { register } from '../../../lib/overlay/bars/cg';
 import { handleState } from '../../../lib/overlay/bars/animation';
 import { getStylesProxy } from '../../../lib/animation';
 import { CG } from '../../../components/CG';
 
-export const BarsAnimation: React.FC<{ state: number }> = ({ state }) => {
-    return (
-        <CG
-            state={state}
-            handle={handleState}
-            labels={['start', 'end']}
-            styles={getStylesProxy(styles)}
-        >
-            <div className={styles.bar} style={{ top: 0 }} />
-            <div className={styles.bar} style={{ bottom: 0 }} />
-        </CG>
-    );
-};
+export const BarsAnimation: React.FC<{ state: number }> = ({ state }) => (
+    <CG
+        state={state}
+        handle={handleState}
+        labels={['start', 'end']}
+        styles={getStylesProxy(styles)}
+    >
+        <div className={styles.bar} style={{ top: 0 }} />
+        <div className={styles.bar} style={{ bottom: 0 }} />
+    </CG>
+);
 
 const Page = () => {
     const [state, setState] = useState(0);

@@ -1,11 +1,11 @@
-import styles from './style.module.css';
 import { useEffect, useRef, useState } from 'react';
+import styles from './style.module.css';
 import { register } from '../../../lib/overlay/insamling/cg';
 import {
     handleState,
     setCanvas,
 } from '../../../lib/overlay/insamling/animation';
-import { getStylesProxy, Styles } from '../../../lib/animation';
+import { getStylesProxy } from '../../../lib/animation';
 import { CG } from '../../../components/CG';
 import {
     formatNumber,

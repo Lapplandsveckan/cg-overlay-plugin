@@ -1,11 +1,11 @@
 import {
     Effect,
-    EffectGroup,
+    type EffectGroup,
     PlayCommand,
     StopCommand,
     Transform,
-    BasicLayer,
-    Command,
+    type BasicLayer,
+    type Command,
     BasicChannel,
 } from '@lappis/cg-manager';
 
@@ -61,7 +61,7 @@ export class RouteEffect extends Effect {
         return result;
     }
 
-    public getMetadata(): {} {
+    public getMetadata(): object {
         return {};
     }
 

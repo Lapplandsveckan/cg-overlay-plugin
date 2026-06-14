@@ -1,18 +1,18 @@
-import { BasicChannel, Logger, PluginAPI } from '@lappis/cg-manager';
-import { SwishOverlayEffect } from './effects/overlay/swish';
-import { SwishWallEffect } from './effects/wall/swish';
-import { VideoTransitionWallEffect } from './effects/wall/videotransition';
-import { BarsOverlayEffect } from './effects/overlay/bars';
+import { BasicChannel, type Logger, type PluginAPI } from '@lappis/cg-manager';
+import { type SwishOverlayEffect } from './effects/overlay/swish';
+import { type SwishWallEffect } from './effects/wall/swish';
+import { type VideoTransitionWallEffect } from './effects/wall/videotransition';
+import { type BarsOverlayEffect } from './effects/overlay/bars';
 import {
-    InsamlingOverlayEffect,
-    InsamlingOverlayEffectOptions,
+    type InsamlingOverlayEffect,
+    type InsamlingOverlayEffectOptions,
 } from './effects/overlay/insamling';
-import { VideoEffect } from './effects/misc/video';
-import { RouteEffect } from './effects/misc/route';
-import LappisOverlayPlugin from './index';
-import { TextWallEffect } from './effects/wall/text';
-import { WallVideoEffect } from './effects/misc/wall_video';
-import { PresentationOverlayEffect } from './effects/overlay/presentation';
+import { type VideoEffect } from './effects/misc/video';
+import { type RouteEffect } from './effects/misc/route';
+import type LappisOverlayPlugin from './index';
+import { type TextWallEffect } from './effects/wall/text';
+import { type WallVideoEffect } from './effects/misc/wall_video';
+import { type PresentationOverlayEffect } from './effects/overlay/presentation';
 
 // Re-export the canonical slide type from the store; OverlayManager
 // stays narrow and only cares about (presentationId, slideId).

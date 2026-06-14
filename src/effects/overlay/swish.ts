@@ -1,4 +1,4 @@
-import { CgCommand, Effect, EffectGroup } from '@lappis/cg-manager';
+import { CgCommand, Effect, type EffectGroup } from '@lappis/cg-manager';
 
 export interface SwishOverlayEffectOptions {
     number: string;
@@ -62,7 +62,7 @@ export class SwishOverlayEffect extends Effect {
         );
     }
 
-    public getMetadata(): {} {
+    public getMetadata(): object {
         return {
             number: this.options.number,
         };

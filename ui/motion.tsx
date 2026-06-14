@@ -11,7 +11,7 @@ import React, { useState } from 'react';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
-// @ts-ignore
+// @ts-expect-error -- no type declarations for @web-lib
 import { MediaView, useSocket } from '@web-lib';
 
 export const MotionControl = () => {

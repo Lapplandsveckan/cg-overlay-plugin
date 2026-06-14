@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-// @ts-ignore
+// @ts-expect-error -- no type declarations for @web-lib
 import { useSocket } from '@web-lib';
 
 export interface BibleSlide {
@@ -123,16 +123,14 @@ export function deletePresentation(conn: any, id: string): Promise<boolean> {
 // ---------- Playback ----------
 
 export function getPlaybackState(conn: any): Promise<PlaybackState> {
-    return conn
-        .rawRequest(`${ROOT}/slides`, 'GET', {})
-        .then(
-            (res: any) =>
-                res?.data ?? {
-                    playing: false,
-                    presentationId: null,
-                    slideId: null,
-                },
-        );
+    return conn.rawRequest(`${ROOT}/slides`, 'GET', {}).then(
+        (res: any) =>
+            res?.data ?? {
+                playing: false,
+                presentationId: null,
+                slideId: null,
+            },
+    );
 }
 
 export function playSlide(

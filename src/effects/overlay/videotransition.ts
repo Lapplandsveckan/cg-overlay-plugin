@@ -1,5 +1,6 @@
-import { CgCommand, Effect, EffectGroup } from '@lappis/cg-manager';
+import { CgCommand, Effect, type EffectGroup } from '@lappis/cg-manager';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface VideoTransitionOverlayEffectOptions {}
 
 export class VideoTransitionOverlayEffect extends Effect {
@@ -49,7 +50,7 @@ export class VideoTransitionOverlayEffect extends Effect {
         return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 
-    public getMetadata(): {} {
+    public getMetadata(): object {
         return {};
     }
 }

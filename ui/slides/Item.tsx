@@ -1,10 +1,10 @@
 import React, { useCallback, useState } from 'react';
 import { Chip, Stack, Typography } from '@mui/material';
-// @ts-ignore
+// @ts-expect-error -- no type declarations for @web-lib
 import { useSocket } from '@web-lib';
 
 import {
-    ArmEvent,
+    type ArmEvent,
     playSlide,
     slideRef,
     stopPlayback,

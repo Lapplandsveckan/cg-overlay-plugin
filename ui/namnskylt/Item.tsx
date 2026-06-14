@@ -15,7 +15,7 @@ interface NamnskyltRundownItemProps {
 }
 
 export const NamnskyltRundownItem: React.FC<NamnskyltRundownItemProps> = ({
-    entry,
+    entry: _entry,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
 

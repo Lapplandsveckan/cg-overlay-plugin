@@ -17,7 +17,8 @@ if (typeof window !== 'undefined') {
     window['update'] = params => {
         try {
             events.emit('update', JSON.parse(params));
-        } catch (e) {}
+            // eslint-disable-next-line no-empty
+        } catch {}
     };
 
     window['play'] = () => events.emit('play');

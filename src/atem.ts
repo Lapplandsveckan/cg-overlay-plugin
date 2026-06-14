@@ -1,5 +1,5 @@
-import { config } from './config';
 import { Atem } from 'atem-connection';
+import { config } from './config';
 
 export class AtemManager {
     private connection: Atem = null;

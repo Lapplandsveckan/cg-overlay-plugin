@@ -1,5 +1,5 @@
 import { InsamlingCanvas } from './canvas';
-import { Styles } from '../../animation';
+import { type Styles } from '../../animation';
 
 const insamlingCanvas = new InsamlingCanvas();
 export function setCanvas(canvas: HTMLCanvasElement) {

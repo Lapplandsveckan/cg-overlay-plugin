@@ -29,7 +29,6 @@ const NameDialog: React.FC<Props> = ({
 }) => {
     const [name, setName] = useState(initialName);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (open) setName(initialName);
     }, [open]);

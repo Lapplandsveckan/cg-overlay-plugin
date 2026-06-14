@@ -1,5 +1,5 @@
-import styles from './style.module.css';
 import React, { useEffect, useState } from 'react';
+import styles from './style.module.css';
 import { register } from '../../../lib/overlay/swish/cg';
 import { handleState } from '../../../lib/overlay/swish/animation';
 import { getStylesProxy } from '../../../lib/animation';
@@ -8,17 +8,15 @@ import { CG } from '../../../components/CG';
 export const SlidingSwish: React.FC<{ count: number; className: string }> = ({
     count,
     className,
-}) => {
-    return (
-        <div className={`${styles.swish__sliding__row} ${className}`}>
-            {Array.from({ length: count }).map((_, i) => (
-                <div key={i} className={styles.swish__sliding__text}>
-                    Swish
-                </div>
-            ))}
-        </div>
-    );
-};
+}) => (
+    <div className={`${styles.swish__sliding__row} ${className}`}>
+        {Array.from({ length: count }).map((_, i) => (
+            <div key={i} className={styles.swish__sliding__text}>
+                Swish
+            </div>
+        ))}
+    </div>
+);
 
 interface SwishAnimationProps {
     number: string;

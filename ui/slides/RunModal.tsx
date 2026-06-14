@@ -14,9 +14,9 @@ import {
 
 import SlidePreview from './SlidePreview';
 import {
-    Presentation,
-    Slide,
-    PlaybackState,
+    type Presentation,
+    type Slide,
+    type PlaybackState,
     slideRef,
     slideLabel,
     useBackgroundImage,
@@ -46,9 +46,7 @@ export const RunModal: React.FC<RunModalProps> = ({
     // "Playing here" = backend reports playing AND the playing presentation
     // matches the one this modal is currently controlling.
     const playingHere = !!(
-        playback?.playing &&
-        presentation &&
-        playback.presentationId === presentation.id
+        playback?.playing && playback.presentationId === presentation?.id
     );
 
     const currentIndex = playingHere

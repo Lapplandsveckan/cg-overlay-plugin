@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { noTry } from 'no-try';
+import { noTry, noTryAsync } from 'no-try';
 import {
     Alert,
     Box,
@@ -11,12 +11,10 @@ import {
     Typography,
 } from '@mui/material';
 
-// @ts-ignore
-import { RundownEditorActionBar } from '@web-lib';
-import { usePresentations, createPresentation, Presentation } from './api';
+// @ts-expect-error -- no type declarations for @web-lib
+import { RundownEditorActionBar, useSocket } from '@web-lib';
+import { usePresentations, createPresentation } from './api';
 import { slidesEditorUrl } from './urls';
-// @ts-ignore
-import { useSocket } from '@web-lib';
 
 interface RundownEntry {
     id: string;
@@ -64,19 +62,17 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
     const handleCreateNew = async () => {
         setCreatingNew(true);
         setError(null);
-        try {
-            const created = await createPresentation(conn, {
-                title: 'Untitled',
-                slides: [],
-            });
-            handleSelect(created.id);
-            openPresentationEditor(created.id);
-        } catch (err: any) {
+        const [err, created] = await noTryAsync(() =>
+            createPresentation(conn, { title: 'Untitled', slides: [] }),
+        );
+        setCreatingNew(false);
+        if (err) {
             console.error(err);
-            setError(err?.message ?? 'Failed to create presentation');
-        } finally {
-            setCreatingNew(false);
+            setError((err as any)?.message ?? 'Failed to create presentation');
+            return;
         }
+        handleSelect(created.id);
+        openPresentationEditor(created.id);
     };
 
     const loading = presentations === null;

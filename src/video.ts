@@ -1,8 +1,8 @@
-import { VideoEffect } from './effects/misc/video';
-import LappisOverlayPlugin from './index';
 import { noTry, noTryAsync } from 'no-try';
-import { WallVideoEffect } from './effects/misc/wall_video';
-import { Effect } from '@lappis/cg-manager';
+import { type Effect } from '@lappis/cg-manager';
+import { type VideoEffect } from './effects/misc/video';
+import type LappisOverlayPlugin from './index';
+import { type WallVideoEffect } from './effects/misc/wall_video';
 
 interface VideoInfo {
     id: string;
@@ -111,7 +111,7 @@ export default class VideoManager {
             return;
         }
 
-        let extraEffects: WallVideoEffect[] = [];
+        const extraEffects: WallVideoEffect[] = [];
         if (video.metadata.secondaryVideo) {
             const [err, effect] = noTry(() =>
                 this.plugin
@@ -164,15 +164,16 @@ export default class VideoManager {
                         .error(`Failed to deactivate wall: ${err}`),
                 );
 
-        try {
+        const [playErr] = await noTryAsync(async () => {
             const promises: Promise<any>[] = [effect.play()];
             for (const extraEffect of extraEffects)
                 promises.push(extraEffect.play());
 
             await Promise.all(promises);
             await effect.waitForFinish();
-        } catch (err) {
-            this.plugin.getLogger().error(`Failed to play video: ${err}`);
+        });
+        if (playErr) {
+            this.plugin.getLogger().error(`Failed to play video: ${playErr}`);
 
             if (extraEffects)
                 extraEffects.forEach(effect => effect.deactivate());
@@ -225,8 +226,7 @@ export default class VideoManager {
 
     public removeItem(id: string) {
         this.queue = this.queue.filter(video => video.metadata.queueId !== id);
-        if (this.playing && this.playing.video.metadata.queueId === id)
-            this.stopVideo();
+        if (this.playing?.video.metadata.queueId === id) this.stopVideo();
 
         this.plugin.sendVideoInformation();
     }

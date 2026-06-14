@@ -1,5 +1,6 @@
-import { CgCommand, Effect, EffectGroup } from '@lappis/cg-manager';
+import { CgCommand, Effect, type EffectGroup } from '@lappis/cg-manager';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface BarsOverlayEffectOptions {}
 
 export class BarsOverlayEffect extends Effect {
@@ -39,7 +40,7 @@ export class BarsOverlayEffect extends Effect {
         return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 
-    public getMetadata(): {} {
+    public getMetadata(): object {
         return {};
     }
 }

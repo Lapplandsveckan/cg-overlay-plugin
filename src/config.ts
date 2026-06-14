@@ -6,10 +6,10 @@ export const config = {
         subnet: 0,
     },
 
-    artnet_send: {
+    artnetSend: {
         ip: '192.168.100.x',
-        subnet_start: 101,
-        universe_start: 6,
+        subnetStart: 101,
+        universeStart: 6,
 
         count: 12,
     },

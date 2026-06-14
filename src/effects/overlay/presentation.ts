@@ -1,4 +1,4 @@
-import { CgCommand, Effect, EffectGroup } from '@lappis/cg-manager';
+import { CgCommand, Effect, type EffectGroup } from '@lappis/cg-manager';
 
 export interface PresentationOverlayEffectOptions {
     text: string;
@@ -48,7 +48,7 @@ export class PresentationOverlayEffect extends Effect {
         return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 
-    public getMetadata(): {} {
+    public getMetadata(): object {
         return {
             text: this.options.text,
             reference: this.options.reference,

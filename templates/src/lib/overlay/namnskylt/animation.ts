@@ -96,7 +96,7 @@ function handleMinimize(
 function handleHide(
     tl: gsap.core.Timeline,
     styles: Record<string, string>,
-    prevState: number,
+    _prevState: number,
 ) {
     tl.clear();
 

@@ -1,5 +1,5 @@
-import styles from './style.module.css';
 import { useEffect, useState } from 'react';
+import styles from './style.module.css';
 import { register } from '../../../lib/overlay/presentation/cg';
 import { handleState } from '../../../lib/overlay/presentation/animation';
 import { getStylesProxy } from '../../../lib/animation';
@@ -41,25 +41,19 @@ export const PresentationAnimation: React.FC<PresentationAnimationProps> = ({
     state,
     text,
     reference,
-}) => {
-    return (
-        <CG
-            state={state}
-            handle={handleState}
-            labels={['start', 'end']}
-            styles={getStylesProxy(styles)}
-        >
-            <div className={styles.presentation__main}>
-                <div className={styles.presentation__text}>
-                    {renderText(text)}
-                </div>
-                <div className={styles.presentation__reference}>
-                    {reference}
-                </div>
-            </div>
-        </CG>
-    );
-};
+}) => (
+    <CG
+        state={state}
+        handle={handleState}
+        labels={['start', 'end']}
+        styles={getStylesProxy(styles)}
+    >
+        <div className={styles.presentation__main}>
+            <div className={styles.presentation__text}>{renderText(text)}</div>
+            <div className={styles.presentation__reference}>{reference}</div>
+        </div>
+    </CG>
+);
 
 const Page = () => {
     const [state, setState] = useState(0);

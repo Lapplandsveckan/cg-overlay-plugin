@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import LappisOverlayPlugin from './index';
+import { noTryAsync } from 'no-try';
+import type LappisOverlayPlugin from './index';
 
 const PRESETS_PATH = path.join(
     process.cwd(),
@@ -20,18 +21,22 @@ export class NamnskyltPresetStore {
     }
 
     private async load() {
-        try {
+        const [err, result] = await noTryAsync(async () => {
             const raw = await fs.readFile(PRESETS_PATH, 'utf8');
-            const parsed = JSON.parse(raw);
-            this.presets = sanitize(parsed);
-        } catch (err: any) {
-            if (err?.code !== 'ENOENT') {
+            return sanitize(JSON.parse(raw));
+        });
+        if (err) {
+            if ((err as any)?.code !== 'ENOENT') {
                 this.plugin
                     .getLogger()
-                    .warn(`Failed to read namnskylt presets: ${err.message}`);
+                    .warn(
+                        `Failed to read namnskylt presets: ${(err as any).message}`,
+                    );
             }
             this.presets = [];
+            return;
         }
+        this.presets = result;
     }
 
     public get(): string[] {

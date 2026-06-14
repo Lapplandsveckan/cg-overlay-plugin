@@ -1,16 +1,15 @@
 import {
     ClearCommand,
-    Command,
+    type Command,
     Effect,
-    EffectGroup,
+    type EffectGroup,
     PauseCommand,
     PlayCommand,
     Transform,
     LoadBGCommand,
     ResumeCommand,
-    PlayoutOptions,
 } from '@lappis/cg-manager';
-import { MediaDoc } from '@lappis/cg-manager/dist/types/scanner/db';
+import { type MediaDoc } from '@lappis/cg-manager/dist/types/scanner/db';
 
 type Tuple<T, N extends number> = N extends N
     ? number extends N
@@ -180,7 +179,7 @@ export class VideoEffect extends Effect {
         return result;
     }
 
-    public getMetadata(): {} {
+    public getMetadata(): object {
         return {
             playing: this.playing,
             loop: this.options.loop ?? false,
