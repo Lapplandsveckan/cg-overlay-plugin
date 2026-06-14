@@ -88,6 +88,14 @@
         "mediaTab": "Media",
         "namnskyltarTab": "Namnskyltar",
         "slidesTab": "Slides",
-        "motionTab": "Motion"
+        "motionTab": "Motion",
+        "mediaHint": "Drag a clip to the rundown · Click to play",
+        "namnskyltarHint": "Drag a name onto the rundown",
+        "slidesHint": "Drag to add to rundown · Click to edit",
+        "openAll": "Open all",
+        "newPresentation": "+ New",
+        "creating": "Creating…",
+        "noPresentations": "No presentations yet.",
+        "emptySlide": "Empty"
     }
 }

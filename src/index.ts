@@ -118,9 +118,22 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             UI_INJECTION_ZONE.RUNDOWN_SIDE,
             path.join(__dirname, 'ui', 'video'),
         );
+        const PANEL = UI_INJECTION_ZONE.RUNDOWN_BOTTOM_PANEL;
         this.api.registerUI(
-            UI_INJECTION_ZONE.RUNDOWN_BOTTOM_PANEL,
-            path.join(__dirname, 'ui', 'panel'),
+            `${PANEL}.cg-overlay-plugin:panel.mediaTab` as UI_INJECTION_ZONE,
+            path.join(__dirname, 'ui', 'media'),
+        );
+        this.api.registerUI(
+            `${PANEL}.cg-overlay-plugin:panel.namnskyltarTab` as UI_INJECTION_ZONE,
+            path.join(__dirname, 'ui', 'namnskyltar'),
+        );
+        this.api.registerUI(
+            `${PANEL}.cg-overlay-plugin:panel.slidesTab` as UI_INJECTION_ZONE,
+            path.join(__dirname, 'ui', 'slides'),
+        );
+        this.api.registerUI(
+            `${PANEL}.cg-overlay-plugin:panel.motionTab` as UI_INJECTION_ZONE,
+            path.join(__dirname, 'ui', 'motion-tab'),
         );
 
         this.registerRundownActions();
