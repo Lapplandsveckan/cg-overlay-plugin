@@ -1,31 +1,29 @@
 import React from 'react';
-import {Box, Button, Stack, Typography} from '@mui/material';
+import {Box, Stack} from '@mui/material';
 import VideoQueue from './video';
 import PresentationIndex from './slides/PresentationIndex';
 import PresentationEditor from './slides/PresentationEditor';
 
-const OverlayTest = ({ path }) => {
-    if (path && path[0] === 'slides') {
-        const id = path[1];
-        if (id) return <PresentationEditor id={id} />;
-        return <PresentationIndex />;
+const OverlayTest = ({path}) => {
+    if (path && path[0] === 'slides' && path[1]) {
+        return <PresentationEditor id={path[1]} />;
     }
 
     return (
-        <Stack spacing={2} sx={{maxWidth: 720, margin: '0 auto', padding: 2}}>
-            <Typography variant="h5" fontWeight={600}>Overlay controls</Typography>
-
-            <VideoQueue />
-
-            <Box sx={{paddingTop: 1}}>
-                <Typography variant="overline" color="text.secondary">More</Typography>
-                <Stack direction="row" spacing={1.5} sx={{marginTop: 1}}>
-                    <Button component="a" href="lappis/slides" variant="outlined" fullWidth>
-                        Slides
-                    </Button>
-                </Stack>
-            </Box>
-        </Stack>
+        <Box sx={{maxWidth: 1600, margin: '0 auto', padding: {xs: 2, md: 3}}}>
+            <Stack
+                direction={{xs: 'column', md: 'row'}}
+                spacing={3}
+                alignItems="flex-start"
+            >
+                <Box sx={{flexGrow: 1, minWidth: 0}}>
+                    <PresentationIndex />
+                </Box>
+                <Box sx={{flexBasis: 380, flexShrink: 0, width: {xs: '100%', md: 'auto'}}}>
+                    <VideoQueue />
+                </Box>
+            </Stack>
+        </Box>
     );
 };
 

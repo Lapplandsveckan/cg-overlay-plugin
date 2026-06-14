@@ -6,10 +6,11 @@
 // panel) — and from inside the plugin page they only resolve correctly when
 // the current URL is /plugins/lappis (one level up), not deeper.
 
-export const SLIDES_BASE = '/plugins/lappis/slides';
+export const PLUGIN_BASE = '/plugins/lappis';
+export const SLIDES_BASE = `${PLUGIN_BASE}/slides`;
 
-export function slidesIndexUrl(): string {
-    return SLIDES_BASE;
+export function pluginHomeUrl(): string {
+    return PLUGIN_BASE;
 }
 
 export function slidesEditorUrl(id: string): string {

@@ -30,7 +30,7 @@ import {useSocket} from '@web-lib';
 import SlidePreview from './SlidePreview';
 import {BibleSlide, BibleLookup, FetchedVerse, Presentation, Slide, TextSlide, slideLabel, updatePresentation, deletePresentation, usePresentation, useBackgroundImage, fetchBibleSlides} from './api';
 import {BOOKS, TRANSLATIONS} from './bible-api';
-import {slidesIndexUrl} from './urls';
+import {pluginHomeUrl} from './urls';
 
 interface Props {
     id: string;
@@ -70,7 +70,7 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
             <CenteredMessage>
                 <Stack spacing={1.5} alignItems="center">
                     <Typography variant="body1">Presentation not found.</Typography>
-                    <Link href={slidesIndexUrl()}>← Back to presentations</Link>
+                    <Link href={pluginHomeUrl()}>← Back to home</Link>
                 </Stack>
             </CenteredMessage>
         );
@@ -104,7 +104,7 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
         setConfirmDelete(false);
         try {
             await deletePresentation(conn, id);
-            window.location.assign(slidesIndexUrl());
+            window.location.assign(pluginHomeUrl());
         } catch (err) {
             console.error(err);
             setError('Failed to delete presentation');
@@ -115,7 +115,15 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
         <Box sx={{maxWidth: 1400, margin: '0 auto', padding: {xs: 2, md: 3}}}>
             <Stack spacing={3}>
                 <Stack direction="row" spacing={2} alignItems="center">
-                    <Link href={slidesIndexUrl()} sx={{fontSize: 14}}>← Presentations</Link>
+                    <Button
+                        component="a"
+                        href={pluginHomeUrl()}
+                        variant="outlined"
+                        size="small"
+                        sx={{textTransform: 'none', fontWeight: 600}}
+                    >
+                        ← Home
+                    </Button>
                     <Box sx={{flexGrow: 1}} />
                     <Button
                         size="small"
