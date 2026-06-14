@@ -1,6 +1,6 @@
 (() => {
     let cg = null;
-    window.__cg = (c) => {
+    window.__cg = c => {
         cg = c;
         flush();
     };
@@ -15,10 +15,12 @@
         buffer.length = 0;
     };
 
-    window.update = (params) => {
+    window.update = params => {
         try {
             buffer.push(['update', JSON.parse(params)]);
-        } catch (e) {}
+        } catch {
+            // intentionally empty
+        }
     };
 
     window.play = () => buffer.push(['play']);

@@ -1,4 +1,4 @@
-import {offCGEvent, onCGEvent} from '../../cg';
+import { offCGEvent, onCGEvent } from '../../cg';
 
 // state
 // 0: hidden
@@ -7,15 +7,17 @@ import {offCGEvent, onCGEvent} from '../../cg';
 type StringHandler = (value: string) => void;
 type NumberHandler = (value: number) => void;
 
-export function register(setState: NumberHandler, setText: StringHandler, setReference: StringHandler) {
-    const states = [
-        () => setState(0),
-        () => setState(1),
-    ];
+export function register(
+    setState: NumberHandler,
+    setText: StringHandler,
+    setReference: StringHandler,
+) {
+    const states = [() => setState(0), () => setState(1)];
 
-    const update = (params) => {
+    const update = params => {
         if (typeof params?.text === 'string') setText(params.text);
-        if (typeof params?.reference === 'string') setReference(params.reference);
+        if (typeof params?.reference === 'string')
+            setReference(params.reference);
     };
     onCGEvent('update', update);
 

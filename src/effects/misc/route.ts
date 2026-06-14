@@ -1,14 +1,22 @@
 import {
     Effect,
-    EffectGroup,
+    type EffectGroup,
     PlayCommand,
     StopCommand,
     Transform,
-    BasicLayer, Command, BasicChannel,
+    type BasicLayer,
+    type Command,
+    BasicChannel,
 } from '@lappis/cg-manager';
 
-type Tuple<T, N extends number> = N extends N ? number extends N ? T[] : _TupleOf<T, N, []> : never;
-type _TupleOf<T, N extends number, R extends unknown[]> = R['length'] extends N ? R : _TupleOf<T, N, [T, ...R]>;
+type Tuple<T, N extends number> = N extends N
+    ? number extends N
+        ? T[]
+        : _TupleOf<T, N, []>
+    : never;
+type _TupleOf<T, N extends number, R extends unknown[]> = R['length'] extends N
+    ? R
+    : _TupleOf<T, N, [T, ...R]>;
 
 export interface RouteEffectOptions {
     source: BasicChannel | BasicLayer;
@@ -25,7 +33,8 @@ export class RouteEffect extends Effect {
         this.options = options;
         this.allocateLayers();
 
-        if (options.transform) this.setTransform(Transform.fromArray(options.transform));
+        if (options.transform)
+            this.setTransform(Transform.fromArray(options.transform));
     }
 
     protected get layer() {
@@ -46,22 +55,19 @@ export class RouteEffect extends Effect {
 
         const cmd = new StopCommand(this.layer);
         const result = this.executor.execute(cmd);
-        if (this.options.disposeOnStop) result.then(() => !this.active && this.dispose());
+        if (this.options.disposeOnStop)
+            result.then(() => !this.active && this.dispose());
 
         return result;
     }
 
-    public getMetadata(): {} {
+    public getMetadata(): Record<string, unknown> {
         return {};
     }
 
     public updatePositions(): Command[] {
         if (!this.active) return [];
         if (this.options.source instanceof BasicChannel) return [];
-        return [
-            PlayCommand
-                .route(this.options.source)
-                .allocate(this.layer),
-        ];
+        return [PlayCommand.route(this.options.source).allocate(this.layer)];
     }
 }

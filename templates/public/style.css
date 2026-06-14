@@ -1,4 +1,6 @@
-:root, body, #__next {
+:root,
+body,
+#__next {
     display: flex;
     overflow: hidden;
 

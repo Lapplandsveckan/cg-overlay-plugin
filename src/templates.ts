@@ -26,7 +26,7 @@ export class Templates {
     private server: any;
 
     constructor(onListen: () => void) {
-        const server = this.server = http.createServer((req, res) => {
+        const server = (this.server = http.createServer((req, res) => {
             let url = req.url;
             if (path.extname(url) === '') url += '/'; // Append trailing slash if missing
             if (url.endsWith('/')) url += 'index.html';
@@ -54,7 +54,7 @@ export class Templates {
                 res.writeHead(500);
                 res.end('500 - Internal Server Error');
             });
-        });
+        }));
 
         server.listen(PORT, () => onListen());
     }

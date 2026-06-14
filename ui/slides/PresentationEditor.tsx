@@ -1,4 +1,5 @@
-import React, {useEffect, useMemo, useState} from 'react';
+/* eslint-disable max-lines */
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Accordion,
     AccordionDetails,
@@ -22,15 +23,24 @@ import {
     Typography,
 } from '@mui/material';
 
+import { noTryAsync } from 'no-try';
+import { useSocket } from '@web-lib';
 import NameDialog from './NameDialog';
 
-// @ts-ignore
-import {useSocket} from '@web-lib';
-
 import SlidePreview from './SlidePreview';
-import {BibleSlide, BibleLookup, FetchedVerse, Presentation, Slide, TextSlide, slideLabel, updatePresentation, deletePresentation, usePresentation, useBackgroundImage, fetchBibleSlides} from './api';
-import {BOOKS, TRANSLATIONS} from './bible-api';
-import {pluginHomeUrl} from './urls';
+import {
+    type BibleSlide,
+    type Slide,
+    type TextSlide,
+    slideLabel,
+    updatePresentation,
+    deletePresentation,
+    usePresentation,
+    useBackgroundImage,
+    fetchBibleSlides,
+} from './api';
+import { BOOKS, TRANSLATIONS } from './bible-api';
+import { pluginHomeUrl } from './urls';
 
 interface Props {
     id: string;
@@ -40,8 +50,7 @@ function makeSlideId(): string {
     return `slide-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-
-export const PresentationEditor: React.FC<Props> = ({id}) => {
+export const PresentationEditor: React.FC<Props> = ({ id }) => {
     const conn = useSocket();
     const remote = usePresentation(id);
     const backgroundUrl = useBackgroundImage();
@@ -54,9 +63,10 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
 
     const handleRename = async (title: string) => {
         setRenameOpen(false);
-        try {
-            await updatePresentation(conn, id, {title});
-        } catch (err) {
+        const [err] = await noTryAsync(() =>
+            updatePresentation(conn, id, { title }),
+        );
+        if (err) {
             console.error(err);
             setError('Failed to rename presentation');
         }
@@ -69,7 +79,9 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
         return (
             <CenteredMessage>
                 <Stack spacing={1.5} alignItems="center">
-                    <Typography variant="body1">Presentation not found.</Typography>
+                    <Typography variant="body1">
+                        Presentation not found.
+                    </Typography>
                     <Link href={pluginHomeUrl()}>← Back to home</Link>
                 </Stack>
             </CenteredMessage>
@@ -78,11 +90,12 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
 
     const persistSlides = async (slides: Slide[]) => {
         setError(null);
-        try {
-            await updatePresentation(conn, id, {slides});
-        } catch (err: any) {
+        const [err] = await noTryAsync(() =>
+            updatePresentation(conn, id, { slides }),
+        );
+        if (err) {
             console.error(err);
-            setError(err?.message ?? 'Failed to save slides');
+            setError((err as any)?.message ?? 'Failed to save slides');
         }
     };
 
@@ -92,7 +105,9 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
     };
 
     const handleUpdateSlide = (updated: Slide) => {
-        persistSlides(remote.slides.map(s => s.id === updated.id ? updated : s));
+        persistSlides(
+            remote.slides.map(s => (s.id === updated.id ? updated : s)),
+        );
         setEditing(null);
     };
 
@@ -102,17 +117,19 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
 
     const handleDeletePresentation = async () => {
         setConfirmDelete(false);
-        try {
-            await deletePresentation(conn, id);
-            window.location.assign(pluginHomeUrl());
-        } catch (err) {
+        const [err] = await noTryAsync(() => deletePresentation(conn, id));
+        if (err) {
             console.error(err);
             setError('Failed to delete presentation');
+            return;
         }
+        window.location.assign(pluginHomeUrl());
     };
 
     return (
-        <Box sx={{maxWidth: 1400, margin: '0 auto', padding: {xs: 2, md: 3}}}>
+        <Box
+            sx={{ maxWidth: 1400, margin: '0 auto', padding: { xs: 2, md: 3 } }}
+        >
             <Stack spacing={3}>
                 <Stack direction="row" spacing={2} alignItems="center">
                     <Button
@@ -120,11 +137,11 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
                         href={pluginHomeUrl()}
                         variant="outlined"
                         size="small"
-                        sx={{textTransform: 'none', fontWeight: 600}}
+                        sx={{ textTransform: 'none', fontWeight: 600 }}
                     >
                         ← Home
                     </Button>
-                    <Box sx={{flexGrow: 1}} />
+                    <Box sx={{ flexGrow: 1 }} />
                     <Button
                         size="small"
                         color="error"
@@ -139,7 +156,14 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
                     <Typography
                         variant="h2"
                         fontWeight={600}
-                        sx={!remote.title ? {color: 'text.disabled', fontStyle: 'italic'} : undefined}
+                        sx={
+                            !remote.title
+                                ? {
+                                      color: 'text.disabled',
+                                      fontStyle: 'italic',
+                                  }
+                                : undefined
+                        }
                     >
                         {remote.title || 'Untitled'}
                     </Typography>
@@ -147,15 +171,26 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
                         <IconButton
                             onClick={() => setRenameOpen(true)}
                             sx={{
-                                width: 32, height: 32, padding: 0,
+                                width: 32,
+                                height: 32,
+                                padding: 0,
                                 color: 'text.secondary',
-                                '&:hover': {color: 'text.primary'},
+                                '&:hover': { color: 'text.primary' },
                             }}
                         >
-                            <Box component="span" sx={{fontSize: 19, lineHeight: 1, fontWeight: 700}}>✎</Box>
+                            <Box
+                                component="span"
+                                sx={{
+                                    fontSize: 19,
+                                    lineHeight: 1,
+                                    fontWeight: 700,
+                                }}
+                            >
+                                ✎
+                            </Box>
                         </IconButton>
                     </Tooltip>
-                    <Box sx={{flexGrow: 1}} />
+                    <Box sx={{ flexGrow: 1 }} />
                     <Chip
                         label={`${remote.slides.length} slide${remote.slides.length === 1 ? '' : 's'}`}
                         variant="outlined"
@@ -170,10 +205,21 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
                     onSubmit={handleRename}
                 />
 
-                {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
+                {error && (
+                    <Alert severity="error" onClose={() => setError(null)}>
+                        {error}
+                    </Alert>
+                )}
 
-                <Stack direction="row" alignItems="center" justifyContent="flex-end">
-                    <Button variant="contained" onClick={() => setAddOpen(true)}>
+                <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="flex-end"
+                >
+                    <Button
+                        variant="contained"
+                        onClick={() => setAddOpen(true)}
+                    >
                         + Add slides
                     </Button>
                 </Stack>
@@ -218,17 +264,27 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
                 onSave={handleUpdateSlide}
             />
 
-            <Dialog open={confirmDelete} onClose={() => setConfirmDelete(false)}>
+            <Dialog
+                open={confirmDelete}
+                onClose={() => setConfirmDelete(false)}
+            >
                 <DialogTitle>Delete presentation?</DialogTitle>
                 <DialogContent>
                     <Typography variant="body2">
-                        "{remote.title}" will be permanently removed.
-                        Any rundown entries that reference it will show "Presentation missing".
+                        "{remote.title}" will be permanently removed. Any
+                        rundown entries that reference it will show
+                        "Presentation missing".
                     </Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setConfirmDelete(false)}>Cancel</Button>
-                    <Button color="error" variant="contained" onClick={handleDeletePresentation}>
+                    <Button onClick={() => setConfirmDelete(false)}>
+                        Cancel
+                    </Button>
+                    <Button
+                        color="error"
+                        variant="contained"
+                        onClick={handleDeletePresentation}
+                    >
                         Delete
                     </Button>
                 </DialogActions>
@@ -237,11 +293,13 @@ export const PresentationEditor: React.FC<Props> = ({id}) => {
     );
 };
 
-const CenteredMessage: React.FC<React.PropsWithChildren> = ({children}) => (
-    <Box sx={{padding: 6, textAlign: 'center', color: 'text.secondary'}}>{children}</Box>
+const CenteredMessage: React.FC<React.PropsWithChildren> = ({ children }) => (
+    <Box sx={{ padding: 6, textAlign: 'center', color: 'text.secondary' }}>
+        {children}
+    </Box>
 );
 
-const EmptyState: React.FC<{onAdd: () => void}> = ({onAdd}) => (
+const EmptyState: React.FC<{ onAdd: () => void }> = ({ onAdd }) => (
     <Box
         sx={{
             padding: 6,
@@ -256,7 +314,9 @@ const EmptyState: React.FC<{onAdd: () => void}> = ({onAdd}) => (
             <Typography variant="body2">
                 Add Bible verses or a text slide to get started.
             </Typography>
-            <Button variant="contained" size="small" onClick={onAdd}>+ Add slides</Button>
+            <Button variant="contained" size="small" onClick={onAdd}>
+                + Add slides
+            </Button>
         </Stack>
     </Box>
 );
@@ -269,9 +329,20 @@ interface SlideCardProps {
     onDelete: () => void;
 }
 
-const SlideCard: React.FC<SlideCardProps> = ({slide, index, backgroundUrl, onEdit, onDelete}) => (
+const SlideCard: React.FC<SlideCardProps> = ({
+    slide,
+    index,
+    backgroundUrl,
+    onEdit,
+    onDelete,
+}) => (
     <Stack spacing={1}>
-        <Box sx={{position: 'relative', '&:hover .slide-overlay': {opacity: 1}}}>
+        <Box
+            sx={{
+                position: 'relative',
+                '&:hover .slide-overlay': { opacity: 1 },
+            }}
+        >
             <SlidePreview
                 text={slide.text}
                 reference={slide.type === 'bible' ? slide.reference : ''}
@@ -293,31 +364,53 @@ const SlideCard: React.FC<SlideCardProps> = ({slide, index, backgroundUrl, onEdi
                     <IconButton
                         onClick={onEdit}
                         sx={{
-                            width: 28, height: 28, padding: 0,
+                            width: 28,
+                            height: 28,
+                            padding: 0,
                             backgroundColor: 'rgba(0,0,0,0.6)',
                             color: '#fff',
-                            '&:hover': {backgroundColor: 'rgba(0,0,0,0.8)'},
+                            '&:hover': { backgroundColor: 'rgba(0,0,0,0.8)' },
                         }}
                     >
-                        <Box component="span" sx={{fontSize: 14, lineHeight: 1}}>✎</Box>
+                        <Box
+                            component="span"
+                            sx={{ fontSize: 14, lineHeight: 1 }}
+                        >
+                            ✎
+                        </Box>
                     </IconButton>
                 </Tooltip>
                 <Tooltip title="Delete slide">
                     <IconButton
                         onClick={onDelete}
                         sx={{
-                            width: 28, height: 28, padding: 0,
+                            width: 28,
+                            height: 28,
+                            padding: 0,
                             backgroundColor: 'rgba(0,0,0,0.6)',
                             color: '#e88c8c',
-                            '&:hover': {backgroundColor: 'rgba(0,0,0,0.8)'},
+                            '&:hover': { backgroundColor: 'rgba(0,0,0,0.8)' },
                         }}
                     >
-                        <Box component="span" sx={{fontSize: 16, lineHeight: 1, fontWeight: 300}}>×</Box>
+                        <Box
+                            component="span"
+                            sx={{
+                                fontSize: 16,
+                                lineHeight: 1,
+                                fontWeight: 300,
+                            }}
+                        >
+                            ×
+                        </Box>
                     </IconButton>
                 </Tooltip>
             </Stack>
         </Box>
-        <Typography variant="body2" color="text.secondary" sx={{paddingLeft: 0.25}}>
+        <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ paddingLeft: 0.25 }}
+        >
             {index}. {slideLabel(slide)}
         </Typography>
     </Stack>
@@ -329,7 +422,11 @@ interface AddSlidesDialogProps {
     onAdd: (slides: Slide[]) => void;
 }
 
-const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd}) => {
+const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
+    open,
+    onClose,
+    onAdd,
+}) => {
     const conn = useSocket();
     const [mode, setMode] = useState<'bible' | 'text'>('bible');
 
@@ -346,16 +443,23 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
     // Text state
     const [textContent, setTextContent] = useState('');
 
-    const {verseStart, verseEnd, rangeError} = useMemo(() => parseVerseRange(verseRange), [verseRange]);
+    const { verseStart, verseEnd, rangeError } = useMemo(
+        () => parseVerseRange(verseRange),
+        [verseRange],
+    );
     const parsedChapter = Number(chapter);
-    const bibleValid = book.trim() && Number.isFinite(parsedChapter) && parsedChapter > 0 && !rangeError;
+    const bibleValid =
+        book.trim() &&
+        Number.isFinite(parsedChapter) &&
+        parsedChapter > 0 &&
+        !rangeError;
 
     const handleSubmitBible = async () => {
         if (!bibleValid) return;
         setLoading(true);
         setError(null);
-        try {
-            const results = await fetchBibleSlides(conn, {
+        const [err, results] = await noTryAsync(() =>
+            fetchBibleSlides(conn, {
                 translation,
                 book: book.trim(),
                 chapter: parsedChapter,
@@ -363,8 +467,13 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
                 verseEnd,
                 merge,
                 inlineNumbers,
-            });
-            const slides: BibleSlide[] = results.map(v => ({
+            }),
+        );
+        if (err) {
+            console.error(err);
+            setError((err as any)?.message ?? 'Failed to fetch verses');
+        } else {
+            const slides: BibleSlide[] = results!.map(v => ({
                 type: 'bible',
                 id: makeSlideId(),
                 text: v.text,
@@ -375,12 +484,8 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
                 verse: v.verse,
             }));
             onAdd(slides);
-        } catch (err: any) {
-            console.error(err);
-            setError(err?.message ?? 'Failed to fetch verses');
-        } finally {
-            setLoading(false);
         }
+        setLoading(false);
     };
 
     const handleSubmitText = () => {
@@ -397,11 +502,13 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
             <DialogTitle>Add slides</DialogTitle>
             <DialogContent>
-                <Stack spacing={2} sx={{marginTop: 1}}>
+                <Stack spacing={2} sx={{ marginTop: 1 }}>
                     <Stack direction="row" spacing={1}>
                         <Button
                             size="small"
-                            variant={mode === 'bible' ? 'contained' : 'outlined'}
+                            variant={
+                                mode === 'bible' ? 'contained' : 'outlined'
+                            }
                             onClick={() => setMode('bible')}
                         >
                             Bible verse
@@ -425,7 +532,9 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
                                 fullWidth
                             >
                                 {TRANSLATIONS.map(t => (
-                                    <MenuItem key={t.id} value={t.id}>{t.label}</MenuItem>
+                                    <MenuItem key={t.id} value={t.id}>
+                                        {t.label}
+                                    </MenuItem>
                                 ))}
                             </TextField>
 
@@ -437,7 +546,9 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
                                 fullWidth
                             >
                                 {BOOKS.map(b => (
-                                    <MenuItem key={b.abbr} value={b.name}>{b.name}</MenuItem>
+                                    <MenuItem key={b.abbr} value={b.name}>
+                                        {b.name}
+                                    </MenuItem>
                                 ))}
                             </TextField>
 
@@ -447,32 +558,87 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
                                     type="number"
                                     value={chapter}
                                     onChange={e => setChapter(e.target.value)}
-                                    sx={{flex: 1}}
+                                    sx={{ flex: 1 }}
                                 />
                                 <TextField
                                     label="Verses"
                                     value={verseRange}
-                                    onChange={e => setVerseRange(e.target.value)}
+                                    onChange={e =>
+                                        setVerseRange(e.target.value)
+                                    }
                                     placeholder="16 or 16-17"
                                     error={!!rangeError}
-                                    helperText={rangeError ?? `${verseEnd - verseStart + 1} verse${verseEnd === verseStart ? '' : 's'}`}
-                                    sx={{flex: 1}}
+                                    helperText={
+                                        rangeError ??
+                                        `${verseEnd - verseStart + 1} verse${verseEnd === verseStart ? '' : 's'}`
+                                    }
+                                    sx={{ flex: 1 }}
                                 />
                             </Stack>
 
-                            <Accordion disableGutters elevation={0} sx={{border: '1px solid', borderColor: 'divider', borderRadius: 1, '&:before': {display: 'none'}}}>
-                                <AccordionSummary sx={{minHeight: 36, '& .MuiAccordionSummary-content': {margin: '6px 0'}}}>
-                                    <Typography variant="body2" color="text.secondary">Additional options</Typography>
+                            <Accordion
+                                disableGutters
+                                elevation={0}
+                                sx={{
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    borderRadius: 1,
+                                    '&:before': { display: 'none' },
+                                }}
+                            >
+                                <AccordionSummary
+                                    sx={{
+                                        minHeight: 36,
+                                        '& .MuiAccordionSummary-content': {
+                                            margin: '6px 0',
+                                        },
+                                    }}
+                                >
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                    >
+                                        Additional options
+                                    </Typography>
                                 </AccordionSummary>
-                                <AccordionDetails sx={{paddingTop: 0}}>
+                                <AccordionDetails sx={{ paddingTop: 0 }}>
                                     <Stack>
                                         <FormControlLabel
-                                            control={<Switch checked={merge} onChange={e => setMerge(e.target.checked)} size="small" />}
-                                            label={<Typography variant="body2">Merge verses into flowing slides</Typography>}
+                                            control={
+                                                <Switch
+                                                    checked={merge}
+                                                    onChange={e =>
+                                                        setMerge(
+                                                            e.target.checked,
+                                                        )
+                                                    }
+                                                    size="small"
+                                                />
+                                            }
+                                            label={
+                                                <Typography variant="body2">
+                                                    Merge verses into flowing
+                                                    slides
+                                                </Typography>
+                                            }
                                         />
                                         <FormControlLabel
-                                            control={<Switch checked={inlineNumbers} onChange={e => setInlineNumbers(e.target.checked)} size="small" />}
-                                            label={<Typography variant="body2">Inline verse numbers in text</Typography>}
+                                            control={
+                                                <Switch
+                                                    checked={inlineNumbers}
+                                                    onChange={e =>
+                                                        setInlineNumbers(
+                                                            e.target.checked,
+                                                        )
+                                                    }
+                                                    size="small"
+                                                />
+                                            }
+                                            label={
+                                                <Typography variant="body2">
+                                                    Inline verse numbers in text
+                                                </Typography>
+                                            }
                                         />
                                     </Stack>
                                 </AccordionDetails>
@@ -497,13 +663,23 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({open, onClose, onAdd})
                 </Stack>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose} disabled={loading}>Cancel</Button>
+                <Button onClick={onClose} disabled={loading}>
+                    Cancel
+                </Button>
                 {mode === 'bible' ? (
-                    <Button variant="contained" onClick={handleSubmitBible} disabled={!bibleValid || loading}>
+                    <Button
+                        variant="contained"
+                        onClick={handleSubmitBible}
+                        disabled={!bibleValid || loading}
+                    >
                         {loading ? 'Fetching…' : 'Add'}
                     </Button>
                 ) : (
-                    <Button variant="contained" onClick={handleSubmitText} disabled={!textContent.trim()}>
+                    <Button
+                        variant="contained"
+                        onClick={handleSubmitText}
+                        disabled={!textContent.trim()}
+                    >
                         Add
                     </Button>
                 )}
@@ -518,7 +694,11 @@ interface EditSlideDialogProps {
     onSave: (slide: Slide) => void;
 }
 
-const EditSlideDialog: React.FC<EditSlideDialogProps> = ({slide, onClose, onSave}) => {
+const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
+    slide,
+    onClose,
+    onSave,
+}) => {
     const [text, setText] = useState('');
     const [reference, setReference] = useState('');
     const backgroundUrl = useBackgroundImage();
@@ -533,9 +713,9 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({slide, onClose, onSave
 
     const handleSave = () => {
         if (slide.type === 'bible') {
-            onSave({...slide, text, reference});
+            onSave({ ...slide, text, reference });
         } else {
-            onSave({...slide, text});
+            onSave({ ...slide, text });
         }
     };
 
@@ -545,12 +725,18 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({slide, onClose, onSave
             onClose={onClose}
             fullWidth
             maxWidth={false}
-            PaperProps={{sx: {width: 'min(92vw, 1100px)', maxWidth: 'none'}}}
+            PaperProps={{
+                sx: { width: 'min(92vw, 1100px)', maxWidth: 'none' },
+            }}
         >
             <DialogTitle>Edit slide</DialogTitle>
             <DialogContent>
-                <Stack spacing={2.5} sx={{marginTop: 1}}>
-                    <SlidePreview text={text} reference={reference} backgroundUrl={backgroundUrl} />
+                <Stack spacing={2.5} sx={{ marginTop: 1 }}>
+                    <SlidePreview
+                        text={text}
+                        reference={reference}
+                        backgroundUrl={backgroundUrl}
+                    />
 
                     {slide.type === 'bible' && (
                         <TextField
@@ -581,21 +767,37 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({slide, onClose, onSave
     );
 };
 
-function parseVerseRange(input: string): {verseStart: number; verseEnd: number; rangeError: string | null} {
+function parseVerseRange(input: string): {
+    verseStart: number;
+    verseEnd: number;
+    rangeError: string | null;
+} {
     const trimmed = input.trim();
-    if (!trimmed) return {verseStart: 0, verseEnd: 0, rangeError: 'Required'};
+    if (!trimmed) return { verseStart: 0, verseEnd: 0, rangeError: 'Required' };
 
     const match = trimmed.match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);
-    if (!match) return {verseStart: 0, verseEnd: 0, rangeError: 'Format: 16 or 16-17'};
+    if (!match)
+        return {
+            verseStart: 0,
+            verseEnd: 0,
+            rangeError: 'Format: 16 or 16-17',
+        };
 
     const start = Number(match[1]);
     const end = match[2] ? Number(match[2]) : start;
 
-    if (!Number.isFinite(start) || start <= 0) return {verseStart: 0, verseEnd: 0, rangeError: 'Invalid start'};
-    if (!Number.isFinite(end) || end < start) return {verseStart: 0, verseEnd: 0, rangeError: 'End must be ≥ start'};
-    if (end - start > 50) return {verseStart: 0, verseEnd: 0, rangeError: 'Range too long'};
+    if (!Number.isFinite(start) || start <= 0)
+        return { verseStart: 0, verseEnd: 0, rangeError: 'Invalid start' };
+    if (!Number.isFinite(end) || end < start)
+        return {
+            verseStart: 0,
+            verseEnd: 0,
+            rangeError: 'End must be ≥ start',
+        };
+    if (end - start > 50)
+        return { verseStart: 0, verseEnd: 0, rangeError: 'Range too long' };
 
-    return {verseStart: start, verseEnd: end, rangeError: null};
+    return { verseStart: start, verseEnd: end, rangeError: null };
 }
 
 export default PresentationEditor;

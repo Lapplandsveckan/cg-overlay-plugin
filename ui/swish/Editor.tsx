@@ -1,8 +1,15 @@
-import React, {useState} from 'react';
-import {Checkbox, FormControlLabel, FormHelperText, Stack, TextField, Typography} from '@mui/material';
+import React, { useState } from 'react';
+import {
+    Checkbox,
+    FormControlLabel,
+    FormHelperText,
+    Stack,
+    TextField,
+    Typography,
+} from '@mui/material';
 
-import {RundownEditorActionBar} from '@web-lib';
-import {useTranslation} from '../i18n';
+import { RundownEditorActionBar } from '@web-lib';
+import { useTranslation } from '../i18n';
 
 interface RundownEntry {
     id: string;
@@ -20,8 +27,13 @@ interface SwishEditorProps {
     deleteEntry: (entry: RundownEntry) => void;
 }
 
-export const SwishEditor: React.FC<SwishEditorProps> = ({entry, updateEntry, deleteEntry, creating}) => {
-    const {t} = useTranslation('cg-overlay-plugin');
+export const SwishEditor: React.FC<SwishEditorProps> = ({
+    entry,
+    updateEntry,
+    deleteEntry,
+    creating,
+}) => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const [title, setTitle] = useState(entry?.title ?? '');
     const [number, setNumber] = useState(entry?.data.number ?? '');
     const [labels, setLabels] = useState(entry?.data.labels ?? '');
@@ -42,7 +54,7 @@ export const SwishEditor: React.FC<SwishEditorProps> = ({entry, updateEntry, del
                 label={t('swish.numberLabel')}
                 value={number}
                 placeholder="123 607 27 97"
-                InputLabelProps={{shrink: true}}
+                InputLabelProps={{ shrink: true }}
                 onChange={e => setNumber(e.target['value'])}
                 helperText={t('swish.numberHelper')}
             />
@@ -64,14 +76,13 @@ export const SwishEditor: React.FC<SwishEditorProps> = ({entry, updateEntry, del
                         />
                     }
                 />
-                <FormHelperText sx={{marginLeft: 4}}>
+                <FormHelperText sx={{ marginLeft: 4 }}>
                     {t('swish.skipFirstHelper')}
                 </FormHelperText>
             </Stack>
 
             <RundownEditorActionBar
                 exists={!creating}
-
                 onDelete={() => deleteEntry(entry)}
                 onSave={() => {
                     updateEntry({

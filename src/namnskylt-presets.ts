@@ -1,8 +1,14 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import LappisOverlayPlugin from './index';
+import { noTry, noTryAsync } from 'no-try';
+import type LappisOverlayPlugin from './index';
 
-const PRESETS_PATH = path.join(process.cwd(), 'plugin-data', 'lappis', 'namnskylt-presets.json');
+const PRESETS_PATH = path.join(
+    process.cwd(),
+    'plugin-data',
+    'lappis',
+    'namnskylt-presets.json',
+);
 
 export class NamnskyltPresetStore {
     private plugin: LappisOverlayPlugin;
@@ -15,16 +21,20 @@ export class NamnskyltPresetStore {
     }
 
     private async load() {
-        try {
-            const raw = await fs.readFile(PRESETS_PATH, 'utf8');
-            const parsed = JSON.parse(raw);
-            this.presets = sanitize(parsed);
-        } catch (err: any) {
-            if (err?.code !== 'ENOENT') {
-                this.plugin.getLogger().warn(`Failed to read namnskylt presets: ${err.message}`);
-            }
-            this.presets = [];
+        const [readErr, raw] = await noTryAsync(() =>
+            fs.readFile(PRESETS_PATH, 'utf8'),
+        );
+        if (readErr) {
+            if ((readErr as any)?.code !== 'ENOENT')
+                this.plugin
+                    .getLogger()
+                    .warn(
+                        `Failed to read namnskylt presets: ${(readErr as any).message}`,
+                    );
+            return;
         }
+        const [, parsed] = noTry(() => JSON.parse(raw!));
+        if (parsed) this.presets = sanitize(parsed);
     }
 
     public get(): string[] {
@@ -34,8 +44,12 @@ export class NamnskyltPresetStore {
     public async replace(next: unknown): Promise<string[]> {
         this.presets = sanitize(next);
 
-        await fs.mkdir(path.dirname(PRESETS_PATH), {recursive: true});
-        await fs.writeFile(PRESETS_PATH, JSON.stringify(this.presets, null, 2), 'utf8');
+        await fs.mkdir(path.dirname(PRESETS_PATH), { recursive: true });
+        await fs.writeFile(
+            PRESETS_PATH,
+            JSON.stringify(this.presets, null, 2),
+            'utf8',
+        );
 
         return this.get();
     }

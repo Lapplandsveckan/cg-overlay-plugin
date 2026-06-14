@@ -1,5 +1,12 @@
-import React, {useEffect, useState} from 'react';
-import {Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField} from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import {
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    TextField,
+} from '@mui/material';
 
 interface Props {
     open: boolean;
@@ -22,8 +29,9 @@ const NameDialog: React.FC<Props> = ({
 }) => {
     const [name, setName] = useState(initialName);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => { if (open) setName(initialName); }, [open]);
+    useEffect(() => {
+        if (open) setName(initialName);
+    }, [open]);
 
     const handleSubmit = () => {
         const trimmed = name.trim();
@@ -44,12 +52,16 @@ const NameDialog: React.FC<Props> = ({
                     }}
                     autoFocus
                     fullWidth
-                    sx={{marginTop: 1}}
+                    sx={{ marginTop: 1 }}
                 />
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
-                <Button variant="contained" onClick={handleSubmit} disabled={!name.trim()}>
+                <Button
+                    variant="contained"
+                    onClick={handleSubmit}
+                    disabled={!name.trim()}
+                >
                     {confirmLabel}
                 </Button>
             </DialogActions>

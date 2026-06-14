@@ -1,14 +1,17 @@
-import {Logger, PluginAPI} from '@lappis/cg-manager';
-import {SwishOverlayEffect} from './effects/overlay/swish';
-import {BarsOverlayEffect} from './effects/overlay/bars';
-import {InsamlingOverlayEffect, InsamlingOverlayEffectOptions} from './effects/overlay/insamling';
-import {VideoEffect} from './effects/misc/video';
-import LappisOverlayPlugin from './index';
-import {PresentationOverlayEffect} from './effects/overlay/presentation';
+import { type Logger, type PluginAPI } from '@lappis/cg-manager';
+import { type SwishOverlayEffect } from './effects/overlay/swish';
+import { type BarsOverlayEffect } from './effects/overlay/bars';
+import {
+    type InsamlingOverlayEffect,
+    type InsamlingOverlayEffectOptions,
+} from './effects/overlay/insamling';
+import { type VideoEffect } from './effects/misc/video';
+import type LappisOverlayPlugin from './index';
+import { type PresentationOverlayEffect } from './effects/overlay/presentation';
 
 // Re-export the canonical slide type from the store; OverlayManager
 // stays narrow and only cares about (presentationId, slideId).
-export type {Slide} from './presentations';
+export type { Slide } from './presentations';
 
 export interface PresentationPlaybackState {
     playing: boolean;
@@ -34,7 +37,8 @@ export const GROUPS = {
     PRESENTATION: 'presentation',
 };
 
-export const getGroup = (channel: number, group: string) => `${channel}:${group}`;
+export const getGroup = (channel: number, group: string) =>
+    `${channel}:${group}`;
 
 export default class OverlayManager {
     private api: PluginAPI;
@@ -66,12 +70,24 @@ export default class OverlayManager {
     };
 
     public initialize() {
-        this.swish = this.api.createEffect('overlay-swish', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {
-            number: '123 607 27 97',
-        }) as SwishOverlayEffect;
+        this.swish = this.api.createEffect(
+            'overlay-swish',
+            getGroup(CHANNELS.MAIN, GROUPS.OVERLAY),
+            {
+                number: '123 607 27 97',
+            },
+        ) as SwishOverlayEffect;
 
-        this.bars = this.api.createEffect('overlay-bars', getGroup(CHANNELS.MAIN, GROUPS.BARS), {}) as BarsOverlayEffect; // TODO: special group so it is underneeth all overlays
-        this.insamling = this.api.createEffect('overlay-insamling', getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY), {}) as InsamlingOverlayEffect; // TODO: special group so it is underneeth all overlays
+        this.bars = this.api.createEffect(
+            'overlay-bars',
+            getGroup(CHANNELS.MAIN, GROUPS.BARS),
+            {},
+        ) as BarsOverlayEffect; // TODO: special group so it is underneeth all overlays
+        this.insamling = this.api.createEffect(
+            'overlay-insamling',
+            getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY),
+            {},
+        ) as InsamlingOverlayEffect; // TODO: special group so it is underneeth all overlays
     }
 
     public dispose() {
@@ -97,7 +113,7 @@ export default class OverlayManager {
     }
 
     private videoSession: null | {
-        stop: () => void,
+        stop: () => void;
     } = null;
 
     public getVideoSession() {
@@ -107,8 +123,9 @@ export default class OverlayManager {
     public startVideoSession(atem = false, skipIntro = false) {
         if (this.videoSession) return Promise.resolve();
 
-        this.videoSession = {stop: () => null};
-        if (this.videoTransitionState !== 1) this.toggleVideoTransition(skipIntro);
+        this.videoSession = { stop: () => null };
+        if (this.videoTransitionState !== 1)
+            this.toggleVideoTransition(skipIntro);
 
         if (skipIntro) {
             if (atem) this.plugin.atem.setVideoProgram();
@@ -132,7 +149,8 @@ export default class OverlayManager {
 
     public stopVideoSession(atem = false) {
         if (this.insamlingState === 1) return; // insamling still showing — keep session alive
-        if (!this.videoSession) return this.logger.warn('No video session to stop');
+        if (!this.videoSession)
+            return this.logger.warn('No video session to stop');
         if (this.videoTransitionState !== 0) this.toggleVideoTransition();
 
         if (atem) this.plugin.atem.returnToPreview();
@@ -145,23 +163,30 @@ export default class OverlayManager {
         const media = this.api.getFileDatabase().get(video);
         if (!media) throw new Error('Video not found');
 
-        return this.api.createEffect('lappis-video', `${CHANNELS.VIDEO}:video`, {
-            media,
-            holdLastFrame: true,
-            disposeOnStop: true,
+        return this.api.createEffect(
+            'lappis-video',
+            `${CHANNELS.VIDEO}:video`,
+            {
+                media,
+                holdLastFrame: true,
+                disposeOnStop: true,
 
-            loop,
-        }) as VideoEffect;
+                loop,
+            },
+        ) as VideoEffect;
     }
 
     public showNamnskylt(name: string) {
-        const overlay = this.api.createEffect('overlay-namnskylt', '1:overlay', { name });
+        const overlay = this.api.createEffect(
+            'overlay-namnskylt',
+            '1:overlay',
+            { name },
+        );
 
-        overlay.activate()
-            .catch(err => {
-                this.logger.error('Failed to activate namnskylt effect');
-                this.logger.error(err);
-            });
+        overlay.activate().catch(err => {
+            this.logger.error('Failed to activate namnskylt effect');
+            this.logger.error(err);
+        });
     }
 
     public toggleVideoTransition(skipIntro = false) {
@@ -173,12 +198,15 @@ export default class OverlayManager {
         this.videoTransitionState = 1;
         if (skipIntro) return;
 
-        const overlay = this.api.createEffect('overlay-videotransition', '1:presentation', {});
-        overlay.activate()
-            .catch(err => {
-                this.logger.error('Failed to activate videotransition effect');
-                this.logger.error(err);
-            });
+        const overlay = this.api.createEffect(
+            'overlay-videotransition',
+            '1:presentation',
+            {},
+        );
+        overlay.activate().catch(err => {
+            this.logger.error('Failed to activate videotransition effect');
+            this.logger.error(err);
+        });
     }
 
     public toggleSwish(number?: string, labels?: string, skipFirst?: boolean) {
@@ -196,25 +224,22 @@ export default class OverlayManager {
 
         switch (this.swishState) {
             case 0:
-                this.swish.activate()
-                    .catch(err => {
-                        this.logger.error('Failed to activate swish effect');
-                        this.logger.error(err);
-                    });
+                this.swish.activate().catch(err => {
+                    this.logger.error('Failed to activate swish effect');
+                    this.logger.error(err);
+                });
                 break;
             case 1:
-                this.swish.minimize()
-                    .catch(err => {
-                        this.logger.error('Failed to activate swish effect');
-                        this.logger.error(err);
-                    });
+                this.swish.minimize().catch(err => {
+                    this.logger.error('Failed to activate swish effect');
+                    this.logger.error(err);
+                });
                 break;
             case 2:
-                this.swish.deactivate()
-                    .catch(err => {
-                        this.logger.error('Failed to deactivate swish effect');
-                        this.logger.error(err);
-                    });
+                this.swish.deactivate().catch(err => {
+                    this.logger.error('Failed to deactivate swish effect');
+                    this.logger.error(err);
+                });
                 break;
         }
     }
@@ -224,20 +249,16 @@ export default class OverlayManager {
 
         switch (this.barsState) {
             case 0:
-                this.bars
-                    .deactivate()
-                    .catch(err => {
-                        this.logger.error('Failed to deactivate bars effect');
-                        this.logger.error(err);
-                    });
+                this.bars.deactivate().catch(err => {
+                    this.logger.error('Failed to deactivate bars effect');
+                    this.logger.error(err);
+                });
                 break;
             case 1:
-                this.bars
-                    .activate()
-                    .catch(err => {
-                        this.logger.error('Failed to activate bars effect');
-                        this.logger.error(err);
-                    });
+                this.bars.activate().catch(err => {
+                    this.logger.error('Failed to activate bars effect');
+                    this.logger.error(err);
+                });
                 break;
         }
     }
@@ -245,33 +266,28 @@ export default class OverlayManager {
     public async toggleInsamling(options?: InsamlingOverlayEffectOptions) {
         this.insamlingState = 1 - this.insamlingState;
 
-        if (options)
-            this.insamling.update(options);
+        if (options) this.insamling.update(options);
 
         switch (this.insamlingState) {
             case 0:
-                this.insamling
-                    .deactivate()
-                    ?.catch(err => {
-                        this.logger.error('Failed to deactivate insamling effect');
-                        this.logger.error(err);
-                    });
+                this.insamling.deactivate()?.catch(err => {
+                    this.logger.error('Failed to deactivate insamling effect');
+                    this.logger.error(err);
+                });
                 if (!this.plugin.video.playing) this.stopVideoSession(true);
                 break;
             case 1:
                 await this.startVideoSession(true);
-                this.insamling
-                    .activate()
-                    ?.catch(err => {
-                        this.logger.error('Failed to activate insamling effect');
-                        this.logger.error(err);
-                    });
+                this.insamling.activate()?.catch(err => {
+                    this.logger.error('Failed to activate insamling effect');
+                    this.logger.error(err);
+                });
                 break;
         }
     }
 
     public getPresentationState(): PresentationPlaybackState {
-        return {...this.presentationState};
+        return { ...this.presentationState };
     }
 
     private broadcastPresentation() {
@@ -279,18 +295,22 @@ export default class OverlayManager {
     }
 
     public broadcastArmEvent(presentationId: string, rundownId: string | null) {
-        const event: PresentationArmEvent = {presentationId, rundownId, ts: Date.now()};
+        const event: PresentationArmEvent = {
+            presentationId,
+            rundownId,
+            ts: Date.now(),
+        };
         this.api.broadcast('slides-arm', 'UPDATE', event);
     }
 
     public playSlide(
         presentationId: string,
         slideId: string,
-        render: {text: string, reference: string},
+        render: { text: string; reference: string },
     ) {
         const wasPlaying = this.presentationState.playing;
 
-        this.presentationState = {playing: true, presentationId, slideId};
+        this.presentationState = { playing: true, presentationId, slideId };
 
         if (!this.presentationEffect) {
             this.presentationEffect = this.api.createEffect(
@@ -303,12 +323,10 @@ export default class OverlayManager {
         }
 
         if (!wasPlaying) {
-            this.presentationEffect
-                .activate()
-                ?.catch(err => {
-                    this.logger.error('Failed to activate presentation effect');
-                    this.logger.error(err);
-                });
+            this.presentationEffect.activate()?.catch(err => {
+                this.logger.error('Failed to activate presentation effect');
+                this.logger.error(err);
+            });
         }
 
         this.broadcastPresentation();
@@ -317,15 +335,17 @@ export default class OverlayManager {
     public stopPlayback() {
         if (!this.presentationState.playing) return;
 
-        this.presentationState = {playing: false, presentationId: null, slideId: null};
+        this.presentationState = {
+            playing: false,
+            presentationId: null,
+            slideId: null,
+        };
 
         if (this.presentationEffect) {
-            this.presentationEffect
-                .deactivate()
-                ?.catch(err => {
-                    this.logger.error('Failed to deactivate presentation effect');
-                    this.logger.error(err);
-                });
+            this.presentationEffect.deactivate()?.catch(err => {
+                this.logger.error('Failed to deactivate presentation effect');
+                this.logger.error(err);
+            });
         }
 
         this.broadcastPresentation();

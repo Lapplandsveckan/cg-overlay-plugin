@@ -1,24 +1,46 @@
-import React, {useEffect, useMemo, useState} from 'react';
-import {Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, Link, Stack, Tab, Tabs, TextField, Tooltip, Typography} from '@mui/material';
+/* eslint-disable max-lines */
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+    Box,
+    Breadcrumbs,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    IconButton,
+    InputAdornment,
+    Link,
+    Stack,
+    Tab,
+    Tabs,
+    TextField,
+    Tooltip,
+    Typography,
+} from '@mui/material';
 
-import {MediaDropZone, useSocket, useRundownLive} from '@web-lib';
-import {useTranslation} from './i18n';
+import { noTryAsync } from 'no-try';
+import { MediaDropZone, useSocket, useRundownLive } from '@web-lib';
+import { useTranslation } from './i18n';
 
 import SlidePreview from './slides/SlidePreview';
 import {
     createPresentation,
-    Presentation,
+    type Presentation,
     slideRef,
     useBackgroundImage,
     usePresentations,
 } from './slides/api';
-import {slidesEditorUrl, pluginHomeUrl} from './slides/urls';
+import { slidesEditorUrl, pluginHomeUrl } from './slides/urls';
 
 const RUNDOWN_ITEM_MIME = 'application/x-cg-rundown-item';
 
 // ---------- Drag payload helpers ----------
 
-function setRundownDragPayload(e: React.DragEvent, payload: {type: string; data?: unknown; title?: string}) {
+function setRundownDragPayload(
+    e: React.DragEvent,
+    payload: { type: string; data?: unknown; title?: string },
+) {
     e.dataTransfer.setData(RUNDOWN_ITEM_MIME, JSON.stringify(payload));
     e.dataTransfer.effectAllowed = 'copy';
 }
@@ -54,14 +76,20 @@ interface DraggableClipProps {
     onInstantPlay?: () => void;
 }
 
-const DraggableClip: React.FC<DraggableClipProps> = ({item, displayName, onInstantPlay}) => (
+const DraggableClip: React.FC<DraggableClipProps> = ({
+    item,
+    displayName,
+    onInstantPlay,
+}) => (
     <Box
         draggable
-        onDragStart={e => setRundownDragPayload(e, {
-            type: 'play-video',
-            data: {clip: item.id, options: {}},
-            title: displayName,
-        })}
+        onDragStart={e =>
+            setRundownDragPayload(e, {
+                type: 'play-video',
+                data: { clip: item.id, options: {} },
+                title: displayName,
+            })
+        }
         onClick={onInstantPlay}
         sx={{
             position: 'relative',
@@ -69,15 +97,17 @@ const DraggableClip: React.FC<DraggableClipProps> = ({item, displayName, onInsta
             borderRadius: 1,
             overflow: 'hidden',
             backgroundColor: '#1a1c22',
-            backgroundImage: item.thumbnailUrl ? `url(${item.thumbnailUrl})` : undefined,
+            backgroundImage: item.thumbnailUrl
+                ? `url(${item.thumbnailUrl})`
+                : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             border: '1px solid rgba(255,255,255,0.08)',
             cursor: 'grab',
             transition: 'border-color 80ms',
             userSelect: 'none',
-            '&:hover': {borderColor: '#4a90e2'},
-            '&:active': {cursor: 'grabbing'},
+            '&:hover': { borderColor: '#4a90e2' },
+            '&:active': { cursor: 'grabbing' },
         }}
     >
         <Stack
@@ -95,13 +125,26 @@ const DraggableClip: React.FC<DraggableClipProps> = ({item, displayName, onInsta
         >
             <Typography
                 fontSize={11}
-                sx={{color: '#e8eaed', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0}}
+                sx={{
+                    color: '#e8eaed',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    minWidth: 0,
+                }}
                 title={displayName}
             >
                 {displayName}
             </Typography>
             {item.duration > 0 && (
-                <Typography fontSize={10} sx={{color: 'rgba(232,234,237,0.65)', flexShrink: 0, marginLeft: 1}}>
+                <Typography
+                    fontSize={10}
+                    sx={{
+                        color: 'rgba(232,234,237,0.65)',
+                        flexShrink: 0,
+                        marginLeft: 1,
+                    }}
+                >
                     {formatDuration(item.duration)}
                 </Typography>
             )}
@@ -114,7 +157,7 @@ interface FolderTileProps {
     onOpen: () => void;
 }
 
-const FolderTile: React.FC<FolderTileProps> = ({name, onOpen}) => (
+const FolderTile: React.FC<FolderTileProps> = ({ name, onOpen }) => (
     <Box
         onClick={onOpen}
         sx={{
@@ -130,16 +173,20 @@ const FolderTile: React.FC<FolderTileProps> = ({name, onOpen}) => (
             gap: 0.5,
             color: 'text.secondary',
             transition: 'background-color 80ms, border-color 80ms',
-            '&:hover': {borderColor: '#4a90e2', backgroundColor: '#2a2d35'},
+            '&:hover': { borderColor: '#4a90e2', backgroundColor: '#2a2d35' },
         }}
     >
-        <Box component="span" sx={{fontSize: 22}}>📁</Box>
-        <Typography variant="caption" noWrap sx={{maxWidth: '90%'}}>{name}</Typography>
+        <Box component="span" sx={{ fontSize: 22 }}>
+            📁
+        </Box>
+        <Typography variant="caption" noWrap sx={{ maxWidth: '90%' }}>
+            {name}
+        </Typography>
     </Box>
 );
 
 const MediaTab: React.FC = () => {
-    const {t} = useTranslation('cg-overlay-plugin');
+    const { t } = useTranslation('cg-overlay-plugin');
     const socket = useSocket();
     const isLive = useRundownLive();
     const [allMedia, setAllMedia] = useState<any[]>([]);
@@ -147,23 +194,26 @@ const MediaTab: React.FC = () => {
     const [path, setPath] = useState<string[]>([]);
 
     useEffect(() => {
-        const load = () => socket.caspar
-            .getMedia()
-            .then((media: Map<string, any>) => setAllMedia([...media.values()]))
-            .catch(console.error);
+        const load = () =>
+            socket.caspar
+                .getMedia()
+                .then((media: Map<string, any>) =>
+                    setAllMedia([...media.values()]),
+                )
+                .catch(console.error);
 
         load();
         socket.caspar.on('media', load);
         return () => void socket.caspar.off('media', load);
     }, []);
 
-    const prefix = path.length ? path.join('/') + '/' : '';
+    const prefix = path.length ? `${path.join('/')}/` : '';
     const trimmedQuery = query.trim().toLowerCase();
     const searching = trimmedQuery.length > 0;
 
-    const {clips, folders} = useMemo(() => {
+    const { clips, folders } = useMemo(() => {
         const folderSet = new Set<string>();
-        const clipList: {item: MediaItem; displayName: string}[] = [];
+        const clipList: { item: MediaItem; displayName: string }[] = [];
 
         for (const media of allMedia) {
             if (!media.id.startsWith(prefix)) continue;
@@ -174,7 +224,8 @@ const MediaTab: React.FC = () => {
                 clipList.push({
                     item: {
                         id: media.id,
-                        duration: Number(media.mediainfo?.format?.duration) || 0,
+                        duration:
+                            Number(media.mediainfo?.format?.duration) || 0,
                         thumbnailUrl: buildThumbnailUrl(media),
                     },
                     displayName: media.id,
@@ -199,7 +250,7 @@ const MediaTab: React.FC = () => {
         }
 
         clipList.sort((a, b) => a.displayName.localeCompare(b.displayName));
-        return {clips: clipList, folders: [...folderSet].sort()};
+        return { clips: clipList, folders: [...folderSet].sort() };
     }, [allMedia, prefix, trimmedQuery, searching]);
 
     const isEmpty = clips.length === 0 && folders.length === 0;
@@ -208,93 +259,137 @@ const MediaTab: React.FC = () => {
         <MediaDropZone
             accept={['video/*']}
             overlayLabel={t('panel.dropToUpload')}
-            onComplete={(results: {file: File; error?: string}[]) => {
+            onComplete={(results: { file: File; error?: string }[]) => {
                 for (const r of results) {
-                    if (r.error) console.error(`Upload failed for ${r.file.name}: ${r.error}`);
+                    if (r.error)
+                        console.error(
+                            `Upload failed for ${r.file.name}: ${r.error}`,
+                        );
                 }
             }}
         >
-        <Stack spacing={1.5} sx={{padding: 1.5, height: '100%', boxSizing: 'border-box'}}>
-            <Stack direction="row" spacing={1.5} alignItems="center">
-                {path.length > 0 ? (
-                    <Breadcrumbs separator="/" sx={{fontSize: 13, flexGrow: 1, minWidth: 0}}>
-                        <Link
-                            component="button"
-                            underline="hover"
-                            color="primary"
-                            onClick={() => setPath([])}
-                            sx={{fontSize: 13}}
+            <Stack
+                spacing={1.5}
+                sx={{ padding: 1.5, height: '100%', boxSizing: 'border-box' }}
+            >
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                    {path.length > 0 ? (
+                        <Breadcrumbs
+                            separator="/"
+                            sx={{ fontSize: 13, flexGrow: 1, minWidth: 0 }}
                         >
-                            {t('panel.backAll')}
-                        </Link>
-                        {path.map((segment, idx) => (
                             <Link
-                                key={`${segment}-${idx}`}
                                 component="button"
                                 underline="hover"
-                                color={idx === path.length - 1 ? 'text.primary' : 'primary'}
-                                onClick={() => setPath(path.slice(0, idx + 1))}
-                                sx={{fontSize: 13}}
+                                color="primary"
+                                onClick={() => setPath([])}
+                                sx={{ fontSize: 13 }}
                             >
-                                {segment}
+                                {t('panel.backAll')}
                             </Link>
-                        ))}
-                    </Breadcrumbs>
-                ) : (
-                    <Box sx={{flexGrow: 1}} />
-                )}
-                <TextField
-                    size="small"
-                    placeholder={t('panel.searchPlaceholder')}
-                    value={query}
-                    onChange={e => setQuery(e.target.value)}
-                    sx={{width: 220}}
-                    InputProps={{
-                        endAdornment: query ? (
-                            <InputAdornment position="end">
-                                <IconButton size="small" onClick={() => setQuery('')}>
-                                    <Box component="span" sx={{fontSize: 14, lineHeight: 1}}>×</Box>
-                                </IconButton>
-                            </InputAdornment>
-                        ) : null,
-                    }}
-                />
-            </Stack>
-
-            <Box sx={{flexGrow: 1, overflowY: 'auto', minHeight: 0}}>
-                {isEmpty ? (
-                    <Stack alignItems="center" justifyContent="center" sx={{height: '100%', color: 'text.secondary'}}>
-                        <Typography variant="body2">
-                            {searching ? t('panel.noSearchResults') : t('panel.emptyFolder')}
-                        </Typography>
-                    </Stack>
-                ) : (
-                    <Box
-                        sx={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-                            gap: 1,
+                            {path.map((segment, idx) => (
+                                <Link
+                                    key={`${segment}-${idx}`}
+                                    component="button"
+                                    underline="hover"
+                                    color={
+                                        idx === path.length - 1
+                                            ? 'text.primary'
+                                            : 'primary'
+                                    }
+                                    onClick={() =>
+                                        setPath(path.slice(0, idx + 1))
+                                    }
+                                    sx={{ fontSize: 13 }}
+                                >
+                                    {segment}
+                                </Link>
+                            ))}
+                        </Breadcrumbs>
+                    ) : (
+                        <Box sx={{ flexGrow: 1 }} />
+                    )}
+                    <TextField
+                        size="small"
+                        placeholder={t('panel.searchPlaceholder')}
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
+                        sx={{ width: 220 }}
+                        InputProps={{
+                            endAdornment: query ? (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => setQuery('')}
+                                    >
+                                        <Box
+                                            component="span"
+                                            sx={{ fontSize: 14, lineHeight: 1 }}
+                                        >
+                                            ×
+                                        </Box>
+                                    </IconButton>
+                                </InputAdornment>
+                            ) : null,
                         }}
-                    >
-                        {!searching && folders.map(folder => (
-                            <FolderTile
-                                key={`folder-${folder}`}
-                                name={folder}
-                                onOpen={() => setPath([...path, folder])}
-                            />
-                        ))}
-                        {clips.map(({item, displayName}) => (
-                            <DraggableClip
-                                key={item.id}
-                                item={item}
-                                displayName={displayName}
-                                onInstantPlay={isLive ? () => socket.rawRequest('/api/plugin/lappis/video/play', 'ACTION', {clip: item.id}).catch(console.error) : undefined}
-                            />
-                        ))}
-                    </Box>
-                )}
-            </Box>
-        </Stack>
+                    />
+                </Stack>
+
+                <Box sx={{ flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>
+                    {isEmpty ? (
+                        <Stack
+                            alignItems="center"
+                            justifyContent="center"
+                            sx={{ height: '100%', color: 'text.secondary' }}
+                        >
+                            <Typography variant="body2">
+                                {searching
+                                    ? t('panel.noSearchResults')
+                                    : t('panel.emptyFolder')}
+                            </Typography>
+                        </Stack>
+                    ) : (
+                        <Box
+                            sx={{
+                                display: 'grid',
+                                gridTemplateColumns:
+                                    'repeat(auto-fill, minmax(160px, 1fr))',
+                                gap: 1,
+                            }}
+                        >
+                            {!searching &&
+                                folders.map(folder => (
+                                    <FolderTile
+                                        key={`folder-${folder}`}
+                                        name={folder}
+                                        onOpen={() =>
+                                            setPath([...path, folder])
+                                        }
+                                    />
+                                ))}
+                            {clips.map(({ item, displayName }) => (
+                                <DraggableClip
+                                    key={item.id}
+                                    item={item}
+                                    displayName={displayName}
+                                    onInstantPlay={
+                                        isLive
+                                            ? () =>
+                                                  socket
+                                                      .rawRequest(
+                                                          '/api/plugin/lappis/video/play',
+                                                          'ACTION',
+                                                          { clip: item.id },
+                                                      )
+                                                      .catch(console.error)
+                                            : undefined
+                                    }
+                                />
+                            ))}
+                        </Box>
+                    )}
+                </Box>
+            </Stack>
         </MediaDropZone>
     );
 };
@@ -312,7 +407,12 @@ const DragHandleIcon: React.FC = () => (
     <Box
         component="svg"
         viewBox="0 0 12 16"
-        sx={{width: 12, height: 16, flexShrink: 0, color: 'rgba(232,234,237,0.45)'}}
+        sx={{
+            width: 12,
+            height: 16,
+            flexShrink: 0,
+            color: 'rgba(232,234,237,0.45)',
+        }}
         aria-hidden
     >
         <g fill="currentColor">
@@ -326,8 +426,8 @@ const DragHandleIcon: React.FC = () => (
     </Box>
 );
 
-const NamnskyltCard: React.FC<NamnskyltCardProps> = ({name, onDelete}) => {
-    const {t} = useTranslation('cg-overlay-plugin');
+const NamnskyltCard: React.FC<NamnskyltCardProps> = ({ name, onDelete }) => {
+    const { t } = useTranslation('cg-overlay-plugin');
 
     return (
         <Stack
@@ -335,11 +435,13 @@ const NamnskyltCard: React.FC<NamnskyltCardProps> = ({name, onDelete}) => {
             direction="row"
             spacing={1.25}
             alignItems="center"
-            onDragStart={e => setRundownDragPayload(e, {
-                type: 'namnskylt',
-                data: {name},
-                title: name,
-            })}
+            onDragStart={e =>
+                setRundownDragPayload(e, {
+                    type: 'namnskylt',
+                    data: { name },
+                    title: name,
+                })
+            }
             sx={{
                 padding: '10px 12px',
                 borderRadius: 1,
@@ -352,14 +454,19 @@ const NamnskyltCard: React.FC<NamnskyltCardProps> = ({name, onDelete}) => {
                 '&:hover': {
                     borderColor: '#4a90e2',
                     backgroundColor: '#2a2d35',
-                    '& svg': {color: 'rgba(232,234,237,0.85)'},
-                    '& .delete-btn': {opacity: 1},
+                    '& svg': { color: 'rgba(232,234,237,0.85)' },
+                    '& .delete-btn': { opacity: 1 },
                 },
-                '&:active': {cursor: 'grabbing'},
+                '&:active': { cursor: 'grabbing' },
             }}
         >
             <DragHandleIcon />
-            <Typography variant="body2" sx={{color: '#e8eaed', flexGrow: 1, minWidth: 0}}>{name}</Typography>
+            <Typography
+                variant="body2"
+                sx={{ color: '#e8eaed', flexGrow: 1, minWidth: 0 }}
+            >
+                {name}
+            </Typography>
             <Tooltip title={t('panel.removePreset')}>
                 <IconButton
                     className="delete-btn"
@@ -374,10 +481,18 @@ const NamnskyltCard: React.FC<NamnskyltCardProps> = ({name, onDelete}) => {
                         transition: 'opacity 80ms',
                         color: 'rgba(232,234,237,0.65)',
                         padding: 0.25,
-                        '&:hover': {color: '#e88c8c', backgroundColor: 'rgba(232,140,140,0.08)'},
+                        '&:hover': {
+                            color: '#e88c8c',
+                            backgroundColor: 'rgba(232,140,140,0.08)',
+                        },
                     }}
                 >
-                    <Box component="span" sx={{fontSize: 16, lineHeight: 1, fontWeight: 300}}>×</Box>
+                    <Box
+                        component="span"
+                        sx={{ fontSize: 16, lineHeight: 1, fontWeight: 300 }}
+                    >
+                        ×
+                    </Box>
                 </IconButton>
             </Tooltip>
         </Stack>
@@ -385,7 +500,7 @@ const NamnskyltCard: React.FC<NamnskyltCardProps> = ({name, onDelete}) => {
 };
 
 const NamnskyltarTab: React.FC = () => {
-    const {t} = useTranslation('cg-overlay-plugin');
+    const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
     const [presets, setPresets] = useState<string[]>([]);
     const [loaded, setLoaded] = useState(false);
@@ -395,12 +510,17 @@ const NamnskyltarTab: React.FC = () => {
 
     useEffect(() => {
         conn.rawRequest('/api/plugin/lappis/namnskylt-presets', 'GET', {})
-            .then((res: any) => setPresets(Array.isArray(res?.data) ? res.data : []))
+            .then((res: any) =>
+                setPresets(Array.isArray(res?.data) ? res.data : []),
+            )
             .catch(console.error)
             .finally(() => setLoaded(true));
     }, []);
 
-    const sorted = useMemo(() => [...presets].sort((a, b) => a.localeCompare(b)), [presets]);
+    const sorted = useMemo(
+        () => [...presets].sort((a, b) => a.localeCompare(b)),
+        [presets],
+    );
 
     const handleAdd = async () => {
         const name = draftName.trim();
@@ -412,48 +532,73 @@ const NamnskyltarTab: React.FC = () => {
 
         const next = [...presets, name];
         setSaving(true);
-        try {
-            const res: any = await conn.rawRequest('/api/plugin/lappis/namnskylt-presets', 'UPDATE', next);
-            setPresets(Array.isArray(res?.data) ? res.data : next);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setSaving(false);
-            setDialogOpen(false);
-            setDraftName('');
-        }
+        const [err, res] = await noTryAsync<any>(() =>
+            conn.rawRequest(
+                '/api/plugin/lappis/namnskylt-presets',
+                'UPDATE',
+                next,
+            ),
+        );
+        if (err) console.error(err);
+        else setPresets(Array.isArray(res?.data) ? res.data : next);
+        setSaving(false);
+        setDialogOpen(false);
+        setDraftName('');
     };
 
     const handleDelete = async (name: string) => {
         const previous = presets;
         const next = presets.filter(p => p !== name);
         setPresets(next);
-        try {
-            await conn.rawRequest('/api/plugin/lappis/namnskylt-presets', 'UPDATE', next);
-        } catch (err) {
+        const [err] = await noTryAsync(() =>
+            conn.rawRequest(
+                '/api/plugin/lappis/namnskylt-presets',
+                'UPDATE',
+                next,
+            ),
+        );
+        if (err) {
             console.error(err);
             setPresets(previous);
         }
     };
 
     return (
-        <Stack spacing={1.5} sx={{padding: 1.5, height: '100%', boxSizing: 'border-box'}}>
-            <Stack direction="row" alignItems="center" justifyContent="flex-end">
-                <Button variant="outlined" size="small" onClick={() => setDialogOpen(true)}>
+        <Stack
+            spacing={1.5}
+            sx={{ padding: 1.5, height: '100%', boxSizing: 'border-box' }}
+        >
+            <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="flex-end"
+            >
+                <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => setDialogOpen(true)}
+                >
                     {t('panel.addPreset')}
                 </Button>
             </Stack>
 
-            <Box sx={{flexGrow: 1, overflowY: 'auto', minHeight: 0}}>
+            <Box sx={{ flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>
                 {!loaded ? null : sorted.length === 0 ? (
-                    <Stack alignItems="center" justifyContent="center" sx={{height: '100%', color: 'text.secondary'}}>
-                        <Typography variant="body2">{t('panel.noPresets')}</Typography>
+                    <Stack
+                        alignItems="center"
+                        justifyContent="center"
+                        sx={{ height: '100%', color: 'text.secondary' }}
+                    >
+                        <Typography variant="body2">
+                            {t('panel.noPresets')}
+                        </Typography>
                     </Stack>
                 ) : (
                     <Box
                         sx={{
                             display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                            gridTemplateColumns:
+                                'repeat(auto-fill, minmax(200px, 1fr))',
                             gap: 1,
                         }}
                     >
@@ -468,7 +613,12 @@ const NamnskyltarTab: React.FC = () => {
                 )}
             </Box>
 
-            <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="xs">
+            <Dialog
+                open={dialogOpen}
+                onClose={() => setDialogOpen(false)}
+                fullWidth
+                maxWidth="xs"
+            >
                 <DialogTitle>{t('panel.addPresetTitle')}</DialogTitle>
                 <DialogContent>
                     <TextField
@@ -478,12 +628,21 @@ const NamnskyltarTab: React.FC = () => {
                         value={draftName}
                         onChange={e => setDraftName(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleAdd()}
-                        sx={{marginTop: 1}}
+                        sx={{ marginTop: 1 }}
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setDialogOpen(false)} disabled={saving}>{t('panel.cancel')}</Button>
-                    <Button variant="contained" onClick={handleAdd} disabled={!draftName.trim() || saving}>
+                    <Button
+                        onClick={() => setDialogOpen(false)}
+                        disabled={saving}
+                    >
+                        {t('panel.cancel')}
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleAdd}
+                        disabled={!draftName.trim() || saving}
+                    >
                         {saving ? t('panel.saving') : t('panel.add')}
                     </Button>
                 </DialogActions>
@@ -500,30 +659,37 @@ interface PresentationCardProps {
     presentation: Presentation;
 }
 
-const PresentationCard: React.FC<PresentationCardProps> = ({presentation}) => {
+const PresentationCard: React.FC<PresentationCardProps> = ({
+    presentation,
+}) => {
     const firstSlide = presentation.slides[0];
     const backgroundUrl = useBackgroundImage();
     return (
         <Box
             draggable
-            onDragStart={e => setRundownDragPayload(e, {
-                type: 'slides',
-                data: {presentationId: presentation.id},
-                title: presentation.title,
-            })}
-            onClick={() => window.location.assign(slidesEditorUrl(presentation.id))}
+            onDragStart={e =>
+                setRundownDragPayload(e, {
+                    type: 'slides',
+                    data: { presentationId: presentation.id },
+                    title: presentation.title,
+                })
+            }
+            onClick={() =>
+                window.location.assign(slidesEditorUrl(presentation.id))
+            }
             role="button"
             tabIndex={0}
             onKeyDown={e => {
-                if (e.key === 'Enter') window.location.assign(slidesEditorUrl(presentation.id));
+                if (e.key === 'Enter')
+                    window.location.assign(slidesEditorUrl(presentation.id));
             }}
             sx={{
                 cursor: 'grab',
                 userSelect: 'none',
                 outline: 'none',
-                '&:active': {cursor: 'grabbing'},
-                '&:hover .pres-title': {color: '#4a90e2'},
-                '&:hover .pres-thumb': {borderColor: '#4a90e2'},
+                '&:active': { cursor: 'grabbing' },
+                '&:hover .pres-title': { color: '#4a90e2' },
+                '&:hover .pres-thumb': { borderColor: '#4a90e2' },
             }}
         >
             <Stack spacing={0.75}>
@@ -537,7 +703,11 @@ const PresentationCard: React.FC<PresentationCardProps> = ({presentation}) => {
                     }}
                 >
                     {firstSlide ? (
-                        <SlidePreview text={firstSlide.text} reference={slideRef(firstSlide)} backgroundUrl={backgroundUrl} />
+                        <SlidePreview
+                            text={firstSlide.text}
+                            reference={slideRef(firstSlide)}
+                            backgroundUrl={backgroundUrl}
+                        />
                     ) : (
                         <Box
                             sx={{
@@ -555,11 +725,23 @@ const PresentationCard: React.FC<PresentationCardProps> = ({presentation}) => {
                         </Box>
                     )}
                 </Box>
-                <Stack direction="row" spacing={0.5} alignItems="center" sx={{paddingLeft: 0.25}}>
+                <Stack
+                    direction="row"
+                    spacing={0.5}
+                    alignItems="center"
+                    sx={{ paddingLeft: 0.25 }}
+                >
                     <Typography
                         className="pres-title"
                         variant="body2"
-                        sx={{flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#e8eaed'}}
+                        sx={{
+                            flexGrow: 1,
+                            minWidth: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            color: '#e8eaed',
+                        }}
                     >
                         {presentation.title}
                     </Typography>
@@ -574,23 +756,32 @@ const PresentationCard: React.FC<PresentationCardProps> = ({presentation}) => {
 
 const SlidesTab: React.FC = () => {
     const conn = useSocket();
-    const {presentations} = usePresentations();
+    const { presentations } = usePresentations();
     const [creating, setCreating] = useState(false);
 
     const handleCreate = async () => {
         setCreating(true);
-        try {
-            const p = await createPresentation(conn, {title: 'Untitled', slides: []});
-            window.location.assign(slidesEditorUrl(p.id));
-        } catch (err) {
+        const [err, p] = await noTryAsync(() =>
+            createPresentation(conn, { title: 'Untitled', slides: [] }),
+        );
+        if (err) {
             console.error(err);
             setCreating(false);
+            return;
         }
+        window.location.assign(slidesEditorUrl(p!.id));
     };
 
     return (
-        <Stack spacing={1.5} sx={{padding: 1.5, height: '100%', boxSizing: 'border-box'}}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Stack
+            spacing={1.5}
+            sx={{ padding: 1.5, height: '100%', boxSizing: 'border-box' }}
+        >
+            <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+            >
                 <Typography variant="body2" color="text.secondary">
                     Drag to add to rundown · Click to edit
                 </Typography>
@@ -614,25 +805,31 @@ const SlidesTab: React.FC = () => {
                 </Stack>
             </Stack>
 
-            <Box sx={{flexGrow: 1, overflowY: 'auto', minHeight: 0}}>
-                {presentations === null ? null
-                    : presentations.length === 0 ? (
-                        <Stack alignItems="center" justifyContent="center" sx={{height: '100%', color: 'text.secondary'}}>
-                            <Typography variant="body2">No presentations yet.</Typography>
-                        </Stack>
-                    ) : (
-                        <Box
-                            sx={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                                gap: 1.5,
-                            }}
-                        >
-                            {presentations.map(p => (
-                                <PresentationCard key={p.id} presentation={p} />
-                            ))}
-                        </Box>
-                    )}
+            <Box sx={{ flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>
+                {presentations === null ? null : presentations.length === 0 ? (
+                    <Stack
+                        alignItems="center"
+                        justifyContent="center"
+                        sx={{ height: '100%', color: 'text.secondary' }}
+                    >
+                        <Typography variant="body2">
+                            No presentations yet.
+                        </Typography>
+                    </Stack>
+                ) : (
+                    <Box
+                        sx={{
+                            display: 'grid',
+                            gridTemplateColumns:
+                                'repeat(auto-fill, minmax(200px, 1fr))',
+                            gap: 1.5,
+                        }}
+                    >
+                        {presentations.map(p => (
+                            <PresentationCard key={p.id} presentation={p} />
+                        ))}
+                    </Box>
+                )}
             </Box>
         </Stack>
     );
@@ -643,25 +840,25 @@ const SlidesTab: React.FC = () => {
 // ============================================================
 
 const BottomPanel: React.FC = () => {
-    const {t} = useTranslation('cg-overlay-plugin');
+    const { t } = useTranslation('cg-overlay-plugin');
     const [tab, setTab] = useState<'media' | 'namnskyltar' | 'slides'>('media');
 
     return (
-        <Stack direction="column" sx={{height: '100%'}}>
+        <Stack direction="column" sx={{ height: '100%' }}>
             <Tabs
                 value={tab}
                 onChange={(_, v) => setTab(v)}
                 sx={{
                     borderBottom: '1px solid rgba(255,255,255,0.08)',
                     minHeight: 40,
-                    '& .MuiTab-root': {minHeight: 40, textTransform: 'none'},
+                    '& .MuiTab-root': { minHeight: 40, textTransform: 'none' },
                 }}
             >
                 <Tab label={t('panel.mediaTab')} value="media" />
                 <Tab label={t('panel.namnskyltarTab')} value="namnskyltar" />
                 <Tab label={t('panel.slidesTab')} value="slides" />
             </Tabs>
-            <Box sx={{flexGrow: 1, minHeight: 0}}>
+            <Box sx={{ flexGrow: 1, minHeight: 0 }}>
                 {tab === 'media' && <MediaTab />}
                 {tab === 'namnskyltar' && <NamnskyltarTab />}
                 {tab === 'slides' && <SlidesTab />}

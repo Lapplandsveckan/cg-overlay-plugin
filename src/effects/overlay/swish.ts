@@ -1,4 +1,4 @@
-import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
+import { CgCommand, Effect, type EffectGroup } from '@lappis/cg-manager';
 
 export interface SwishOverlayEffectOptions {
     number: string;
@@ -8,7 +8,11 @@ export interface SwishOverlayEffectOptions {
 export class SwishOverlayEffect extends Effect {
     private options: SwishOverlayEffectOptions;
 
-    public constructor(group: EffectGroup, options: SwishOverlayEffectOptions, template: string) {
+    public constructor(
+        group: EffectGroup,
+        options: SwishOverlayEffectOptions,
+        template: string,
+    ) {
         super(group);
 
         this.options = options;
@@ -24,11 +28,7 @@ export class SwishOverlayEffect extends Effect {
 
     public update(options: SwishOverlayEffectOptions) {
         this.options = options;
-        this.executor.execute(
-            CgCommand
-                .update(options)
-                .allocate(this.layer),
-        );
+        this.executor.execute(CgCommand.update(options).allocate(this.layer));
     }
 
     public get layer() {
@@ -37,11 +37,7 @@ export class SwishOverlayEffect extends Effect {
 
     public activate() {
         if (!super.activate()) return;
-        return this.executor.execute(
-            CgCommand
-                .play()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.play().allocate(this.layer));
     }
 
     public minimize() {
@@ -49,32 +45,24 @@ export class SwishOverlayEffect extends Effect {
         // actually fires the stop command. Returns false when already
         // active — fine, we just want the side-effect of flipping the flag.
         super.activate();
-        return this.executor.execute(
-            CgCommand
-                .next()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.next().allocate(this.layer));
     }
 
     public deactivate() {
         if (!super.deactivate()) return;
-        return this.executor.execute(
-            CgCommand
-                .stop()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 
     public setNumber(number: string) {
         this.options.number = number;
         return this.executor.execute(
-            CgCommand
-                .update({ number: this.options.number })
-                .allocate(this.layer),
+            CgCommand.update({ number: this.options.number }).allocate(
+                this.layer,
+            ),
         );
     }
 
-    public getMetadata(): {} {
+    public getMetadata(): Record<string, unknown> {
         return {
             number: this.options.number,
         };

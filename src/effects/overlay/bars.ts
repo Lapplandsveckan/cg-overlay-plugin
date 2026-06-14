@@ -1,13 +1,16 @@
-import {CgCommand, Effect, EffectGroup} from '@lappis/cg-manager';
+import { CgCommand, Effect, type EffectGroup } from '@lappis/cg-manager';
 
-export interface BarsOverlayEffectOptions {
-
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface BarsOverlayEffectOptions {}
 
 export class BarsOverlayEffect extends Effect {
     private options: BarsOverlayEffectOptions;
 
-    public constructor(group: EffectGroup, options: BarsOverlayEffectOptions, template: string) {
+    public constructor(
+        group: EffectGroup,
+        options: BarsOverlayEffectOptions,
+        template: string,
+    ) {
         super(group);
 
         this.options = options;
@@ -28,26 +31,16 @@ export class BarsOverlayEffect extends Effect {
     public activate() {
         if (!super.activate()) return;
 
-        return this.executor.execute(
-            CgCommand
-                .play()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.play().allocate(this.layer));
     }
 
     public deactivate() {
         if (!super.deactivate()) return;
 
-        return this.executor.execute(
-            CgCommand
-                .stop()
-                .allocate(this.layer),
-        );
+        return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 
-    public getMetadata(): {} {
-        return {
-
-        };
+    public getMetadata(): Record<string, unknown> {
+        return {};
     }
 }

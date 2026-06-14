@@ -1,8 +1,8 @@
-import React, {useEffect, useMemo, useState} from 'react';
-import {Box, Chip, Stack, Typography} from '@mui/material';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Box, Chip, Stack, Typography } from '@mui/material';
 
-import {useSocket, MediaCard} from '@web-lib';
-import {useTranslation} from '../i18n';
+import { useSocket, MediaCard } from '@web-lib';
+import { useTranslation } from '../i18n';
 
 interface RundownEntry {
     id: string;
@@ -33,8 +33,10 @@ function useMediaCardData(clip: any) {
     }, [clip]);
 }
 
-export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({entry}) => {
-    const {t} = useTranslation('cg-overlay-plugin');
+export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
+    entry,
+}) => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const socket = useSocket();
     const [clip, setClip] = useState<any | null>(null);
 
@@ -43,20 +45,36 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({entry
 
     useEffect(() => {
         if (!entry.data?.clip) return;
-        socket.caspar.getMedia().then(media => setClip(media.get(entry.data.clip) || null));
+        socket.caspar
+            .getMedia()
+            .then(media => setClip(media.get(entry.data.clip) || null));
     }, [entry.data?.clip]);
 
     return (
         <Stack spacing={1}>
             <Stack direction="row" spacing={1} alignItems="center">
                 <Typography variant="body1">{t('playVideo.label')}</Typography>
-                {playNow && <Chip label={t('playVideo.playNowChip')} size="small" color="warning" />}
+                {playNow && (
+                    <Chip
+                        label={t('playVideo.playNowChip')}
+                        size="small"
+                        color="warning"
+                    />
+                )}
             </Stack>
             {data ? (
                 <MediaCard {...data} columns={1} />
             ) : (
-                <Box sx={{padding: 1, borderRadius: 1, border: '1px dashed rgba(255,255,255,0.15)'}}>
-                    <Typography variant="caption" color="warning.main">{t('playVideo.noClip')}</Typography>
+                <Box
+                    sx={{
+                        padding: 1,
+                        borderRadius: 1,
+                        border: '1px dashed rgba(255,255,255,0.15)',
+                    }}
+                >
+                    <Typography variant="caption" color="warning.main">
+                        {t('playVideo.noClip')}
+                    </Typography>
                 </Box>
             )}
         </Stack>
