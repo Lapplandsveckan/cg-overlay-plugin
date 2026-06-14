@@ -3,6 +3,7 @@ import {Box, Breadcrumbs, Button, Dialog, DialogActions, DialogContent, DialogTi
 
 import {MediaDropZone, useSocket, useRundownLive} from '@web-lib';
 import {useTranslation} from './i18n';
+import {MotionControl} from './motion';
 
 import SlidePreview from './slides/SlidePreview';
 import {
@@ -639,12 +640,22 @@ const SlidesTab: React.FC = () => {
 };
 
 // ============================================================
+// Motion tab
+// ============================================================
+
+const MotionTab: React.FC = () => (
+    <Box sx={{height: '100%'}}>
+        <MotionControl />
+    </Box>
+);
+
+// ============================================================
 // Container
 // ============================================================
 
 const BottomPanel: React.FC = () => {
     const {t} = useTranslation('cg-overlay-plugin');
-    const [tab, setTab] = useState<'media' | 'namnskyltar' | 'slides'>('media');
+    const [tab, setTab] = useState<'media' | 'namnskyltar' | 'slides' | 'motion'>('media');
 
     return (
         <Stack direction="column" sx={{height: '100%'}}>
@@ -660,11 +671,13 @@ const BottomPanel: React.FC = () => {
                 <Tab label={t('panel.mediaTab')} value="media" />
                 <Tab label={t('panel.namnskyltarTab')} value="namnskyltar" />
                 <Tab label={t('panel.slidesTab')} value="slides" />
+                <Tab label={t('panel.motionTab')} value="motion" />
             </Tabs>
             <Box sx={{flexGrow: 1, minHeight: 0}}>
                 {tab === 'media' && <MediaTab />}
                 {tab === 'namnskyltar' && <NamnskyltarTab />}
                 {tab === 'slides' && <SlidesTab />}
+                {tab === 'motion' && <MotionTab />}
             </Box>
         </Stack>
     );

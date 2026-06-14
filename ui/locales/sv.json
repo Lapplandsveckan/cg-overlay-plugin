@@ -87,6 +87,7 @@
         "removePreset": "Ta bort förinställning",
         "mediaTab": "Media",
         "namnskyltarTab": "Namnskyltar",
-        "slidesTab": "Slides"
+        "slidesTab": "Slides",
+        "motionTab": "Motion"
     }
 }
