@@ -85,6 +85,14 @@
         "removePreset": "Ta bort förinställning",
         "mediaTab": "Media",
         "namnskyltarTab": "Namnskyltar",
-        "slidesTab": "Slides"
+        "slidesTab": "Slides",
+        "mediaHint": "Dra ett klipp till rundown · Klicka för att spela",
+        "namnskyltarHint": "Dra ett namn till rundown",
+        "slidesHint": "Dra för att lägga till i rundown · Klicka för att redigera",
+        "openAll": "Öppna alla",
+        "newPresentation": "+ Ny",
+        "creating": "Skapar…",
+        "noPresentations": "Inga presentationer ännu.",
+        "emptySlide": "Tom"
     }
 }
