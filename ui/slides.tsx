@@ -35,14 +35,17 @@ const PresentationCard: React.FC<PresentationCardProps> = ({
                     title: presentation.title,
                 })
             }
-            onClick={() =>
-                window.location.assign(slidesEditorUrl(presentation.id))
-            }
+            onClick={() => {
+                const from = window.location.pathname + window.location.search;
+                window.location.assign(slidesEditorUrl(presentation.id, from));
+            }}
             role="button"
             tabIndex={0}
             onKeyDown={e => {
-                if (e.key === 'Enter')
-                    window.location.assign(slidesEditorUrl(presentation.id));
+                if (e.key === 'Enter') {
+                    const from = window.location.pathname + window.location.search;
+                    window.location.assign(slidesEditorUrl(presentation.id, from));
+                }
             }}
             sx={{
                 cursor: 'grab',
