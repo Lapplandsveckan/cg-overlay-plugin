@@ -43,8 +43,11 @@ const PresentationCard: React.FC<PresentationCardProps> = ({
             tabIndex={0}
             onKeyDown={e => {
                 if (e.key === 'Enter') {
-                    const from = window.location.pathname + window.location.search;
-                    window.location.assign(slidesEditorUrl(presentation.id, from));
+                    const from =
+                        window.location.pathname + window.location.search;
+                    window.location.assign(
+                        slidesEditorUrl(presentation.id, from),
+                    );
                 }
             }}
             sx={{
@@ -170,7 +173,9 @@ const SlidesTab: React.FC = () => {
                         onClick={handleCreate}
                         disabled={creating}
                     >
-                        {creating ? t('panel.creating') : t('panel.newPresentation')}
+                        {creating
+                            ? t('panel.creating')
+                            : t('panel.newPresentation')}
                     </Button>
                 </Stack>
             </Stack>
