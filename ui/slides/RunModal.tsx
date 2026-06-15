@@ -21,6 +21,7 @@ import {
     slideLabel,
     useBackgroundImage,
 } from './api';
+import { useTranslation } from '../i18n';
 
 export interface RunModalProps {
     open: boolean;
@@ -40,6 +41,7 @@ export const RunModal: React.FC<RunModalProps> = ({
     onStop,
     onPlay,
 }) => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const slides = presentation?.slides ?? [];
     const backgroundUrl = useBackgroundImage();
 
@@ -125,7 +127,7 @@ export const RunModal: React.FC<RunModalProps> = ({
                     justifyContent="space-between"
                 >
                     <Stack direction="row" spacing={1.5} alignItems="baseline">
-                        <Typography variant="h6">Slides</Typography>
+                        <Typography variant="h6">{t('runModal.heading')}</Typography>
                         {presentation?.title && (
                             <Typography variant="body2" color="text.secondary">
                                 {presentation.title}
@@ -133,7 +135,7 @@ export const RunModal: React.FC<RunModalProps> = ({
                         )}
                         {!playingHere && slides.length > 0 && (
                             <Chip
-                                label="Click a slide to start"
+                                label={t('runModal.clickToStart')}
                                 size="small"
                                 variant="outlined"
                                 sx={{ borderStyle: 'dashed' }}
@@ -147,19 +149,19 @@ export const RunModal: React.FC<RunModalProps> = ({
                             </Typography>
                         )}
                         {playingHere && (
-                            <Tooltip title="Stop playback, keep modal open (Esc)">
+                            <Tooltip title={t('runModal.stopTooltip')}>
                                 <Button
                                     onClick={onStop}
                                     size="small"
                                     color="error"
                                     variant="outlined"
                                 >
-                                    Stop
+                                    {t('runModal.stop')}
                                 </Button>
                             </Tooltip>
                         )}
                         <Tooltip
-                            title={playingHere ? 'Close modal' : 'Close (Esc)'}
+                            title={playingHere ? t('runModal.closeModal') : t('runModal.closeEsc')}
                         >
                             <Button
                                 onClick={onClose}
@@ -167,7 +169,7 @@ export const RunModal: React.FC<RunModalProps> = ({
                                 color="inherit"
                                 variant="outlined"
                             >
-                                Close
+                                {t('runModal.close')}
                             </Button>
                         </Tooltip>
                     </Stack>
@@ -223,10 +225,12 @@ const PlayingView: React.FC<PlayingViewProps> = ({
     onNext,
     onPrev,
     onJump,
-}) => (
+}) => {
+    const { t } = useTranslation('cg-overlay-plugin');
+    return (
     <Stack spacing={2}>
         <Stack direction="row" spacing={1.5} alignItems="stretch">
-            <Tooltip title="Previous (←)">
+            <Tooltip title={t('runModal.prev')}>
                 <span>
                     <IconButton
                         onClick={onPrev}
@@ -257,7 +261,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                     backgroundUrl={backgroundUrl}
                 />
             </Box>
-            <Tooltip title="Next (→ / Space)">
+            <Tooltip title={t('runModal.next')}>
                 <span>
                     <IconButton
                         onClick={onNext}
@@ -329,7 +333,8 @@ const PlayingView: React.FC<PlayingViewProps> = ({
             ))}
         </Box>
     </Stack>
-);
+    );
+};
 
 interface PickerViewProps {
     slides: Slide[];
@@ -342,6 +347,7 @@ const PickerView: React.FC<PickerViewProps> = ({
     backgroundUrl,
     onPlay,
 }) => {
+    const { t } = useTranslation('cg-overlay-plugin');
     if (slides.length === 0) {
         return (
             <Box
@@ -351,7 +357,7 @@ const PickerView: React.FC<PickerViewProps> = ({
                     color: 'text.secondary',
                 }}
             >
-                <Typography variant="body2">No slides to play.</Typography>
+                <Typography variant="body2">{t('runModal.noSlides')}</Typography>
             </Box>
         );
     }
@@ -431,7 +437,7 @@ const PickerView: React.FC<PickerViewProps> = ({
                                             letterSpacing: '0.05em',
                                         }}
                                     >
-                                        Start from here
+                                        {t('runModal.startFromHere')}
                                     </Typography>
                                 </Stack>
                             </Box>

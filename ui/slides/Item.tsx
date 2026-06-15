@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Chip, Stack, Typography } from '@mui/material';
 import { useSocket } from '@web-lib';
+import { useTranslation } from '../i18n';
 
 import {
     type ArmEvent,
@@ -27,6 +28,7 @@ interface SlidesRundownItemProps {
 export const SlidesRundownItem: React.FC<SlidesRundownItemProps> = ({
     entry,
 }) => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
     const presentationId: string | null = entry.data?.presentationId ?? null;
     const presentation = usePresentation(presentationId);
@@ -52,7 +54,7 @@ export const SlidesRundownItem: React.FC<SlidesRundownItemProps> = ({
         if (!presentationId) {
             return (
                 <Chip
-                    label="No presentation"
+                    label={t('slides.noPresentation')}
                     size="small"
                     color="warning"
                     variant="outlined"
@@ -62,14 +64,14 @@ export const SlidesRundownItem: React.FC<SlidesRundownItemProps> = ({
         if (presentation === undefined) {
             return (
                 <Typography variant="caption" color="text.secondary">
-                    Loading…
+                    {t('slides.loading')}
                 </Typography>
             );
         }
         if (presentation === null) {
             return (
                 <Chip
-                    label="Presentation missing"
+                    label={t('slides.presentationMissing')}
                     size="small"
                     color="error"
                     variant="outlined"
@@ -86,12 +88,12 @@ export const SlidesRundownItem: React.FC<SlidesRundownItemProps> = ({
             <Stack spacing={0.5}>
                 <Stack direction="row" spacing={1} alignItems="center">
                     <Chip
-                        label={`${slideCount} slide${slideCount === 1 ? '' : 's'}`}
+                        label={t('slides.slideCount', { count: slideCount })}
                         size="small"
                         variant="outlined"
                     />
                     {playingHere && (
-                        <Chip label="Live" size="small" color="error" />
+                        <Chip label={t('slides.live')} size="small" color="error" />
                     )}
                 </Stack>
                 {firstRef && (

@@ -12,6 +12,7 @@ import {
 
 import { noTry, noTryAsync } from 'no-try';
 import { RundownEditorActionBar, useSocket } from '@web-lib';
+import { useTranslation } from '../i18n';
 import { usePresentations, createPresentation } from './api';
 import { slidesEditorUrl } from './urls';
 
@@ -35,6 +36,7 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
     deleteEntry,
     creating,
 }) => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
     const { presentations } = usePresentations();
 
@@ -62,7 +64,7 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
         setCreatingNew(true);
         setError(null);
         const [err, created] = await noTryAsync(() =>
-            createPresentation(conn, { title: 'Untitled', slides: [] }),
+            createPresentation(conn, { title: t('presentationEditor.untitled'), slides: [] }),
         );
         if (err) {
             console.error(err);
@@ -79,36 +81,36 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
 
     return (
         <Stack spacing={2}>
-            <Typography variant="h6">Slides</Typography>
+            <Typography variant="h6">{t('slides.heading')}</Typography>
 
             <TextField
-                label="Title"
+                label={t('slides.titleLabel')}
                 value={title}
                 onChange={e => {
                     setTitle(e.target['value']);
                     setTitleTouched(true);
                 }}
-                helperText="Shown in the rundown."
+                helperText={t('slides.titleHelper')}
             />
 
             {loading && (
                 <Typography variant="body2" color="text.secondary">
-                    Loading presentations…
+                    {t('slides.loadingPresentations')}
                 </Typography>
             )}
 
             {!loading && (
                 <TextField
                     select
-                    label="Presentation"
+                    label={t('slides.presentationLabel')}
                     value={presentationId}
                     onChange={e => handleSelect(e.target.value)}
                     helperText={
                         empty
-                            ? 'No presentations yet. Create one to get started.'
+                            ? t('slides.noPresentationsCreate')
                             : selected
-                              ? `${selected.slides.length} slide${selected.slides.length === 1 ? '' : 's'}`
-                              : 'Select which presentation this entry plays.'
+                              ? t('slides.slideCount', { count: selected.slides.length })
+                              : t('slides.selectHelper')
                     }
                     fullWidth
                 >
@@ -148,7 +150,7 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
                     onClick={handleCreateNew}
                     disabled={creatingNew}
                 >
-                    {creatingNew ? 'Creating…' : '+ New presentation'}
+                    {creatingNew ? t('panel.creating') : t('slides.newPresentation')}
                 </Button>
                 {selected && (
                     <Button
@@ -156,7 +158,7 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
                         size="small"
                         onClick={() => openPresentationEditor(selected.id)}
                     >
-                        Edit selected
+                        {t('slides.editSelected')}
                     </Button>
                 )}
             </Stack>

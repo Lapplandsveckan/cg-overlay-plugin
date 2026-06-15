@@ -3,6 +3,7 @@ import { Alert, Box, Chip, Stack, Typography } from '@mui/material';
 
 import { noTryAsync } from 'no-try';
 import { useSocket } from '@web-lib';
+import { useTranslation } from '../i18n';
 
 import SlidePreview from './SlidePreview';
 import {
@@ -16,6 +17,7 @@ import { slidesEditorUrl } from './urls';
 import NameDialog from './NameDialog';
 
 export const PresentationIndex: React.FC = () => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
     const { presentations } = usePresentations();
     const backgroundUrl = useBackgroundImage();
@@ -42,7 +44,7 @@ export const PresentationIndex: React.FC = () => {
     return (
         <Stack spacing={3}>
             <Typography variant="h5" fontWeight={600}>
-                Presentations
+                {t('presentationIndex.heading')}
             </Typography>
 
             {error && (
@@ -53,7 +55,7 @@ export const PresentationIndex: React.FC = () => {
 
             {presentations === null ? (
                 <Typography variant="body2" color="text.secondary">
-                    Loading…
+                    {t('presentationIndex.loading')}
                 </Typography>
             ) : (
                 <Box
@@ -83,9 +85,9 @@ export const PresentationIndex: React.FC = () => {
 
             <NameDialog
                 open={createOpen}
-                title="New presentation"
+                title={t('presentationIndex.newPresentationDialogTitle')}
                 initialName=""
-                confirmLabel="Create"
+                confirmLabel={t('presentationIndex.create')}
                 onClose={() => setCreateOpen(false)}
                 onSubmit={handleCreate}
             />
@@ -96,7 +98,9 @@ export const PresentationIndex: React.FC = () => {
 const CreateTile: React.FC<{ onClick: () => void; disabled: boolean }> = ({
     onClick,
     disabled,
-}) => (
+}) => {
+    const { t } = useTranslation('cg-overlay-plugin');
+    return (
     <Box
         onClick={disabled ? undefined : onClick}
         role="button"
@@ -138,15 +142,17 @@ const CreateTile: React.FC<{ onClick: () => void; disabled: boolean }> = ({
             +
         </Box>
         <Typography variant="body2">
-            {disabled ? 'Creating…' : 'New presentation'}
+            {disabled ? t('panel.creating') : t('presentationIndex.newPresentation')}
         </Typography>
     </Box>
-);
+    );
+};
 
 const PresentationTile: React.FC<{
     presentation: Presentation;
     backgroundUrl?: string | null;
 }> = ({ presentation, backgroundUrl }) => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const firstSlide = presentation.slides[0];
     return (
         <Stack
@@ -189,7 +195,7 @@ const PresentationTile: React.FC<{
                             fontStyle: 'italic',
                         }}
                     >
-                        Empty
+                        {t('presentationIndex.empty')}
                     </Box>
                 )}
             </Box>
