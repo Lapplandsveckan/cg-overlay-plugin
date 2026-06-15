@@ -85,7 +85,7 @@
         "removePreset": "Remove preset",
         "mediaTab": "Media",
         "namnskyltarTab": "Namnskyltar",
-        "slidesTab": "Slides",
+        "slidesTab": "Presentations",
         "mediaHint": "Drag a clip to the rundown · Click to play",
         "namnskyltarHint": "Drag a name onto the rundown",
         "slidesHint": "Drag to add to rundown · Click to edit",
@@ -96,7 +96,7 @@
         "emptySlide": "Empty"
     },
     "slides": {
-        "heading": "Slides",
+        "heading": "Presentations",
         "titleLabel": "Title",
         "titleHelper": "Shown in the rundown.",
         "presentationLabel": "Presentation",
@@ -153,7 +153,7 @@
         "verseCount_other": "{{count}} verses"
     },
     "runModal": {
-        "heading": "Slides",
+        "heading": "Presentations",
         "clickToStart": "Click a slide to start",
         "stopTooltip": "Stop playback, keep modal open (Esc)",
         "stop": "Stop",
