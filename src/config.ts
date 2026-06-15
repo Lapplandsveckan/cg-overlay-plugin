@@ -6,14 +6,6 @@ export const config = {
         subnet: 0,
     },
 
-    artnetSend: {
-        ip: '192.168.100.x',
-        subnetStart: 101,
-        universeStart: 6,
-
-        count: 12,
-    },
-
     atem: {
         ip: '',
         videoInput: 18,

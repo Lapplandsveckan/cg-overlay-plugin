@@ -72,27 +72,13 @@ export default class MotionManager {
     public setColor(color?: string) {
         this.motion?.setColor(color);
         this.color = color;
-
-        if (this.connection)
-            for (const sender of this.senders)
-                this.sendColor(this.color, sender);
-    }
-
-    private sendColor(color: string, sender: dmxlib.sender) {
-        const value = color
-            .match(/#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i)
-            .slice(1)
-            .map(v => parseInt(v, 16));
-
-        for (let i = 0; i < 512; i++) sender.prepChannel(i, value[i % 3]);
     }
 
     private acceptIncoming = true;
     private connection: ArtNetConfig = null;
 
     private artnetColor: string;
-    private senders = [];
-    private async setupDMX(_config: ArtNetConfig) {
+    private setupDMX(_config: ArtNetConfig) {
         // IDEA: Add support for closing the connection, eg when the user changes the config or it already exists
         if (this.connection) return;
         const { universe, net, subnet, channel } = (this.connection = _config);
@@ -112,24 +98,6 @@ export default class MotionManager {
             net,
             subnet,
         });
-
-        for (let i = 0; i < config.artnetSend.count; i++) {
-            this.senders.push(
-                dmxnet.newSender({
-                    subuni: config.artnetSend.universeStart + i,
-                    ip: config.artnetSend.ip.replace(
-                        'x',
-                        (config.artnetSend.subnetStart + i)
-                            .toString()
-                            .padStart(3, '0'),
-                    ),
-                    // eslint-disable-next-line camelcase
-                    base_refresh_interval: 100,
-                }),
-            );
-
-            await new Promise(resolve => setTimeout(resolve, 5));
-        }
 
         receiver.on('data', (data: number[]) => {
             const channelIndex = channel - 1;
