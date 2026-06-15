@@ -12,8 +12,10 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 import { MediaView, useSocket } from '@web-lib';
+import { useTranslation } from './i18n';
 
 export const MotionControl = () => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
     const [color, setColor] = useState<string>();
     const [colorOpen, setColorOpen] = useState(false);
@@ -66,7 +68,7 @@ export const MotionControl = () => {
                                 letterSpacing: '0.08em',
                             }}
                         >
-                            Background color
+                            {t('motion.backgroundColor')}
                         </Typography>
                         <Box
                             component="label"
@@ -106,7 +108,7 @@ export const MotionControl = () => {
                             />
                         </Box>
                         <Typography variant="caption" color="text.secondary">
-                            {color ? color.toUpperCase() : 'No color set'}
+                            {color ? color.toUpperCase() : t('motion.noColor')}
                         </Typography>
                         <Button
                             variant="outlined"
@@ -121,13 +123,13 @@ export const MotionControl = () => {
                                 );
                             }}
                         >
-                            Clear
+                            {t('motion.clear')}
                         </Button>
                     </Stack>
                 </Collapse>
 
                 <Tooltip
-                    title={colorOpen ? 'Hide color' : 'Background color'}
+                    title={colorOpen ? t('motion.hideColor') : t('motion.backgroundColor')}
                     placement="left"
                 >
                     <IconButton

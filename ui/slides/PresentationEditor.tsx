@@ -25,6 +25,7 @@ import {
 
 import { noTryAsync } from 'no-try';
 import { useSocket } from '@web-lib';
+import { useTranslation } from '../i18n';
 import NameDialog from './NameDialog';
 
 import SlidePreview from './SlidePreview';
@@ -51,11 +52,12 @@ function makeSlideId(): string {
 }
 
 export const PresentationEditor: React.FC<Props> = ({ id }) => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
     const remote = usePresentation(id);
     const backFrom = backTargetFromSearch(window.location.search);
     const backHref = backFrom ?? pluginHomeUrl();
-    const backLabel = backFrom ? '← Back' : '← Home';
+    const backLabel = backFrom ? t('presentationEditor.back') : t('presentationEditor.home');
     const backgroundUrl = useBackgroundImage();
 
     const [renameOpen, setRenameOpen] = useState(false);
@@ -76,14 +78,14 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
     };
 
     if (remote === undefined) {
-        return <CenteredMessage>Loading…</CenteredMessage>;
+        return <CenteredMessage>{t('presentationEditor.loading')}</CenteredMessage>;
     }
     if (remote === null) {
         return (
             <CenteredMessage>
                 <Stack spacing={1.5} alignItems="center">
                     <Typography variant="body1">
-                        Presentation not found.
+                        {t('presentationEditor.notFound')}
                     </Typography>
                     <Link href={backHref}>{backLabel}</Link>
                 </Stack>
@@ -151,7 +153,7 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                         variant="outlined"
                         onClick={() => setConfirmDelete(true)}
                     >
-                        Delete presentation
+                        {t('presentationEditor.deleteButton')}
                     </Button>
                 </Stack>
 
@@ -168,9 +170,9 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                                 : undefined
                         }
                     >
-                        {remote.title || 'Untitled'}
+                        {remote.title || t('presentationEditor.untitled')}
                     </Typography>
-                    <Tooltip title="Rename">
+                    <Tooltip title={t('presentationEditor.renameTooltip')}>
                         <IconButton
                             onClick={() => setRenameOpen(true)}
                             sx={{
@@ -195,14 +197,14 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                     </Tooltip>
                     <Box sx={{ flexGrow: 1 }} />
                     <Chip
-                        label={`${remote.slides.length} slide${remote.slides.length === 1 ? '' : 's'}`}
+                        label={t('slides.slideCount', { count: remote.slides.length })}
                         variant="outlined"
                     />
                 </Stack>
 
                 <NameDialog
                     open={renameOpen}
-                    title="Rename presentation"
+                    title={t('presentationEditor.renameDialogTitle')}
                     initialName={remote.title}
                     onClose={() => setRenameOpen(false)}
                     onSubmit={handleRename}
@@ -223,7 +225,7 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                         variant="contained"
                         onClick={() => setAddOpen(true)}
                     >
-                        + Add slides
+                        {t('presentationEditor.addSlides')}
                     </Button>
                 </Stack>
 
@@ -271,24 +273,22 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                 open={confirmDelete}
                 onClose={() => setConfirmDelete(false)}
             >
-                <DialogTitle>Delete presentation?</DialogTitle>
+                <DialogTitle>{t('presentationEditor.deleteConfirmTitle')}</DialogTitle>
                 <DialogContent>
                     <Typography variant="body2">
-                        "{remote.title}" will be permanently removed. Any
-                        rundown entries that reference it will show
-                        "Presentation missing".
+                        {t('presentationEditor.deleteConfirmBody', { title: remote.title })}
                     </Typography>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setConfirmDelete(false)}>
-                        Cancel
+                        {t('panel.cancel')}
                     </Button>
                     <Button
                         color="error"
                         variant="contained"
                         onClick={handleDeletePresentation}
                     >
-                        Delete
+                        {t('presentationEditor.delete')}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -302,7 +302,9 @@ const CenteredMessage: React.FC<React.PropsWithChildren> = ({ children }) => (
     </Box>
 );
 
-const EmptyState: React.FC<{ onAdd: () => void }> = ({ onAdd }) => (
+const EmptyState: React.FC<{ onAdd: () => void }> = ({ onAdd }) => {
+    const { t } = useTranslation('cg-overlay-plugin');
+    return (
     <Box
         sx={{
             padding: 6,
@@ -313,16 +315,17 @@ const EmptyState: React.FC<{ onAdd: () => void }> = ({ onAdd }) => (
         }}
     >
         <Stack spacing={1.5} alignItems="center">
-            <Typography variant="body1">No slides yet.</Typography>
+            <Typography variant="body1">{t('presentationEditor.noSlidesYet')}</Typography>
             <Typography variant="body2">
-                Add Bible verses or a text slide to get started.
+                {t('presentationEditor.noSlidesHelper')}
             </Typography>
             <Button variant="contained" size="small" onClick={onAdd}>
-                + Add slides
+                {t('presentationEditor.addSlides')}
             </Button>
         </Stack>
     </Box>
-);
+    );
+};
 
 interface SlideCardProps {
     slide: Slide;
@@ -338,7 +341,9 @@ const SlideCard: React.FC<SlideCardProps> = ({
     backgroundUrl,
     onEdit,
     onDelete,
-}) => (
+}) => {
+    const { t } = useTranslation('cg-overlay-plugin');
+    return (
     <Stack spacing={1}>
         <Box
             sx={{
@@ -363,7 +368,7 @@ const SlideCard: React.FC<SlideCardProps> = ({
                     transition: 'opacity 80ms',
                 }}
             >
-                <Tooltip title="Edit slide">
+                <Tooltip title={t('presentationEditor.editSlide')}>
                     <IconButton
                         onClick={onEdit}
                         sx={{
@@ -383,7 +388,7 @@ const SlideCard: React.FC<SlideCardProps> = ({
                         </Box>
                     </IconButton>
                 </Tooltip>
-                <Tooltip title="Delete slide">
+                <Tooltip title={t('presentationEditor.deleteSlide')}>
                     <IconButton
                         onClick={onDelete}
                         sx={{
@@ -417,7 +422,8 @@ const SlideCard: React.FC<SlideCardProps> = ({
             {index}. {slideLabel(slide)}
         </Typography>
     </Stack>
-);
+    );
+};
 
 interface AddSlidesDialogProps {
     open: boolean;
@@ -430,6 +436,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
     onClose,
     onAdd,
 }) => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
     const [mode, setMode] = useState<'bible' | 'text'>('bible');
 
@@ -503,7 +510,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-            <DialogTitle>Add slides</DialogTitle>
+            <DialogTitle>{t('presentationEditor.addSlidesTitle')}</DialogTitle>
             <DialogContent>
                 <Stack spacing={2} sx={{ marginTop: 1 }}>
                     <Stack direction="row" spacing={1}>
@@ -514,14 +521,14 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                             }
                             onClick={() => setMode('bible')}
                         >
-                            Bible verse
+                            {t('presentationEditor.bibleVerse')}
                         </Button>
                         <Button
                             size="small"
                             variant={mode === 'text' ? 'contained' : 'outlined'}
                             onClick={() => setMode('text')}
                         >
-                            Text slide
+                            {t('presentationEditor.textSlide')}
                         </Button>
                     </Stack>
 
@@ -529,7 +536,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                         <>
                             <TextField
                                 select
-                                label="Translation"
+                                label={t('presentationEditor.translationLabel')}
                                 value={translation}
                                 onChange={e => setTranslation(e.target.value)}
                                 fullWidth
@@ -543,7 +550,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
 
                             <TextField
                                 select
-                                label="Book"
+                                label={t('presentationEditor.bookLabel')}
                                 value={book}
                                 onChange={e => setBook(e.target.value)}
                                 fullWidth
@@ -557,23 +564,24 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
 
                             <Stack direction="row" spacing={1}>
                                 <TextField
-                                    label="Chapter"
+                                    label={t('presentationEditor.chapterLabel')}
                                     type="number"
                                     value={chapter}
                                     onChange={e => setChapter(e.target.value)}
                                     sx={{ flex: 1 }}
                                 />
                                 <TextField
-                                    label="Verses"
+                                    label={t('presentationEditor.versesLabel')}
                                     value={verseRange}
                                     onChange={e =>
                                         setVerseRange(e.target.value)
                                     }
-                                    placeholder="16 or 16-17"
+                                    placeholder={t('presentationEditor.versesPlaceholder')}
                                     error={!!rangeError}
                                     helperText={
-                                        rangeError ??
-                                        `${verseEnd - verseStart + 1} verse${verseEnd === verseStart ? '' : 's'}`
+                                        rangeError
+                                            ? t(rangeError)
+                                            : t('presentationEditor.verseCount', { count: verseEnd - verseStart + 1 })
                                     }
                                     sx={{ flex: 1 }}
                                 />
@@ -601,7 +609,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                                         variant="body2"
                                         color="text.secondary"
                                     >
-                                        Additional options
+                                        {t('playVideo.additionalOptions')}
                                     </Typography>
                                 </AccordionSummary>
                                 <AccordionDetails sx={{ paddingTop: 0 }}>
@@ -620,8 +628,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                                             }
                                             label={
                                                 <Typography variant="body2">
-                                                    Merge verses into flowing
-                                                    slides
+                                                    {t('presentationEditor.mergeVerses')}
                                                 </Typography>
                                             }
                                         />
@@ -639,7 +646,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                                             }
                                             label={
                                                 <Typography variant="body2">
-                                                    Inline verse numbers in text
+                                                    {t('presentationEditor.inlineNumbers')}
                                                 </Typography>
                                             }
                                         />
@@ -651,14 +658,14 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
 
                     {mode === 'text' && (
                         <TextField
-                            label="Text"
+                            label={t('presentationEditor.textLabel')}
                             value={textContent}
                             onChange={e => setTextContent(e.target.value)}
                             multiline
                             minRows={4}
                             fullWidth
                             autoFocus
-                            placeholder="Enter slide text…"
+                            placeholder={t('presentationEditor.textPlaceholder')}
                         />
                     )}
 
@@ -667,7 +674,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose} disabled={loading}>
-                    Cancel
+                    {t('panel.cancel')}
                 </Button>
                 {mode === 'bible' ? (
                     <Button
@@ -675,7 +682,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                         onClick={handleSubmitBible}
                         disabled={!bibleValid || loading}
                     >
-                        {loading ? 'Fetching…' : 'Add'}
+                        {loading ? t('presentationEditor.fetching') : t('panel.add')}
                     </Button>
                 ) : (
                     <Button
@@ -683,7 +690,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                         onClick={handleSubmitText}
                         disabled={!textContent.trim()}
                     >
-                        Add
+                        {t('panel.add')}
                     </Button>
                 )}
             </DialogActions>
@@ -702,6 +709,7 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
     onClose,
     onSave,
 }) => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const [text, setText] = useState('');
     const [reference, setReference] = useState('');
     const backgroundUrl = useBackgroundImage();
@@ -732,7 +740,7 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
                 sx: { width: 'min(92vw, 1100px)', maxWidth: 'none' },
             }}
         >
-            <DialogTitle>Edit slide</DialogTitle>
+            <DialogTitle>{t('presentationEditor.editSlide')}</DialogTitle>
             <DialogContent>
                 <Stack spacing={2.5} sx={{ marginTop: 1 }}>
                     <SlidePreview
@@ -743,7 +751,7 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
 
                     {slide.type === 'bible' && (
                         <TextField
-                            label="Reference"
+                            label={t('presentationEditor.referenceLabel')}
                             value={reference}
                             onChange={e => setReference(e.target.value)}
                             fullWidth
@@ -751,7 +759,7 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
                     )}
 
                     <TextField
-                        label="Text"
+                        label={t('presentationEditor.textLabel')}
                         value={text}
                         onChange={e => setText(e.target.value)}
                         multiline
@@ -761,9 +769,9 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
                 </Stack>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
+                <Button onClick={onClose}>{t('panel.cancel')}</Button>
                 <Button variant="contained" onClick={handleSave}>
-                    Save
+                    {t('presentationEditor.save')}
                 </Button>
             </DialogActions>
         </Dialog>
@@ -776,29 +784,29 @@ function parseVerseRange(input: string): {
     rangeError: string | null;
 } {
     const trimmed = input.trim();
-    if (!trimmed) return { verseStart: 0, verseEnd: 0, rangeError: 'Required' };
+    if (!trimmed) return { verseStart: 0, verseEnd: 0, rangeError: 'presentationEditor.verseRequired' };
 
     const match = trimmed.match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);
     if (!match)
         return {
             verseStart: 0,
             verseEnd: 0,
-            rangeError: 'Format: 16 or 16-17',
+            rangeError: 'presentationEditor.verseFormat',
         };
 
     const start = Number(match[1]);
     const end = match[2] ? Number(match[2]) : start;
 
     if (!Number.isFinite(start) || start <= 0)
-        return { verseStart: 0, verseEnd: 0, rangeError: 'Invalid start' };
+        return { verseStart: 0, verseEnd: 0, rangeError: 'presentationEditor.verseInvalidStart' };
     if (!Number.isFinite(end) || end < start)
         return {
             verseStart: 0,
             verseEnd: 0,
-            rangeError: 'End must be ≥ start',
+            rangeError: 'presentationEditor.verseEndGte',
         };
     if (end - start > 50)
-        return { verseStart: 0, verseEnd: 0, rangeError: 'Range too long' };
+        return { verseStart: 0, verseEnd: 0, rangeError: 'presentationEditor.verseRangeLong' };
 
     return { verseStart: start, verseEnd: end, rangeError: null };
 }

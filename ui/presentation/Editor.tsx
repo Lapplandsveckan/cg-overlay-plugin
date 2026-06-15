@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 
 import { RundownEditorActionBar } from '@web-lib';
+import { useTranslation } from '../i18n';
 
 interface RundownEntry {
     id: string;
@@ -32,23 +33,24 @@ export const PresentationEditor: React.FC<PresentationEditorProps> = ({
     deleteEntry,
     creating,
 }) => {
+    const { t } = useTranslation('cg-overlay-plugin');
     const [title, setTitle] = useState(entry?.title ?? '');
     const [atem, setAtem] = useState(entry?.data.atem ?? false);
 
     return (
         <Stack spacing={2}>
-            <Typography variant="h6">Presentation</Typography>
+            <Typography variant="h6">{t('presentation.heading')}</Typography>
 
             <TextField
-                label="Title"
+                label={t('presentation.titleLabel')}
                 value={title}
                 onChange={e => setTitle(e.target['value'])}
-                helperText="Shown in the rundown."
+                helperText={t('presentation.titleHelper')}
             />
 
             <Stack>
                 <FormControlLabel
-                    label="Switch ATEM source"
+                    label={t('presentation.switchAtemLabel')}
                     control={
                         <Checkbox
                             checked={atem}
@@ -57,8 +59,7 @@ export const PresentationEditor: React.FC<PresentationEditorProps> = ({
                     }
                 />
                 <FormHelperText sx={{ marginLeft: 4 }}>
-                    Cut the ATEM to the presentation source when this entry
-                    plays.
+                    {t('presentation.switchAtemHelper')}
                 </FormHelperText>
             </Stack>
 
