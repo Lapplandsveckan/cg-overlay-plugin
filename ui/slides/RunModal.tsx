@@ -127,7 +127,9 @@ export const RunModal: React.FC<RunModalProps> = ({
                     justifyContent="space-between"
                 >
                     <Stack direction="row" spacing={1.5} alignItems="baseline">
-                        <Typography variant="h6">{t('runModal.heading')}</Typography>
+                        <Typography variant="h6">
+                            {t('runModal.heading')}
+                        </Typography>
                         {presentation?.title && (
                             <Typography variant="body2" color="text.secondary">
                                 {presentation.title}
@@ -161,7 +163,11 @@ export const RunModal: React.FC<RunModalProps> = ({
                             </Tooltip>
                         )}
                         <Tooltip
-                            title={playingHere ? t('runModal.closeModal') : t('runModal.closeEsc')}
+                            title={
+                                playingHere
+                                    ? t('runModal.closeModal')
+                                    : t('runModal.closeEsc')
+                            }
                         >
                             <Button
                                 onClick={onClose}
@@ -228,111 +234,111 @@ const PlayingView: React.FC<PlayingViewProps> = ({
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     return (
-    <Stack spacing={2}>
-        <Stack direction="row" spacing={1.5} alignItems="stretch">
-            <Tooltip title={t('runModal.prev')}>
-                <span>
-                    <IconButton
-                        onClick={onPrev}
-                        disabled={atStart}
-                        sx={{
-                            width: 56,
-                            alignSelf: 'stretch',
-                            borderRadius: 1,
-                            backgroundColor: 'rgba(255,255,255,0.04)',
-                            '&:hover': {
-                                backgroundColor: 'rgba(255,255,255,0.08)',
-                            },
-                        }}
-                    >
-                        <Box
-                            component="span"
-                            sx={{ fontSize: 28, lineHeight: 1 }}
+        <Stack spacing={2}>
+            <Stack direction="row" spacing={1.5} alignItems="stretch">
+                <Tooltip title={t('runModal.prev')}>
+                    <span>
+                        <IconButton
+                            onClick={onPrev}
+                            disabled={atStart}
+                            sx={{
+                                width: 56,
+                                alignSelf: 'stretch',
+                                borderRadius: 1,
+                                backgroundColor: 'rgba(255,255,255,0.04)',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255,255,255,0.08)',
+                                },
+                            }}
                         >
-                            ‹
-                        </Box>
-                    </IconButton>
-                </span>
-            </Tooltip>
-            <Box sx={{ flexGrow: 1 }}>
-                <SlidePreview
-                    text={current.text}
-                    reference={slideRef(current)}
-                    backgroundUrl={backgroundUrl}
-                />
-            </Box>
-            <Tooltip title={t('runModal.next')}>
-                <span>
-                    <IconButton
-                        onClick={onNext}
-                        disabled={atEnd}
-                        sx={{
-                            width: 56,
-                            alignSelf: 'stretch',
-                            borderRadius: 1,
-                            backgroundColor: 'rgba(255,255,255,0.04)',
-                            '&:hover': {
-                                backgroundColor: 'rgba(255,255,255,0.08)',
-                            },
-                        }}
-                    >
-                        <Box
-                            component="span"
-                            sx={{ fontSize: 28, lineHeight: 1 }}
-                        >
-                            ›
-                        </Box>
-                    </IconButton>
-                </span>
-            </Tooltip>
-        </Stack>
-
-        <Box
-            ref={thumbnailRef}
-            sx={{
-                display: 'flex',
-                gap: 1,
-                overflowX: 'auto',
-                paddingBottom: 1,
-                scrollSnapType: 'x proximity',
-            }}
-        >
-            {slides.map((slide, idx) => (
-                <Box
-                    key={slide.id}
-                    data-slide-thumb-id={slide.id}
-                    onClick={() => onJump(slide.id)}
-                    sx={{
-                        flexShrink: 0,
-                        width: 200,
-                        cursor: 'pointer',
-                        scrollSnapAlign: 'center',
-                    }}
-                >
-                    <Stack spacing={0.5}>
-                        <SlidePreview
-                            text={slide.text}
-                            reference={slideRef(slide)}
-                            backgroundUrl={backgroundUrl}
-                            selected={slide.id === currentSlideId}
-                            dimmed={slide.id !== currentSlideId}
-                        />
-                        <Typography
-                            variant="caption"
-                            color={
-                                slide.id === currentSlideId
-                                    ? 'text.primary'
-                                    : 'text.secondary'
-                            }
-                            sx={{ textAlign: 'center' }}
-                        >
-                            {idx + 1}. {slideLabel(slide)}
-                        </Typography>
-                    </Stack>
+                            <Box
+                                component="span"
+                                sx={{ fontSize: 28, lineHeight: 1 }}
+                            >
+                                ‹
+                            </Box>
+                        </IconButton>
+                    </span>
+                </Tooltip>
+                <Box sx={{ flexGrow: 1 }}>
+                    <SlidePreview
+                        text={current.text}
+                        reference={slideRef(current)}
+                        backgroundUrl={backgroundUrl}
+                    />
                 </Box>
-            ))}
-        </Box>
-    </Stack>
+                <Tooltip title={t('runModal.next')}>
+                    <span>
+                        <IconButton
+                            onClick={onNext}
+                            disabled={atEnd}
+                            sx={{
+                                width: 56,
+                                alignSelf: 'stretch',
+                                borderRadius: 1,
+                                backgroundColor: 'rgba(255,255,255,0.04)',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255,255,255,0.08)',
+                                },
+                            }}
+                        >
+                            <Box
+                                component="span"
+                                sx={{ fontSize: 28, lineHeight: 1 }}
+                            >
+                                ›
+                            </Box>
+                        </IconButton>
+                    </span>
+                </Tooltip>
+            </Stack>
+
+            <Box
+                ref={thumbnailRef}
+                sx={{
+                    display: 'flex',
+                    gap: 1,
+                    overflowX: 'auto',
+                    paddingBottom: 1,
+                    scrollSnapType: 'x proximity',
+                }}
+            >
+                {slides.map((slide, idx) => (
+                    <Box
+                        key={slide.id}
+                        data-slide-thumb-id={slide.id}
+                        onClick={() => onJump(slide.id)}
+                        sx={{
+                            flexShrink: 0,
+                            width: 200,
+                            cursor: 'pointer',
+                            scrollSnapAlign: 'center',
+                        }}
+                    >
+                        <Stack spacing={0.5}>
+                            <SlidePreview
+                                text={slide.text}
+                                reference={slideRef(slide)}
+                                backgroundUrl={backgroundUrl}
+                                selected={slide.id === currentSlideId}
+                                dimmed={slide.id !== currentSlideId}
+                            />
+                            <Typography
+                                variant="caption"
+                                color={
+                                    slide.id === currentSlideId
+                                        ? 'text.primary'
+                                        : 'text.secondary'
+                                }
+                                sx={{ textAlign: 'center' }}
+                            >
+                                {idx + 1}. {slideLabel(slide)}
+                            </Typography>
+                        </Stack>
+                    </Box>
+                ))}
+            </Box>
+        </Stack>
     );
 };
 
@@ -357,7 +363,9 @@ const PickerView: React.FC<PickerViewProps> = ({
                     color: 'text.secondary',
                 }}
             >
-                <Typography variant="body2">{t('runModal.noSlides')}</Typography>
+                <Typography variant="body2">
+                    {t('runModal.noSlides')}
+                </Typography>
             </Box>
         );
     }

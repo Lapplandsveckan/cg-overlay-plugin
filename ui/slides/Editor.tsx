@@ -64,7 +64,10 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
         setCreatingNew(true);
         setError(null);
         const [err, created] = await noTryAsync(() =>
-            createPresentation(conn, { title: t('presentationEditor.untitled'), slides: [] }),
+            createPresentation(conn, {
+                title: t('presentationEditor.untitled'),
+                slides: [],
+            }),
         );
         if (err) {
             console.error(err);
@@ -109,7 +112,9 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
                         empty
                             ? t('slides.noPresentationsCreate')
                             : selected
-                              ? t('slides.slideCount', { count: selected.slides.length })
+                              ? t('slides.slideCount', {
+                                    count: selected.slides.length,
+                                })
                               : t('slides.selectHelper')
                     }
                     fullWidth
@@ -150,7 +155,9 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
                     onClick={handleCreateNew}
                     disabled={creatingNew}
                 >
-                    {creatingNew ? t('panel.creating') : t('slides.newPresentation')}
+                    {creatingNew
+                        ? t('panel.creating')
+                        : t('slides.newPresentation')}
                 </Button>
                 {selected && (
                     <Button
