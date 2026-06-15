@@ -93,7 +93,11 @@ export const SlidesRundownItem: React.FC<SlidesRundownItemProps> = ({
                         variant="outlined"
                     />
                     {playingHere && (
-                        <Chip label={t('slides.live')} size="small" color="error" />
+                        <Chip
+                            label={t('slides.live')}
+                            size="small"
+                            color="error"
+                        />
                     )}
                 </Stack>
                 {firstRef && (

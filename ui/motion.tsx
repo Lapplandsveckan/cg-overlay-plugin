@@ -129,7 +129,11 @@ export const MotionControl = () => {
                 </Collapse>
 
                 <Tooltip
-                    title={colorOpen ? t('motion.hideColor') : t('motion.backgroundColor')}
+                    title={
+                        colorOpen
+                            ? t('motion.hideColor')
+                            : t('motion.backgroundColor')
+                    }
                     placement="left"
                 >
                     <IconButton
