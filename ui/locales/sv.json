@@ -87,7 +87,7 @@
         "removePreset": "Ta bort förinställning",
         "mediaTab": "Media",
         "namnskyltarTab": "Namnskyltar",
-        "slidesTab": "Slides",
+        "slidesTab": "Presentationer",
         "motionTab": "Motion",
         "mediaHint": "Dra ett klipp till rundown · Klicka för att spela",
         "namnskyltarHint": "Dra ett namn till rundown",
@@ -99,7 +99,7 @@
         "emptySlide": "Tom"
     },
     "slides": {
-        "heading": "Slides",
+        "heading": "Presentationer",
         "titleLabel": "Titel",
         "titleHelper": "Visas i rundown:en.",
         "presentationLabel": "Presentation",
@@ -116,7 +116,7 @@
         "slideCount_other": "{{count}} slides"
     },
     "presentation": {
-        "heading": "Presentation",
+        "heading": "Presentationsläge",
         "titleLabel": "Titel",
         "titleHelper": "Visas i rundown:en.",
         "switchAtemLabel": "Växla ATEM-källa",
@@ -163,7 +163,7 @@
         "verseCount_other": "{{count}} verser"
     },
     "runModal": {
-        "heading": "Slides",
+        "heading": "Presentationer",
         "clickToStart": "Klicka på en slide för att starta",
         "stopTooltip": "Stoppa uppspelning, håll modalen öppen (Esc)",
         "stop": "Stopp",
