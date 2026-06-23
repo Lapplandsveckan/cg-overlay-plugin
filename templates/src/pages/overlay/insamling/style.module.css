@@ -2,9 +2,7 @@
     width: 100vw;
     height: 100vh;
 
-    background-image: url(/images/banner1.png);
-    background-size: 100vw 110vh;
-    background-repeat: no-repeat;
+    background: var(--c-orange);
 
     opacity: 0;
 }
@@ -64,7 +62,7 @@
 
 .diagram-info p {
     position: absolute;
-    bottom: 25px;
+    bottom: 2vh;
 
     display: flex;
     flex-direction: row;
@@ -73,11 +71,12 @@
 
     font-size: 45px;
     color: #fff;
+    white-space: nowrap;
 }
 
 .diagram-pillar {
     position: absolute;
-    bottom: 150px;
+    bottom: 14vh;
 
     display: flex;
     flex-direction: column;
@@ -85,7 +84,7 @@
     align-items: center;
 
     width: 275px;
-    height: 700px;
+    height: 65vh;
 }
 
 .diagram-pillar p {

@@ -4,6 +4,7 @@ import { register } from '../../../lib/overlay/presentation/cg';
 import { handleState } from '../../../lib/overlay/presentation/animation';
 import { getStylesProxy } from '../../../lib/animation';
 import { CG } from '../../../components/CG';
+import { BubbleWatermark } from '../../../components/BubbleWatermark';
 
 interface PresentationAnimationProps {
     state: number;
@@ -51,6 +52,7 @@ export const PresentationAnimation: React.FC<PresentationAnimationProps> = ({
         <div className={styles.presentation__main}>
             <div className={styles.presentation__text}>{renderText(text)}</div>
             <div className={styles.presentation__reference}>{reference}</div>
+            <BubbleWatermark />
         </div>
     </CG>
 );

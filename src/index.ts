@@ -1,6 +1,5 @@
 /* eslint-disable max-lines */
 import path from 'path';
-import fs from 'fs';
 import { noTry } from 'no-try';
 import {
     CasparPlugin,
@@ -42,6 +41,7 @@ import { AtemManager } from './atem';
 import { config } from './config';
 import { NamnskyltPresetStore } from './namnskylt-presets';
 import { PresentationStore } from './presentations';
+import { buildBackgroundData } from './assets';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -316,19 +316,10 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     public registerRoutes() {
-        const bgPath = path.join(
-            __dirname,
-            'templates',
-            'images',
-            'banner1.png',
-        );
-        let bgCache: string | null = null;
+        const bgData = buildBackgroundData(__dirname);
         this.api.registerRoute(
             'assets/background',
-            async () => {
-                bgCache ??= fs.readFileSync(bgPath).toString('base64');
-                return { data: bgCache, mimeType: 'image/png' };
-            },
+            async () => bgData,
             'GET',
         );
 

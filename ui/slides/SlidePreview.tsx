@@ -70,7 +70,7 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
             aspectRatio,
             width: '100%',
             minWidth,
-            backgroundColor: '#1a1c22',
+            backgroundColor: '#f87a00',
             backgroundImage: backgroundUrl
                 ? `url(${backgroundUrl})`
                 : undefined,
