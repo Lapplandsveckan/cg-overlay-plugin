@@ -17,8 +17,8 @@ export const VideoTransitionAnimation: React.FC<{ state: number }> = ({
         <main className={styles.container}>
             <img
                 className={styles['banner-logo']}
-                src="/images/mod-white.png"
-                alt="Lappis - Mod"
+                src="/images/beratta-om.png"
+                alt="Berätta om"
             />
         </main>
     </CG>

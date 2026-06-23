@@ -4,6 +4,7 @@ import { register } from '../../../lib/overlay/namnskylt/cg';
 import { handleState } from '../../../lib/overlay/namnskylt/animation';
 import { getStylesProxy } from '../../../lib/animation';
 import { CG } from '../../../components/CG';
+import { BubbleWatermark } from '../../../components/BubbleWatermark';
 
 export const NamnskyltAnimation: React.FC<{ name: string; state: number }> = ({
     name,
@@ -16,6 +17,8 @@ export const NamnskyltAnimation: React.FC<{ name: string; state: number }> = ({
         styles={getStylesProxy(styles)}
     >
         <div className={styles.namnskylt__main}>
+            <BubbleWatermark className={`${styles.bubble} ${styles['bubble--left']}`} />
+            <BubbleWatermark className={`${styles.bubble} ${styles['bubble--right']}`} />
             <div className={styles.namnskylt__main__name}>{name}</div>
         </div>
     </CG>

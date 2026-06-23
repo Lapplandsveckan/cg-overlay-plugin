@@ -29,7 +29,7 @@ export class Coin {
 
     public static create() {
         const x = Math.random() * (WIDTH - 200) + 100 - offsetX;
-        const y = Math.random() * 500 + offsetY;
+        const y = Math.random() * 2000 + offsetY;
 
         const vx = Math.random() * 10 - 5;
         const vy = Math.random() * 10 - 5;
@@ -122,12 +122,19 @@ export class InsamlingCanvas {
     }
 
     private renderPadding() {
-        const PADDING = 150;
+        // Coordinates are in the fixed 1920×1080 canvas space.
+        // LINE_X_START/END are hand-tuned to span just outside the pillars,
+        // which are positioned via .diagram { left: 60%; width: 62.5vw } in CSS.
+        // LINE_Y matches the pillar base at bottom: 14vh on a 1080px viewport.
+        // Both will drift if the CSS layout changes.
+        const LINE_Y = HEIGHT - 150;
+        const LINE_X_START = 670;
+        const LINE_X_END = 1630;
 
         this.ctx.strokeStyle = 'white';
         this.ctx.beginPath();
-        this.ctx.moveTo(PADDING, HEIGHT - PADDING);
-        this.ctx.lineTo(WIDTH - PADDING, HEIGHT - PADDING);
+        this.ctx.moveTo(LINE_X_START, LINE_Y);
+        this.ctx.lineTo(LINE_X_END, LINE_Y);
         this.ctx.stroke();
     }
 

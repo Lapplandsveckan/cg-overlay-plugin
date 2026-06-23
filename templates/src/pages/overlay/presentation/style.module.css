@@ -6,9 +6,7 @@
     width: 100vw;
     height: 100vh;
 
-    background-image: url(/images/banner1.png);
-    background-size: 100vw;
-    background-repeat: no-repeat;
+    background: var(--c-orange);
     color: #fff;
 
     display: flex;

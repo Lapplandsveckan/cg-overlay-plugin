@@ -1,3 +1,8 @@
+:root {
+    --c-orange: #f87a00;
+    --c-dark: #2c2c2c;
+}
+
 :root,
 body,
 #__next {
@@ -13,6 +18,4 @@ body,
     background-color: transparent;
 
     font-family: 'Alright Sans', sans-serif;
-    /* font-family: 'Baloo 2'; */
-    /* font-weight: bold; */
 }

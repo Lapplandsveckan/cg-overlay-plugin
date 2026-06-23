@@ -48,7 +48,7 @@ export const InsamlingAnimation: React.FC<{
                         <div
                             id="goal"
                             className={styles['diagram-pillar']}
-                            style={{ backgroundColor: '#ff006a' }}
+                            style={{ backgroundColor: 'var(--c-dark)' }}
                         >
                             <p className={styles.amount}>
                                 {formatNumber(goal)}
@@ -60,7 +60,7 @@ export const InsamlingAnimation: React.FC<{
                         <div
                             id="now"
                             className={styles['diagram-pillar']}
-                            style={{ backgroundColor: '#009cff' }}
+                            style={{ backgroundColor: 'white' }}
                         >
                             <p className={styles.amount}>
                                 {formatNumber(animatedNow)}

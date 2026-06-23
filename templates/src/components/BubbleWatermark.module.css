@@ -1,0 +1,13 @@
+.base {
+    position: absolute;
+    filter: brightness(0) invert(1);
+    pointer-events: none;
+    user-select: none;
+}
+
+.watermark {
+    bottom: 3vh;
+    right: 3vw;
+    width: 18vw;
+    opacity: 0.4;
+}

@@ -1,6 +1,5 @@
 /* eslint-disable max-lines */
 import path from 'path';
-import fs from 'fs';
 import { noTry } from 'no-try';
 import {
     CasparPlugin,
@@ -316,19 +315,12 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     public registerRoutes() {
-        const bgPath = path.join(
-            __dirname,
-            'templates',
-            'images',
-            'banner1.png',
-        );
-        let bgCache: string | null = null;
+        const bgData = Buffer.from(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="9"><rect width="16" height="9" fill="#f87a00"/></svg>',
+        ).toString('base64');
         this.api.registerRoute(
             'assets/background',
-            async () => {
-                bgCache ??= fs.readFileSync(bgPath).toString('base64');
-                return { data: bgCache, mimeType: 'image/png' };
-            },
+            async () => ({ data: bgData, mimeType: 'image/svg+xml' }),
             'GET',
         );
 
