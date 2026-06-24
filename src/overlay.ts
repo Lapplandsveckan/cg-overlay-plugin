@@ -5,6 +5,7 @@ import { type SwishWallEffect } from './effects/wall/swish';
 import { type VideoTransitionWallEffect } from './effects/wall/videotransition';
 import { type BarsOverlayEffect } from './effects/overlay/bars';
 import { type NamnskyltOverlayEffect } from './effects/overlay/namnskylt';
+import { type NamnskyltWallEffect } from './effects/wall/namnskylt';
 import {
     type InsamlingOverlayEffect,
     type InsamlingOverlayEffectOptions,
@@ -67,7 +68,10 @@ export default class OverlayManager {
     private bars: BarsOverlayEffect = null;
     private barsState = 0;
 
-    private namnskylt: NamnskyltOverlayEffect = null;
+    private namnskylt: {
+        overlay: NamnskyltOverlayEffect;
+        wall: NamnskyltWallEffect;
+    } = null;
 
     private insamling: InsamlingOverlayEffect = null;
     private insamlingState = 0;
@@ -145,7 +149,8 @@ export default class OverlayManager {
         }
 
         if (this.namnskylt) {
-            this.namnskylt.dispose();
+            this.namnskylt.overlay.dispose();
+            this.namnskylt.wall.dispose();
             this.namnskylt = null;
         }
     }
@@ -258,16 +263,21 @@ export default class OverlayManager {
     }
 
     public showNamnskylt(name: string) {
-        this.namnskylt = this.api.createEffect(
-            'overlay-namnskylt',
-            '1:overlay',
-            { name },
-        ) as NamnskyltOverlayEffect;
-        const wall = this.api.createEffect('wall-namnskylt', '2:overlay', {
-            name,
-        });
+        this.namnskylt = {
+            overlay: this.api.createEffect(
+                'overlay-namnskylt',
+                '1:overlay',
+                { name },
+            ) as NamnskyltOverlayEffect,
+            wall: this.api.createEffect('wall-namnskylt', '2:overlay', {
+                name,
+            }) as NamnskyltWallEffect,
+        };
 
-        Promise.all([wall.activate(), this.namnskylt.activate()]).catch(err => {
+        Promise.all([
+            this.namnskylt.wall.activate(),
+            this.namnskylt.overlay.activate(),
+        ]).catch(err => {
             this.logger.error('Failed to activate namnskylt effect');
             this.logger.error(err);
         });
@@ -275,9 +285,9 @@ export default class OverlayManager {
 
     public hideNamnskylt() {
         if (!this.namnskylt) return;
-        const effect = this.namnskylt;
+        const { overlay, wall } = this.namnskylt;
         this.namnskylt = null;
-        effect.deactivate()?.catch(err => {
+        Promise.all([overlay.deactivate(), wall.deactivate()])?.catch(err => {
             this.logger.error('Failed to deactivate namnskylt effect');
             this.logger.error(err);
         });
