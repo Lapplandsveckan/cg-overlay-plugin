@@ -488,12 +488,26 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
     };
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
+        <Dialog
+            open={open}
+            onClose={onClose}
+            fullWidth
+            maxWidth="xs"
+            PaperProps={{
+                component: 'form',
+                onSubmit: (e: React.FormEvent) => {
+                    e.preventDefault();
+                    if (mode === 'bible') handleSubmitBible();
+                    else handleSubmitText();
+                },
+            }}
+        >
             <DialogTitle>{t('presentationEditor.addSlidesTitle')}</DialogTitle>
             <DialogContent>
                 <Stack spacing={2} sx={{ marginTop: 1 }}>
                     <Stack direction="row" spacing={1}>
                         <Button
+                            type="button"
                             size="small"
                             variant={
                                 mode === 'bible' ? 'contained' : 'outlined'
@@ -503,6 +517,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                             {t('presentationEditor.bibleVerse')}
                         </Button>
                         <Button
+                            type="button"
                             size="small"
                             variant={mode === 'text' ? 'contained' : 'outlined'}
                             onClick={() => setMode('text')}
@@ -668,13 +683,13 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                 </Stack>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose} disabled={loading}>
+                <Button type="button" onClick={onClose} disabled={loading}>
                     {t('panel.cancel')}
                 </Button>
                 {mode === 'bible' ? (
                     <Button
+                        type="submit"
                         variant="contained"
-                        onClick={handleSubmitBible}
                         disabled={!bibleValid || loading}
                     >
                         {loading
@@ -683,8 +698,8 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                     </Button>
                 ) : (
                     <Button
+                        type="submit"
                         variant="contained"
-                        onClick={handleSubmitText}
                         disabled={!textContent.trim()}
                     >
                         {t('panel.add')}
@@ -734,6 +749,11 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
             fullWidth
             maxWidth={false}
             PaperProps={{
+                component: 'form',
+                onSubmit: (e: React.FormEvent) => {
+                    e.preventDefault();
+                    handleSave();
+                },
                 sx: { width: 'min(92vw, 1100px)', maxWidth: 'none' },
             }}
         >
@@ -766,8 +786,8 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
                 </Stack>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>{t('panel.cancel')}</Button>
-                <Button variant="contained" onClick={handleSave}>
+                <Button type="button" onClick={onClose}>{t('panel.cancel')}</Button>
+                <Button type="submit" variant="contained">
                     {t('presentationEditor.save')}
                 </Button>
             </DialogActions>
