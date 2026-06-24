@@ -44,7 +44,7 @@ import {
     fetchBibleSlides,
 } from './api';
 import { BOOKS, TRANSLATIONS } from './bible-api';
-import { pluginHomeUrl, backTargetFromSearch } from './urls';
+import { pluginHomeUrl } from './urls';
 
 interface Props {
     id: string;
@@ -58,11 +58,6 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
     const remote = usePresentation(id);
-    const backFrom = backTargetFromSearch(window.location.search);
-    const backHref = backFrom ?? pluginHomeUrl();
-    const backLabel = backFrom
-        ? t('presentationEditor.back')
-        : t('presentationEditor.home');
     const backgroundUrl = useBackgroundImage();
 
     const [renameOpen, setRenameOpen] = useState(false);
@@ -94,7 +89,9 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                     <Typography variant="body1">
                         {t('presentationEditor.notFound')}
                     </Typography>
-                    <Link href={backHref}>{backLabel}</Link>
+                    <Link href={pluginHomeUrl()}>
+                        {t('presentationEditor.home')}
+                    </Link>
                 </Stack>
             </CenteredMessage>
         );
@@ -143,18 +140,6 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
             sx={{ maxWidth: 1400, margin: '0 auto', padding: { xs: 2, md: 3 } }}
         >
             <Stack spacing={3}>
-                <Stack direction="row" spacing={2} alignItems="center">
-                    <Button
-                        component="a"
-                        href={backHref}
-                        variant="outlined"
-                        size="small"
-                        sx={{ textTransform: 'none', fontWeight: 600 }}
-                    >
-                        {backLabel}
-                    </Button>
-                </Stack>
-
                 <Stack direction="row" spacing={1.5} alignItems="center">
                     <Typography
                         variant="h2"
