@@ -14,6 +14,7 @@ import {
     DialogTitle,
     FormControlLabel,
     IconButton,
+    InputAdornment,
     Link,
     MenuItem,
     Stack,
@@ -27,13 +28,14 @@ import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { noTryAsync } from 'no-try';
-import { useSocket } from '@web-lib';
+import { useSocket, MediaDropZone, UploadButton } from '@web-lib';
 import { useTranslation } from '../i18n';
 import NameDialog from './NameDialog';
 
 import SlidePreview from './SlidePreview';
 import {
     type BibleSlide,
+    type ImageSlide,
     type Slide,
     type TextSlide,
     slideLabel,
@@ -45,6 +47,185 @@ import {
 } from './api';
 import { BOOKS, TRANSLATIONS } from './bible-api';
 import { pluginHomeUrl } from './urls';
+
+function buildThumbnailUrl(clip: any): string | null {
+    const thumb = clip?._attachments?.['thumb.png'];
+    if (!thumb) return null;
+    const base64 = btoa(String.fromCharCode(...thumb.data.data));
+    return `data:${thumb.content_type};base64,${base64}`;
+}
+
+function isImageMedia(item: any): boolean {
+    if (!item.mediainfo?.streams) return false;
+    return !item.mediainfo.streams.some((s: any) => s.codec?.type === 'video');
+}
+
+interface ImagePickerProps {
+    selectedId: string | null;
+    onSelect: (id: string) => void;
+}
+
+const ImagePicker: React.FC<ImagePickerProps> = ({ selectedId, onSelect }) => {
+    const { t } = useTranslation('cg-overlay-plugin');
+    const conn = useSocket();
+    const [allImages, setAllImages] = useState<any[]>([]);
+    const [query, setQuery] = useState('');
+
+    useEffect(() => {
+        const load = () =>
+            (conn as any).caspar
+                .getMedia()
+                .then((media: Map<string, any>) => {
+                    const imgs: any[] = [];
+                    for (const item of media.values()) {
+                        if (isImageMedia(item)) imgs.push(item);
+                    }
+                    setAllImages(imgs);
+                })
+                .catch(console.error);
+
+        load();
+        (conn as any).caspar.on('media', load);
+        return () => void (conn as any).caspar.off('media', load);
+    }, []);
+
+    const filtered = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!q) return allImages;
+        return allImages.filter(m => m.id.toLowerCase().includes(q));
+    }, [allImages, query]);
+
+    return (
+        <MediaDropZone
+            accept={['image/*']}
+            overlayLabel={t('presentationEditor.dropToUpload')}
+        >
+        <Stack spacing={1}>
+            <Stack direction="row" spacing={1} alignItems="center">
+                <TextField
+                    size="small"
+                    placeholder={t(
+                        'presentationEditor.imageSearchPlaceholder',
+                    )}
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    sx={{ flexGrow: 1 }}
+                    InputProps={{
+                        endAdornment: query ? (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    size="small"
+                                    onClick={() => setQuery('')}
+                                >
+                                    <CloseIcon sx={{ fontSize: 14 }} />
+                                </IconButton>
+                            </InputAdornment>
+                        ) : null,
+                    }}
+                />
+                <UploadButton
+                    label={t('presentationEditor.uploadImage')}
+                    multiple
+                    types={[
+                        {
+                            description: 'Images',
+                            accept: {
+                                'image/*': [
+                                    '.png',
+                                    '.jpg',
+                                    '.jpeg',
+                                    '.gif',
+                                    '.bmp',
+                                    '.webp',
+                                    '.tiff',
+                                ],
+                            },
+                        },
+                    ]}
+                    createUpload={(file: File) =>
+                        (conn as any).caspar.uploadMedia(file.name, file)
+                    }
+                />
+            </Stack>
+            <Box sx={{ maxHeight: 280, overflowY: 'auto' }}>
+                {filtered.length === 0 ? (
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ py: 2, textAlign: 'center' }}
+                    >
+                        {t('presentationEditor.noImages')}
+                    </Typography>
+                ) : (
+                    <Box
+                        sx={{
+                            display: 'grid',
+                            gridTemplateColumns:
+                                'repeat(auto-fill, minmax(120px, 1fr))',
+                            gap: 1,
+                        }}
+                    >
+                        {filtered.map(item => {
+                            const thumbUrl = buildThumbnailUrl(item);
+                            const name =
+                                item.id.split('/').pop() ?? item.id;
+                            const isSelected = item.id === selectedId;
+                            return (
+                                <Box
+                                    key={item.id}
+                                    onClick={() => onSelect(item.id)}
+                                    sx={{
+                                        position: 'relative',
+                                        aspectRatio: '16/9',
+                                        borderRadius: 1,
+                                        overflow: 'hidden',
+                                        backgroundColor: '#1a1c22',
+                                        backgroundImage: thumbUrl
+                                            ? `url(${thumbUrl})`
+                                            : undefined,
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                        border: isSelected
+                                            ? '2px solid #4a90e2'
+                                            : '1px solid rgba(255,255,255,0.08)',
+                                        cursor: 'pointer',
+                                        transition: 'border-color 80ms',
+                                        '&:hover': {
+                                            borderColor: isSelected
+                                                ? '#4a90e2'
+                                                : '#fff',
+                                        },
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            position: 'absolute',
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            padding: '3px 5px',
+                                            backgroundColor: 'rgba(0,0,0,0.6)',
+                                        }}
+                                    >
+                                        <Typography
+                                            fontSize={10}
+                                            noWrap
+                                            sx={{ color: '#e8eaed' }}
+                                            title={item.id}
+                                        >
+                                            {name}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            );
+                        })}
+                    </Box>
+                )}
+            </Box>
+        </Stack>
+        </MediaDropZone>
+    );
+};
 
 interface Props {
     id: string;
@@ -65,6 +246,32 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
     const [editing, setEditing] = useState<Slide | null>(null);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [imageThumbnails, setImageThumbnails] = useState<
+        Record<string, string>
+    >({});
+
+    const imageMediaIds = useMemo(
+        () =>
+            (remote?.slides ?? [])
+                .filter(s => s.type === 'image')
+                .map(s => (s as ImageSlide).mediaId),
+        [remote?.slides],
+    );
+
+    useEffect(() => {
+        if (imageMediaIds.length === 0) return;
+        (conn as any).caspar
+            .getMedia()
+            .then((media: Map<string, any>) => {
+                const map: Record<string, string> = {};
+                for (const [mid, item] of media) {
+                    const url = buildThumbnailUrl(item);
+                    if (url) map[mid] = url;
+                }
+                setImageThumbnails(map);
+            })
+            .catch(console.error);
+    }, [imageMediaIds.join(',')]);
 
     const handleRename = async (title: string) => {
         setRenameOpen(false);
@@ -232,6 +439,7 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                                 slide={slide}
                                 index={idx + 1}
                                 backgroundUrl={backgroundUrl}
+                                imageThumbnails={imageThumbnails}
                                 onEdit={() => setEditing(slide)}
                                 onDelete={() => handleDeleteSlide(slide.id)}
                             />
@@ -320,6 +528,7 @@ interface SlideCardProps {
     slide: Slide;
     index: number;
     backgroundUrl?: string | null;
+    imageThumbnails?: Record<string, string>;
     onEdit: () => void;
     onDelete: () => void;
 }
@@ -328,6 +537,7 @@ const SlideCard: React.FC<SlideCardProps> = ({
     slide,
     index,
     backgroundUrl,
+    imageThumbnails,
     onEdit,
     onDelete,
 }) => {
@@ -340,11 +550,19 @@ const SlideCard: React.FC<SlideCardProps> = ({
                     '&:hover .slide-overlay': { opacity: 1 },
                 }}
             >
-                <SlidePreview
-                    text={slide.text}
-                    reference={slide.type === 'bible' ? slide.reference : ''}
-                    backgroundUrl={backgroundUrl}
-                />
+                {slide.type === 'image' ? (
+                    <SlidePreview
+                        imageUrl={imageThumbnails?.[slide.mediaId] ?? null}
+                    />
+                ) : (
+                    <SlidePreview
+                        text={slide.text}
+                        reference={
+                            slide.type === 'bible' ? slide.reference : ''
+                        }
+                        backgroundUrl={backgroundUrl}
+                    />
+                )}
                 <Stack
                     className="slide-overlay"
                     direction="row"
@@ -417,7 +635,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
-    const [mode, setMode] = useState<'bible' | 'text'>('bible');
+    const [mode, setMode] = useState<'bible' | 'text' | 'image'>('bible');
 
     // Bible state
     const [translation, setTranslation] = useState(TRANSLATIONS[0].id);
@@ -498,7 +716,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                 onSubmit: (e: React.FormEvent) => {
                     e.preventDefault();
                     if (mode === 'bible') handleSubmitBible();
-                    else handleSubmitText();
+                    else if (mode === 'text') handleSubmitText();
                 },
             }}
         >
@@ -523,6 +741,16 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                             onClick={() => setMode('text')}
                         >
                             {t('presentationEditor.textSlide')}
+                        </Button>
+                        <Button
+                            type="button"
+                            size="small"
+                            variant={
+                                mode === 'image' ? 'contained' : 'outlined'
+                            }
+                            onClick={() => setMode('image')}
+                        >
+                            {t('presentationEditor.imageSlide')}
                         </Button>
                     </Stack>
 
@@ -679,6 +907,21 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                         />
                     )}
 
+                    {mode === 'image' && (
+                        <ImagePicker
+                            selectedId={null}
+                            onSelect={mediaId =>
+                                onAdd([
+                                    {
+                                        type: 'image',
+                                        id: makeSlideId(),
+                                        mediaId,
+                                    },
+                                ])
+                            }
+                        />
+                    )}
+
                     {error && <Alert severity="error">{error}</Alert>}
                 </Stack>
             </DialogContent>
@@ -686,7 +929,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                 <Button type="button" onClick={onClose} disabled={loading}>
                     {t('panel.cancel')}
                 </Button>
-                {mode === 'bible' ? (
+                {mode === 'bible' && (
                     <Button
                         type="submit"
                         variant="contained"
@@ -696,7 +939,8 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                             ? t('presentationEditor.fetching')
                             : t('panel.add')}
                     </Button>
-                ) : (
+                )}
+                {mode === 'text' && (
                     <Button
                         type="submit"
                         variant="contained"
@@ -724,18 +968,26 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
     const { t } = useTranslation('cg-overlay-plugin');
     const [text, setText] = useState('');
     const [reference, setReference] = useState('');
+    const [mediaId, setMediaId] = useState('');
     const backgroundUrl = useBackgroundImage();
 
     useEffect(() => {
         if (!slide) return;
-        setText(slide.text);
-        setReference(slide.type === 'bible' ? slide.reference : '');
+        if (slide.type === 'image') {
+            setMediaId(slide.mediaId);
+        } else {
+            setText(slide.text);
+            setReference(slide.type === 'bible' ? slide.reference : '');
+        }
     }, [slide?.id]);
 
     if (!slide) return null;
 
     const handleSave = () => {
-        if (slide.type === 'bible') {
+        if (slide.type === 'image') {
+            if (!mediaId) return;
+            onSave({ ...slide, mediaId });
+        } else if (slide.type === 'bible') {
             onSave({ ...slide, text, reference });
         } else {
             onSave({ ...slide, text });
@@ -760,34 +1012,53 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
             <DialogTitle>{t('presentationEditor.editSlide')}</DialogTitle>
             <DialogContent>
                 <Stack spacing={2.5} sx={{ marginTop: 1 }}>
-                    <SlidePreview
-                        text={text}
-                        reference={reference}
-                        backgroundUrl={backgroundUrl}
-                    />
-
-                    {slide.type === 'bible' && (
-                        <TextField
-                            label={t('presentationEditor.referenceLabel')}
-                            value={reference}
-                            onChange={e => setReference(e.target.value)}
-                            fullWidth
+                    {slide.type === 'image' ? (
+                        <ImagePicker
+                            selectedId={mediaId}
+                            onSelect={setMediaId}
                         />
-                    )}
+                    ) : (
+                        <>
+                            <SlidePreview
+                                text={text}
+                                reference={reference}
+                                backgroundUrl={backgroundUrl}
+                            />
 
-                    <TextField
-                        label={t('presentationEditor.textLabel')}
-                        value={text}
-                        onChange={e => setText(e.target.value)}
-                        multiline
-                        minRows={4}
-                        fullWidth
-                    />
+                            {slide.type === 'bible' && (
+                                <TextField
+                                    label={t(
+                                        'presentationEditor.referenceLabel',
+                                    )}
+                                    value={reference}
+                                    onChange={e =>
+                                        setReference(e.target.value)
+                                    }
+                                    fullWidth
+                                />
+                            )}
+
+                            <TextField
+                                label={t('presentationEditor.textLabel')}
+                                value={text}
+                                onChange={e => setText(e.target.value)}
+                                multiline
+                                minRows={4}
+                                fullWidth
+                            />
+                        </>
+                    )}
                 </Stack>
             </DialogContent>
             <DialogActions>
-                <Button type="button" onClick={onClose}>{t('panel.cancel')}</Button>
-                <Button type="submit" variant="contained">
+                <Button type="button" onClick={onClose}>
+                    {t('panel.cancel')}
+                </Button>
+                <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={slide.type === 'image' && !mediaId}
+                >
                     {t('presentationEditor.save')}
                 </Button>
             </DialogActions>

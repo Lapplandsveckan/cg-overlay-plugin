@@ -12,6 +12,7 @@ import {
     usePresentations,
     useBackgroundImage,
     slideRef,
+    slideText,
 } from './api';
 import { slidesEditorUrl } from './urls';
 import NameDialog from './NameDialog';
@@ -180,7 +181,7 @@ const PresentationTile: React.FC<{
             >
                 {firstSlide ? (
                     <SlidePreview
-                        text={firstSlide.text}
+                        text={slideText(firstSlide)}
                         reference={slideRef(firstSlide)}
                         backgroundUrl={backgroundUrl}
                     />

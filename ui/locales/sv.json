@@ -131,7 +131,7 @@
         "renameDialogTitle": "Byt namn på presentation",
         "addSlides": "+ Lägg till slides",
         "noSlidesYet": "Inga slides ännu.",
-        "noSlidesHelper": "Lägg till bibelverser eller en textslide för att komma igång.",
+        "noSlidesHelper": "Lägg till bibelverser, en textslide eller en bild för att komma igång.",
         "editSlide": "Redigera slide",
         "deleteSlide": "Ta bort slide",
         "addSlidesTitle": "Lägg till slides",
@@ -160,7 +160,12 @@
         "verseEndGte": "Slutvers måste vara ≥ startvers",
         "verseRangeLong": "Intervallet är för långt",
         "verseCount_one": "{{count}} vers",
-        "verseCount_other": "{{count}} verser"
+        "verseCount_other": "{{count}} verser",
+        "imageSlide": "Bild",
+        "imageSearchPlaceholder": "Sök bilder…",
+        "noImages": "Inga bilder hittades.",
+        "uploadImage": "Ladda upp bild",
+        "dropToUpload": "Släpp bild för uppladdning"
     },
     "runModal": {
         "heading": "Presentationer",

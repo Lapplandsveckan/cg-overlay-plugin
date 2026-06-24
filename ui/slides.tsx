@@ -10,6 +10,7 @@ import {
     createPresentation,
     type Presentation,
     slideRef,
+    slideText,
     useBackgroundImage,
     usePresentations,
 } from './slides/api';
@@ -66,7 +67,7 @@ const PresentationCard: React.FC<PresentationCardProps> = ({
                 >
                     {firstSlide ? (
                         <SlidePreview
-                            text={firstSlide.text}
+                            text={slideText(firstSlide)}
                             reference={slideRef(firstSlide)}
                             backgroundUrl={backgroundUrl}
                         />

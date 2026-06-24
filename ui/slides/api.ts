@@ -19,7 +19,13 @@ export interface TextSlide {
     text: string;
 }
 
-export type Slide = BibleSlide | TextSlide;
+export interface ImageSlide {
+    type: 'image';
+    id: string;
+    mediaId: string;
+}
+
+export type Slide = BibleSlide | TextSlide | ImageSlide;
 
 export interface Presentation {
     id: string;
@@ -46,9 +52,16 @@ export function slideRef(slide: Slide): string {
     return slide.type === 'bible' ? slide.reference : '';
 }
 
-/** Short label for a slide: its reference for bible slides, 'Text' otherwise. */
+/** Returns the display text for a slide, or '' for image slides. */
+export function slideText(slide: Slide): string {
+    return slide.type === 'image' ? '' : slide.text;
+}
+
+/** Short label for a slide: its reference for bible slides, 'Image' for image slides, 'Text' otherwise. */
 export function slideLabel(slide: Slide): string {
-    return slide.type === 'bible' ? slide.reference : 'Text';
+    if (slide.type === 'bible') return slide.reference;
+    if (slide.type === 'image') return 'Image';
+    return 'Text';
 }
 
 const ROOT = '/api/plugin/lappis';

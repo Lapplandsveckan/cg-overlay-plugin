@@ -131,7 +131,7 @@
         "renameDialogTitle": "Rename presentation",
         "addSlides": "+ Add slides",
         "noSlidesYet": "No slides yet.",
-        "noSlidesHelper": "Add Bible verses or a text slide to get started.",
+        "noSlidesHelper": "Add Bible verses, a text slide, or an image to get started.",
         "editSlide": "Edit slide",
         "deleteSlide": "Delete slide",
         "addSlidesTitle": "Add slides",
@@ -160,7 +160,12 @@
         "verseEndGte": "End must be ≥ start",
         "verseRangeLong": "Range too long",
         "verseCount_one": "{{count}} verse",
-        "verseCount_other": "{{count}} verses"
+        "verseCount_other": "{{count}} verses",
+        "imageSlide": "Image",
+        "imageSearchPlaceholder": "Search images…",
+        "noImages": "No images found.",
+        "uploadImage": "Upload image",
+        "dropToUpload": "Drop image to upload"
     },
     "runModal": {
         "heading": "Presentations",

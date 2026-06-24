@@ -592,11 +592,26 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                             s => s.id === data.slideId,
                         );
                         if (!slide) return null;
-                        this.overlay.playSlide(presentation.id, slide.id, {
-                            text: slide.text,
-                            reference:
-                                slide.type === 'bible' ? slide.reference : '',
-                        });
+                        if (slide.type === 'image') {
+                            this.overlay.playSlide(
+                                presentation.id,
+                                slide.id,
+                                { kind: 'image', mediaId: slide.mediaId },
+                            );
+                        } else {
+                            this.overlay.playSlide(
+                                presentation.id,
+                                slide.id,
+                                {
+                                    kind: 'text',
+                                    text: slide.text,
+                                    reference:
+                                        slide.type === 'bible'
+                                            ? slide.reference
+                                            : '',
+                                },
+                            );
+                        }
                         break;
                     }
                     case 'stop':

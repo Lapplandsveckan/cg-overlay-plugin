@@ -27,7 +27,13 @@ export interface TextSlide {
     text: string;
 }
 
-export type Slide = BibleSlide | TextSlide;
+export interface ImageSlide {
+    type: 'image';
+    id: string;
+    mediaId: string;
+}
+
+export type Slide = BibleSlide | TextSlide | ImageSlide;
 
 export interface Presentation {
     id: string;
@@ -194,6 +200,10 @@ function sanitizeSlide(raw: any): Slide | null {
             id: raw.id,
             text: typeof raw.text === 'string' ? raw.text : '',
         };
+    }
+    if (type === 'image') {
+        if (typeof raw.mediaId !== 'string' || !raw.mediaId) return null;
+        return { type: 'image', id: raw.id, mediaId: raw.mediaId };
     }
     return null;
 }
