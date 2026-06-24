@@ -23,6 +23,9 @@ import {
     Typography,
 } from '@mui/material';
 
+import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import { noTryAsync } from 'no-try';
 import { useSocket } from '@web-lib';
 import { useTranslation } from '../i18n';
@@ -178,16 +181,7 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                                 '&:hover': { color: 'text.primary' },
                             }}
                         >
-                            <Box
-                                component="span"
-                                sx={{
-                                    fontSize: 19,
-                                    lineHeight: 1,
-                                    fontWeight: 700,
-                                }}
-                            >
-                                ✎
-                            </Box>
+                            <EditIcon sx={{ fontSize: 19 }} />
                         </IconButton>
                     </Tooltip>
                     <Tooltip title={t('presentationEditor.deleteButton')}>
@@ -201,12 +195,7 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                                 '&:hover': { color: 'error.main' },
                             }}
                         >
-                            <Box
-                                component="span"
-                                sx={{ fontSize: 17, lineHeight: 1 }}
-                            >
-                                🗑
-                            </Box>
+                            <DeleteIcon sx={{ fontSize: 17 }} />
                         </IconButton>
                     </Tooltip>
                     <Box sx={{ flexGrow: 1 }} />
@@ -397,12 +386,7 @@ const SlideCard: React.FC<SlideCardProps> = ({
                                 },
                             }}
                         >
-                            <Box
-                                component="span"
-                                sx={{ fontSize: 14, lineHeight: 1 }}
-                            >
-                                ✎
-                            </Box>
+                            <EditIcon sx={{ fontSize: 14 }} />
                         </IconButton>
                     </Tooltip>
                     <Tooltip title={t('presentationEditor.deleteSlide')}>
@@ -419,16 +403,7 @@ const SlideCard: React.FC<SlideCardProps> = ({
                                 },
                             }}
                         >
-                            <Box
-                                component="span"
-                                sx={{
-                                    fontSize: 16,
-                                    lineHeight: 1,
-                                    fontWeight: 300,
-                                }}
-                            >
-                                ×
-                            </Box>
+                            <CloseIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                     </Tooltip>
                 </Stack>

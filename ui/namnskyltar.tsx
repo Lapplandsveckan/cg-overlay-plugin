@@ -13,6 +13,7 @@ import {
     Typography,
 } from '@mui/material';
 
+import CloseIcon from '@mui/icons-material/Close';
 import { noTryAsync } from 'no-try';
 import { useSocket } from '@web-lib';
 import { useTranslation } from './i18n';
@@ -107,12 +108,7 @@ const NamnskyltCard: React.FC<NamnskyltCardProps> = ({ name, onDelete }) => {
                         },
                     }}
                 >
-                    <Box
-                        component="span"
-                        sx={{ fontSize: 16, lineHeight: 1, fontWeight: 300 }}
-                    >
-                        ×
-                    </Box>
+                    <CloseIcon sx={{ fontSize: 16 }} />
                 </IconButton>
             </Tooltip>
         </Stack>

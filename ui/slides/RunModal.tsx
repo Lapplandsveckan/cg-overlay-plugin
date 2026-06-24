@@ -12,6 +12,9 @@ import {
     Typography,
 } from '@mui/material';
 
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SlidePreview from './SlidePreview';
 import {
     type Presentation,
@@ -251,12 +254,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                                 },
                             }}
                         >
-                            <Box
-                                component="span"
-                                sx={{ fontSize: 28, lineHeight: 1 }}
-                            >
-                                ‹
-                            </Box>
+                            <ChevronLeftIcon sx={{ fontSize: 28 }} />
                         </IconButton>
                     </span>
                 </Tooltip>
@@ -282,12 +280,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                                 },
                             }}
                         >
-                            <Box
-                                component="span"
-                                sx={{ fontSize: 28, lineHeight: 1 }}
-                            >
-                                ›
-                            </Box>
+                            <ChevronRightIcon sx={{ fontSize: 28 }} />
                         </IconButton>
                     </span>
                 </Tooltip>
@@ -427,17 +420,13 @@ const PickerView: React.FC<PickerViewProps> = ({
                                 }}
                             >
                                 <Stack alignItems="center" spacing={0.5}>
-                                    <Box
-                                        component="span"
+                                    <PlayArrowIcon
                                         sx={{
                                             fontSize: 36,
-                                            lineHeight: 1,
                                             color: '#fff',
                                             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))',
                                         }}
-                                    >
-                                        ▶
-                                    </Box>
+                                    />
                                     <Typography
                                         variant="caption"
                                         sx={{
