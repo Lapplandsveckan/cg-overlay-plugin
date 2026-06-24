@@ -13,16 +13,6 @@ export function pluginHomeUrl(): string {
     return PLUGIN_BASE;
 }
 
-export function slidesEditorUrl(id: string, from?: string): string {
-    const base = `${SLIDES_BASE}/${encodeURIComponent(id)}`;
-    return from ? `${base}?from=${encodeURIComponent(from)}` : base;
-}
-
-/** Returns the `from` query param if it is a safe same-origin relative path. */
-export function backTargetFromSearch(search: string): string | null {
-    const raw = new URLSearchParams(search).get('from');
-    // Must start with exactly one '/' and not be protocol-relative (//) or
-    // backslash-bypass (/\) — some browsers normalise /\evil.com to //evil.com.
-    if (raw?.[0] !== '/' || raw[1] === '/' || raw[1] === '\\') return null;
-    return raw;
+export function slidesEditorUrl(id: string): string {
+    return `${SLIDES_BASE}/${encodeURIComponent(id)}`;
 }

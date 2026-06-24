@@ -190,9 +190,7 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
 function openPresentationEditor(id: string) {
     // Use an absolute URL — the rundown editor isn't mounted under the plugin
     // page, so relative paths would resolve against the rundown URL.
-    // Attach the current rundown path as `from` so the editor can show "← Back".
-    const from = window.location.pathname + window.location.search;
-    const url = slidesEditorUrl(id, from);
+    const url = slidesEditorUrl(id);
     const [err] = noTry(() => window.open(url, '_blank', 'noopener'));
     if (err) window.location.assign(url);
 }
