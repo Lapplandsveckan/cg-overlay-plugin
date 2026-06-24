@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { BasicChannel, type Logger, type PluginAPI } from '@lappis/cg-manager';
 import { type SwishOverlayEffect } from './effects/overlay/swish';
 import { type SwishWallEffect } from './effects/wall/swish';
