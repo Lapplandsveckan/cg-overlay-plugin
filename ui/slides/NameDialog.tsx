@@ -40,26 +40,35 @@ const NameDialog: React.FC<Props> = ({
     };
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
+        <Dialog
+            open={open}
+            onClose={onClose}
+            fullWidth
+            maxWidth="xs"
+            PaperProps={{
+                component: 'form',
+                onSubmit: (e: React.FormEvent) => {
+                    e.preventDefault();
+                    handleSubmit();
+                },
+            }}
+        >
             <DialogTitle>{title}</DialogTitle>
             <DialogContent>
                 <TextField
                     label={label}
                     value={name}
                     onChange={e => setName(e.target.value)}
-                    onKeyDown={e => {
-                        if (e.key === 'Enter') handleSubmit();
-                    }}
                     autoFocus
                     fullWidth
                     sx={{ marginTop: 1 }}
                 />
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
+                <Button type="button" onClick={onClose}>Cancel</Button>
                 <Button
+                    type="submit"
                     variant="contained"
-                    onClick={handleSubmit}
                     disabled={!name.trim()}
                 >
                     {confirmLabel}
