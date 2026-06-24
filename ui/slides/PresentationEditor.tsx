@@ -150,15 +150,6 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                     >
                         {backLabel}
                     </Button>
-                    <Box sx={{ flexGrow: 1 }} />
-                    <Button
-                        size="small"
-                        color="error"
-                        variant="outlined"
-                        onClick={() => setConfirmDelete(true)}
-                    >
-                        {t('presentationEditor.deleteButton')}
-                    </Button>
                 </Stack>
 
                 <Stack direction="row" spacing={1.5} alignItems="center">
@@ -199,6 +190,25 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                             </Box>
                         </IconButton>
                     </Tooltip>
+                    <Tooltip title={t('presentationEditor.deleteButton')}>
+                        <IconButton
+                            onClick={() => setConfirmDelete(true)}
+                            sx={{
+                                width: 32,
+                                height: 32,
+                                padding: 0,
+                                color: 'text.secondary',
+                                '&:hover': { color: 'error.main' },
+                            }}
+                        >
+                            <Box
+                                component="span"
+                                sx={{ fontSize: 17, lineHeight: 1 }}
+                            >
+                                🗑
+                            </Box>
+                        </IconButton>
+                    </Tooltip>
                     <Box sx={{ flexGrow: 1 }} />
                     <Chip
                         label={t('slides.slideCount', {
@@ -206,6 +216,12 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                         })}
                         variant="outlined"
                     />
+                    <Button
+                        variant="contained"
+                        onClick={() => setAddOpen(true)}
+                    >
+                        {t('presentationEditor.addSlides')}
+                    </Button>
                 </Stack>
 
                 <NameDialog
@@ -221,19 +237,6 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                         {error}
                     </Alert>
                 )}
-
-                <Stack
-                    direction="row"
-                    alignItems="center"
-                    justifyContent="flex-end"
-                >
-                    <Button
-                        variant="contained"
-                        onClick={() => setAddOpen(true)}
-                    >
-                        {t('presentationEditor.addSlides')}
-                    </Button>
-                </Stack>
 
                 {remote.slides.length === 0 ? (
                     <EmptyState onAdd={() => setAddOpen(true)} />
