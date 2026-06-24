@@ -339,15 +339,20 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                         };
                     },
                 },
+                stop: () => this.video.stopVideo(),
             },
         );
 
-        registerRundownAction('namnskylt', async rundown => {
-            const name = rundown.data.name;
-            if (!name) return null; // throw new WebError('No name provided', 400);
+        registerRundownAction(
+            'namnskylt',
+            async rundown => {
+                const name = rundown.data.name;
+                if (!name) return null; // throw new WebError('No name provided', 400);
 
-            this.overlay.showNamnskylt(name);
-        });
+                this.overlay.showNamnskylt(name);
+            },
+            { stop: () => this.overlay.hideNamnskylt() },
+        );
 
         registerRundownAction('swish', async rundown => {
             const { number, labels, skipFirst } = rundown.data;
@@ -370,27 +375,31 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             this.overlay.setText(rundown.data.text);
         });
 
-        registerRundownAction('slides', async rundown => {
-            const presentationId = rundown.data?.presentationId;
-            if (typeof presentationId !== 'string' || !presentationId) {
-                this.logger.warn(
-                    'slides rundown action: no presentationId on entry',
-                );
-                return;
-            }
+        registerRundownAction(
+            'slides',
+            async rundown => {
+                const presentationId = rundown.data?.presentationId;
+                if (typeof presentationId !== 'string' || !presentationId) {
+                    this.logger.warn(
+                        'slides rundown action: no presentationId on entry',
+                    );
+                    return;
+                }
 
-            await this.presentations.ready;
-            if (!this.presentations.get(presentationId)) {
-                this.logger.warn(
-                    `slides rundown action: presentation ${presentationId} not found`,
-                );
-                return;
-            }
+                await this.presentations.ready;
+                if (!this.presentations.get(presentationId)) {
+                    this.logger.warn(
+                        `slides rundown action: presentation ${presentationId} not found`,
+                    );
+                    return;
+                }
 
-            // Single broadcast — the UI opens the run modal in response.
-            // Playback itself is triggered by the UI when the operator clicks a slide.
-            this.overlay.broadcastArmEvent(presentationId, rundown.id);
-        });
+                // Single broadcast — the UI opens the run modal in response.
+                // Playback itself is triggered by the UI when the operator clicks a slide.
+                this.overlay.broadcastArmEvent(presentationId, rundown.id);
+            },
+            { stop: () => this.overlay.stopPlayback() },
+        );
     }
 
     public registerEffectGroups() {

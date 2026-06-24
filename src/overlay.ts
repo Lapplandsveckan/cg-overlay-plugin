@@ -3,6 +3,7 @@ import { type SwishOverlayEffect } from './effects/overlay/swish';
 import { type SwishWallEffect } from './effects/wall/swish';
 import { type VideoTransitionWallEffect } from './effects/wall/videotransition';
 import { type BarsOverlayEffect } from './effects/overlay/bars';
+import { type NamnskyltOverlayEffect } from './effects/overlay/namnskylt';
 import {
     type InsamlingOverlayEffect,
     type InsamlingOverlayEffectOptions,
@@ -64,6 +65,8 @@ export default class OverlayManager {
 
     private bars: BarsOverlayEffect = null;
     private barsState = 0;
+
+    private namnskylt: NamnskyltOverlayEffect = null;
 
     private insamling: InsamlingOverlayEffect = null;
     private insamlingState = 0;
@@ -138,6 +141,11 @@ export default class OverlayManager {
         if (this.presentationEffect) {
             this.presentationEffect.dispose();
             this.presentationEffect = null;
+        }
+
+        if (this.namnskylt) {
+            this.namnskylt.dispose();
+            this.namnskylt = null;
         }
     }
 
@@ -249,17 +257,27 @@ export default class OverlayManager {
     }
 
     public showNamnskylt(name: string) {
-        const overlay = this.api.createEffect(
+        this.namnskylt = this.api.createEffect(
             'overlay-namnskylt',
             '1:overlay',
             { name },
-        );
+        ) as NamnskyltOverlayEffect;
         const wall = this.api.createEffect('wall-namnskylt', '2:overlay', {
             name,
         });
 
-        Promise.all([wall.activate(), overlay.activate()]).catch(err => {
+        Promise.all([wall.activate(), this.namnskylt.activate()]).catch(err => {
             this.logger.error('Failed to activate namnskylt effect');
+            this.logger.error(err);
+        });
+    }
+
+    public hideNamnskylt() {
+        if (!this.namnskylt) return;
+        const effect = this.namnskylt;
+        this.namnskylt = null;
+        effect.deactivate()?.catch(err => {
+            this.logger.error('Failed to deactivate namnskylt effect');
             this.logger.error(err);
         });
     }
