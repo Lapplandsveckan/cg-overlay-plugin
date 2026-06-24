@@ -10,6 +10,8 @@ import {
     Typography,
 } from '@mui/material';
 
+import CloseIcon from '@mui/icons-material/Close';
+import FolderIcon from '@mui/icons-material/Folder';
 import { MediaDropZone, useSocket, useRundownLive } from '@web-lib';
 import { useTranslation } from './i18n';
 import { setRundownDragPayload } from './drag';
@@ -141,9 +143,7 @@ const FolderTile: React.FC<FolderTileProps> = ({ name, onOpen }) => (
             '&:hover': { borderColor: '#4a90e2', backgroundColor: '#2a2d35' },
         }}
     >
-        <Box component="span" sx={{ fontSize: 22 }}>
-            📁
-        </Box>
+        <FolderIcon sx={{ fontSize: 22 }} />
         <Typography variant="caption" noWrap sx={{ maxWidth: '90%' }}>
             {name}
         </Typography>
@@ -294,12 +294,7 @@ const MediaTab: React.FC = () => {
                                         size="small"
                                         onClick={() => setQuery('')}
                                     >
-                                        <Box
-                                            component="span"
-                                            sx={{ fontSize: 14, lineHeight: 1 }}
-                                        >
-                                            ×
-                                        </Box>
+                                        <CloseIcon sx={{ fontSize: 14 }} />
                                     </IconButton>
                                 </InputAdornment>
                             ) : null,

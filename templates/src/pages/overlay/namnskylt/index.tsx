@@ -17,8 +17,12 @@ export const NamnskyltAnimation: React.FC<{ name: string; state: number }> = ({
         styles={getStylesProxy(styles)}
     >
         <div className={styles.namnskylt__main}>
-            <BubbleWatermark className={`${styles.bubble} ${styles['bubble--left']}`} />
-            <BubbleWatermark className={`${styles.bubble} ${styles['bubble--right']}`} />
+            <BubbleWatermark
+                className={`${styles.bubble} ${styles['bubble--left']}`}
+            />
+            <BubbleWatermark
+                className={`${styles.bubble} ${styles['bubble--right']}`}
+            />
             <div className={styles.namnskylt__main__name}>{name}</div>
         </div>
     </CG>

@@ -326,11 +326,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
     public registerRoutes() {
         const bgData = buildBackgroundData(__dirname);
-        this.api.registerRoute(
-            'assets/background',
-            async () => bgData,
-            'GET',
-        );
+        this.api.registerRoute('assets/background', async () => bgData, 'GET');
 
         this.api.registerRoute(
             'bars',

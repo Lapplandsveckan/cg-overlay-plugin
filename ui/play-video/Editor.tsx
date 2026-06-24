@@ -13,6 +13,7 @@ import {
     Typography,
 } from '@mui/material';
 
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useSocket, MediaSelect, RundownEditorActionBar } from '@web-lib';
 import { useTranslation } from '../i18n';
 
@@ -134,11 +135,7 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                 }}
             >
                 <AccordionSummary
-                    expandIcon={
-                        <Box component="span" sx={{ fontSize: 14 }}>
-                            ▾
-                        </Box>
-                    }
+                    expandIcon={<ExpandMoreIcon sx={{ fontSize: 14 }} />}
                     sx={{
                         minHeight: 40,
                         '& .MuiAccordionSummary-content': { margin: '8px 0' },

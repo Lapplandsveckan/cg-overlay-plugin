@@ -7,6 +7,7 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { useSocket } from '@web-lib';
@@ -151,12 +152,7 @@ const VideoItem: React.FC<VideoItemProps> = ({
                                 onRemove();
                             }}
                         >
-                            <Box
-                                component="span"
-                                sx={{ fontSize: 18, lineHeight: 1 }}
-                            >
-                                ×
-                            </Box>
+                            <CloseIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                     </Tooltip>
                 </Stack>
