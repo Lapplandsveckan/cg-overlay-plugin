@@ -100,129 +100,130 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ selectedId, onSelect }) => {
             accept={['image/*']}
             overlayLabel={t('presentationEditor.dropToUpload')}
         >
-        <Stack spacing={1}>
-            <Stack direction="row" spacing={1} alignItems="center">
-                <TextField
-                    size="small"
-                    placeholder={t(
-                        'presentationEditor.imageSearchPlaceholder',
-                    )}
-                    value={query}
-                    onChange={e => setQuery(e.target.value)}
-                    sx={{ flexGrow: 1 }}
-                    InputProps={{
-                        endAdornment: query ? (
-                            <InputAdornment position="end">
-                                <IconButton
-                                    size="small"
-                                    onClick={() => setQuery('')}
-                                >
-                                    <CloseIcon sx={{ fontSize: 14 }} />
-                                </IconButton>
-                            </InputAdornment>
-                        ) : null,
-                    }}
-                />
-                <UploadButton
-                    label={t('presentationEditor.uploadImage')}
-                    multiple
-                    types={[
-                        {
-                            description: 'Images',
-                            accept: {
-                                'image/*': [
-                                    '.png',
-                                    '.jpg',
-                                    '.jpeg',
-                                    '.gif',
-                                    '.bmp',
-                                    '.webp',
-                                    '.tiff',
-                                ],
-                            },
-                        },
-                    ]}
-                    createUpload={(file: File) =>
-                        (conn as any).caspar.uploadMedia(file.name, file)
-                    }
-                />
-            </Stack>
-            <Box sx={{ maxHeight: 280, overflowY: 'auto' }}>
-                {filtered.length === 0 ? (
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ py: 2, textAlign: 'center' }}
-                    >
-                        {t('presentationEditor.noImages')}
-                    </Typography>
-                ) : (
-                    <Box
-                        sx={{
-                            display: 'grid',
-                            gridTemplateColumns:
-                                'repeat(auto-fill, minmax(120px, 1fr))',
-                            gap: 1,
+            <Stack spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                    <TextField
+                        size="small"
+                        placeholder={t(
+                            'presentationEditor.imageSearchPlaceholder',
+                        )}
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
+                        sx={{ flexGrow: 1 }}
+                        InputProps={{
+                            endAdornment: query ? (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => setQuery('')}
+                                    >
+                                        <CloseIcon sx={{ fontSize: 14 }} />
+                                    </IconButton>
+                                </InputAdornment>
+                            ) : null,
                         }}
-                    >
-                        {filtered.map(item => {
-                            const thumbUrl = buildThumbnailUrl(item);
-                            const name =
-                                item.id.split('/').pop() ?? item.id;
-                            const isSelected = item.id === selectedId;
-                            return (
-                                <Box
-                                    key={item.id}
-                                    onClick={() => onSelect(item.id)}
-                                    sx={{
-                                        position: 'relative',
-                                        aspectRatio: '16/9',
-                                        borderRadius: 1,
-                                        overflow: 'hidden',
-                                        backgroundColor: '#1a1c22',
-                                        backgroundImage: thumbUrl
-                                            ? `url(${thumbUrl})`
-                                            : undefined,
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                        border: isSelected
-                                            ? '2px solid #4a90e2'
-                                            : '1px solid rgba(255,255,255,0.08)',
-                                        cursor: 'pointer',
-                                        transition: 'border-color 80ms',
-                                        '&:hover': {
-                                            borderColor: isSelected
-                                                ? '#4a90e2'
-                                                : '#fff',
-                                        },
-                                    }}
-                                >
+                    />
+                    <UploadButton
+                        label={t('presentationEditor.uploadImage')}
+                        multiple
+                        types={[
+                            {
+                                description: 'Images',
+                                accept: {
+                                    'image/*': [
+                                        '.png',
+                                        '.jpg',
+                                        '.jpeg',
+                                        '.gif',
+                                        '.bmp',
+                                        '.webp',
+                                        '.tiff',
+                                    ],
+                                },
+                            },
+                        ]}
+                        createUpload={(file: File) =>
+                            (conn as any).caspar.uploadMedia(file.name, file)
+                        }
+                    />
+                </Stack>
+                <Box sx={{ maxHeight: 280, overflowY: 'auto' }}>
+                    {filtered.length === 0 ? (
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ py: 2, textAlign: 'center' }}
+                        >
+                            {t('presentationEditor.noImages')}
+                        </Typography>
+                    ) : (
+                        <Box
+                            sx={{
+                                display: 'grid',
+                                gridTemplateColumns:
+                                    'repeat(auto-fill, minmax(120px, 1fr))',
+                                gap: 1,
+                            }}
+                        >
+                            {filtered.map(item => {
+                                const thumbUrl = buildThumbnailUrl(item);
+                                const name =
+                                    item.id.split('/').pop() ?? item.id;
+                                const isSelected = item.id === selectedId;
+                                return (
                                     <Box
+                                        key={item.id}
+                                        onClick={() => onSelect(item.id)}
                                         sx={{
-                                            position: 'absolute',
-                                            left: 0,
-                                            right: 0,
-                                            bottom: 0,
-                                            padding: '3px 5px',
-                                            backgroundColor: 'rgba(0,0,0,0.6)',
+                                            position: 'relative',
+                                            aspectRatio: '16/9',
+                                            borderRadius: 1,
+                                            overflow: 'hidden',
+                                            backgroundColor: '#1a1c22',
+                                            backgroundImage: thumbUrl
+                                                ? `url(${thumbUrl})`
+                                                : undefined,
+                                            backgroundSize: 'cover',
+                                            backgroundPosition: 'center',
+                                            border: isSelected
+                                                ? '2px solid #4a90e2'
+                                                : '1px solid rgba(255,255,255,0.08)',
+                                            cursor: 'pointer',
+                                            transition: 'border-color 80ms',
+                                            '&:hover': {
+                                                borderColor: isSelected
+                                                    ? '#4a90e2'
+                                                    : '#fff',
+                                            },
                                         }}
                                     >
-                                        <Typography
-                                            fontSize={10}
-                                            noWrap
-                                            sx={{ color: '#e8eaed' }}
-                                            title={item.id}
+                                        <Box
+                                            sx={{
+                                                position: 'absolute',
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                padding: '3px 5px',
+                                                backgroundColor:
+                                                    'rgba(0,0,0,0.6)',
+                                            }}
                                         >
-                                            {name}
-                                        </Typography>
+                                            <Typography
+                                                fontSize={10}
+                                                noWrap
+                                                sx={{ color: '#e8eaed' }}
+                                                title={item.id}
+                                            >
+                                                {name}
+                                            </Typography>
+                                        </Box>
                                     </Box>
-                                </Box>
-                            );
-                        })}
-                    </Box>
-                )}
-            </Box>
-        </Stack>
+                                );
+                            })}
+                        </Box>
+                    )}
+                </Box>
+            </Stack>
         </MediaDropZone>
     );
 };
@@ -1037,9 +1038,7 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
                                         'presentationEditor.referenceLabel',
                                     )}
                                     value={reference}
-                                    onChange={e =>
-                                        setReference(e.target.value)
-                                    }
+                                    onChange={e => setReference(e.target.value)}
                                     fullWidth
                                 />
                             )}

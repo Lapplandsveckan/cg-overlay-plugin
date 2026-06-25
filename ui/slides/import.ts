@@ -13,13 +13,14 @@ export function makeSlideId(): string {
 
 /** Lowercase, dashes, strip anything not alphanumeric or dash/underscore. */
 export function slugify(title: string): string {
-    return title
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9_-]/g, '')
-        .replace(/-{2,}/g, '-')
-        .replace(/^-|-$/g, '')
-        || 'presentation';
+    return (
+        title
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9_-]/g, '')
+            .replace(/-{2,}/g, '-')
+            .replace(/^-|-$/g, '') || 'presentation'
+    );
 }
 
 /**
@@ -63,11 +64,15 @@ export async function renderPdfToImages(
 
                 const ctx = canvas.getContext('2d');
                 if (!ctx) throw new Error('Could not get 2d canvas context');
-                await page.render({ canvasContext: ctx, viewport: scaled }).promise;
+                await page.render({ canvasContext: ctx, viewport: scaled })
+                    .promise;
 
                 const blob = await new Promise<Blob>((resolve, reject) => {
                     canvas.toBlob(
-                        b => (b ? resolve(b) : reject(new Error('Canvas toBlob failed'))),
+                        b =>
+                            b
+                                ? resolve(b)
+                                : reject(new Error('Canvas toBlob failed')),
                         'image/png',
                     );
                 });

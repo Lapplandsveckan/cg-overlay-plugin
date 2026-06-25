@@ -31,7 +31,13 @@ import {
 } from './api';
 import { slidesEditorUrl } from './urls';
 import NameDialog from './NameDialog';
-import { slugify, makeSlideId, mediaIdFromPath, renderPdfToImages, type RenderProgress } from './import';
+import {
+    slugify,
+    makeSlideId,
+    mediaIdFromPath,
+    renderPdfToImages,
+    type RenderProgress,
+} from './import';
 
 export const PresentationIndex: React.FC = () => {
     const { t } = useTranslation('cg-overlay-plugin');
@@ -71,7 +77,11 @@ export const PresentationIndex: React.FC = () => {
 
     return (
         <Stack spacing={3}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+            >
                 <Typography variant="h5" fontWeight={600}>
                     {t('presentationIndex.heading')}
                 </Typography>
@@ -298,16 +308,24 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
     const { t } = useTranslation('cg-overlay-plugin');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const folderRef = useRef('');
-    const pendingRef = useRef<{ title: string; mediaIds: string[] } | null>(null);
+    const pendingRef = useRef<{ title: string; mediaIds: string[] } | null>(
+        null,
+    );
 
     const [title, setTitle] = useState('');
     const [file, setFile] = useState<File | null>(null);
     const [phase, setPhase] = useState<DialogPhase>('idle');
-    const [renderProgress, setRenderProgress] = useState<RenderProgress>({ done: 0, total: 0 });
+    const [renderProgress, setRenderProgress] = useState<RenderProgress>({
+        done: 0,
+        total: 0,
+    });
 
     const fileUpload = useFileUpload({
         createUpload: (f: File) =>
-            (conn as any).caspar.uploadMedia(`${folderRef.current}${f.name}`, f),
+            (conn as any).caspar.uploadMedia(
+                `${folderRef.current}${f.name}`,
+                f,
+            ),
     });
 
     const busy = phase !== 'idle';
@@ -335,10 +353,17 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
                 mediaId,
             }));
             createPresentation(conn, { title: pTitle, slides })
-                .then(p => { reset(); onDone(p); })
-                .catch((err: any) => { reset(); onError(err?.message ?? t('presentationIndex.importError')); });
+                .then(p => {
+                    reset();
+                    onDone(p);
+                })
+                .catch((err: any) => {
+                    reset();
+                    onError(err?.message ?? t('presentationIndex.importError'));
+                });
         } else if (fileUpload.state.phase === 'error') {
-            const msg = fileUpload.state.error ?? t('presentationIndex.importError');
+            const msg =
+                fileUpload.state.error ?? t('presentationIndex.importError');
             reset();
             onError(msg);
         }
@@ -367,7 +392,9 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
         );
         if (err) {
             reset();
-            onError((err as any)?.message ?? t('presentationIndex.importError'));
+            onError(
+                (err as any)?.message ?? t('presentationIndex.importError'),
+            );
             return;
         }
 
@@ -381,7 +408,9 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
 
         pendingRef.current = {
             title: title.trim(),
-            mediaIds: uploadFiles.map(f => mediaIdFromPath(`${folder}${f.name}`)),
+            mediaIds: uploadFiles.map(f =>
+                mediaIdFromPath(`${folder}${f.name}`),
+            ),
         };
 
         // Ensure the destination folder exists before uploading.
@@ -395,7 +424,10 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
     const progressLabel = (() => {
         if (phase === 'rendering') {
             return renderProgress.total > 0
-                ? t('presentationIndex.importRendering', { done: renderProgress.done, total: renderProgress.total })
+                ? t('presentationIndex.importRendering', {
+                      done: renderProgress.done,
+                      total: renderProgress.total,
+                  })
                 : t('presentationIndex.importRenderingStart');
         }
         if (phase === 'uploading') {
@@ -415,7 +447,9 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
         if (phase === 'uploading') {
             const { currentIndex, queue, currentProgress } = fileUpload.state;
             if (!queue.length) return undefined;
-            return ((currentIndex + currentProgress / 100) / queue.length) * 100;
+            return (
+                ((currentIndex + currentProgress / 100) / queue.length) * 100
+            );
         }
         return undefined;
     })();
@@ -434,7 +468,9 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
                 },
             }}
         >
-            <DialogTitle>{t('presentationIndex.importDialogTitle')}</DialogTitle>
+            <DialogTitle>
+                {t('presentationIndex.importDialogTitle')}
+            </DialogTitle>
             <DialogContent>
                 <Stack spacing={2} sx={{ marginTop: 1 }}>
                     <Button
@@ -442,9 +478,14 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
                         component="label"
                         startIcon={<UploadFileIcon />}
                         disabled={busy}
-                        sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                        sx={{
+                            justifyContent: 'flex-start',
+                            textTransform: 'none',
+                        }}
                     >
-                        {file ? file.name : t('presentationIndex.importPickFile')}
+                        {file
+                            ? file.name
+                            : t('presentationIndex.importPickFile')}
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -464,10 +505,17 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
                     {busy && (
                         <Stack spacing={0.5}>
                             <LinearProgress
-                                variant={progressValue !== undefined ? 'determinate' : 'indeterminate'}
+                                variant={
+                                    progressValue !== undefined
+                                        ? 'determinate'
+                                        : 'indeterminate'
+                                }
                                 value={progressValue}
                             />
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
                                 {progressLabel}
                             </Typography>
                         </Stack>
@@ -483,7 +531,9 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
                     variant="contained"
                     disabled={busy || !file || !title.trim()}
                 >
-                    {busy ? t('presentationIndex.importImporting') : t('presentationIndex.importConfirm')}
+                    {busy
+                        ? t('presentationIndex.importImporting')
+                        : t('presentationIndex.importConfirm')}
                 </Button>
             </DialogActions>
         </Dialog>
