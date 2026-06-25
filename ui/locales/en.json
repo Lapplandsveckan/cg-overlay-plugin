@@ -186,7 +186,20 @@
         "newPresentationDialogTitle": "New presentation",
         "create": "Create",
         "newPresentation": "New presentation",
-        "empty": "Empty"
+        "empty": "Empty",
+        "importPdf": "Import PDF",
+        "importPdfTooltip": "Convert a PDF into a presentation with one image slide per page",
+        "importDialogTitle": "Import PDF as presentation",
+        "importPickFile": "Choose PDF file…",
+        "importTitleLabel": "Presentation title",
+        "importConfirm": "Import",
+        "importCancel": "Cancel",
+        "importImporting": "Importing…",
+        "importRenderingStart": "Rendering pages…",
+        "importRendering": "Rendering page {{done}} / {{total}}…",
+        "importUploading": "Uploading {{done}} / {{total}}…",
+        "importCreating": "Creating presentation…",
+        "importError": "Failed to import PDF"
     },
     "motion": {
         "backgroundColor": "Background color",

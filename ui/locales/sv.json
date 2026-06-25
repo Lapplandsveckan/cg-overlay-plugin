@@ -186,7 +186,20 @@
         "newPresentationDialogTitle": "Ny presentation",
         "create": "Skapa",
         "newPresentation": "Ny presentation",
-        "empty": "Tom"
+        "empty": "Tom",
+        "importPdf": "Importera PDF",
+        "importPdfTooltip": "Omvandla en PDF till en presentation med en bildslide per sida",
+        "importDialogTitle": "Importera PDF som presentation",
+        "importPickFile": "Välj PDF-fil…",
+        "importTitleLabel": "Presentationstitel",
+        "importConfirm": "Importera",
+        "importCancel": "Avbryt",
+        "importImporting": "Importerar…",
+        "importRenderingStart": "Renderar sidor…",
+        "importRendering": "Renderar sida {{done}} / {{total}}…",
+        "importUploading": "Laddar upp {{done}} / {{total}}…",
+        "importCreating": "Skapar presentation…",
+        "importError": "Det gick inte att importera PDF:en"
     },
     "motion": {
         "backgroundColor": "Bakgrundsfärg",

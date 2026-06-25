@@ -260,17 +260,23 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
 
     useEffect(() => {
         if (imageMediaIds.length === 0) return;
-        (conn as any).caspar
-            .getMedia()
-            .then((media: Map<string, any>) => {
-                const map: Record<string, string> = {};
-                for (const [mid, item] of media) {
-                    const url = buildThumbnailUrl(item);
-                    if (url) map[mid] = url;
-                }
-                setImageThumbnails(map);
-            })
-            .catch(console.error);
+
+        const refresh = () =>
+            (conn as any).caspar
+                .getMedia()
+                .then((media: Map<string, any>) => {
+                    const map: Record<string, string> = {};
+                    for (const [mid, item] of media) {
+                        const url = buildThumbnailUrl(item);
+                        if (url) map[mid] = url;
+                    }
+                    setImageThumbnails(map);
+                })
+                .catch(console.error);
+
+        refresh();
+        (conn as any).caspar.on('media', refresh);
+        return () => (conn as any).caspar.off('media', refresh);
     }, [imageMediaIds.join(',')]);
 
     const handleRename = async (title: string) => {
