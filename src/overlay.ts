@@ -337,6 +337,12 @@ export default class OverlayManager {
 
         this.presentationState = { playing: true, presentationId, slideId };
 
+        if (!wasPlaying) {
+            this.plugin.atem.setVideoProgram();
+        } else {
+            this.plugin.atem.ensureVideoProgram();
+        }
+
         if (render.kind === 'text') {
             if (this.presentationImageEffect) {
                 this.presentationImageEffect.deactivate()?.catch(err => {
@@ -351,7 +357,7 @@ export default class OverlayManager {
             if (!this.presentationEffect) {
                 this.presentationEffect = this.api.createEffect(
                     'overlay-presentation',
-                    getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION),
+                    getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
                     { text: render.text, reference: render.reference },
                 ) as PresentationOverlayEffect;
             } else {
@@ -399,7 +405,7 @@ export default class OverlayManager {
 
             this.presentationImageEffect = this.api.createEffect(
                 'lappis-video',
-                getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION),
+                getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
                 { media, disposeOnStop: true, holdLastFrame: true },
             ) as VideoEffect;
 
@@ -425,6 +431,7 @@ export default class OverlayManager {
             slideId: null,
         };
         this.presentationKind = null;
+        this.plugin.atem.returnToPreview();
 
         if (this.presentationEffect) {
             this.presentationEffect.deactivate()?.catch(err => {

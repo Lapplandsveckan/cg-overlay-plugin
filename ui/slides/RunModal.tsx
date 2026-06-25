@@ -120,6 +120,7 @@ export const RunModal: React.FC<RunModalProps> = ({
         <Dialog
             open={open}
             onClose={onClose}
+            onClick={e => e.stopPropagation()}
             fullWidth
             maxWidth={false}
             PaperProps={{ sx: { width: 'min(92vw, 900px)', maxWidth: 'none' } }}

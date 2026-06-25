@@ -322,6 +322,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.VIDEO)); // video-out
         this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY)); // video-out
+        this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION)); // video-out slides
     }
 
     public registerRoutes() {
@@ -452,24 +453,19 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                         );
                         if (!slide) return null;
                         if (slide.type === 'image') {
-                            this.overlay.playSlide(
-                                presentation.id,
-                                slide.id,
-                                { kind: 'image', mediaId: slide.mediaId },
-                            );
+                            this.overlay.playSlide(presentation.id, slide.id, {
+                                kind: 'image',
+                                mediaId: slide.mediaId,
+                            });
                         } else {
-                            this.overlay.playSlide(
-                                presentation.id,
-                                slide.id,
-                                {
-                                    kind: 'text',
-                                    text: slide.text,
-                                    reference:
-                                        slide.type === 'bible'
-                                            ? slide.reference
-                                            : '',
-                                },
-                            );
+                            this.overlay.playSlide(presentation.id, slide.id, {
+                                kind: 'text',
+                                text: slide.text,
+                                reference:
+                                    slide.type === 'bible'
+                                        ? slide.reference
+                                        : '',
+                            });
                         }
                         break;
                     }
