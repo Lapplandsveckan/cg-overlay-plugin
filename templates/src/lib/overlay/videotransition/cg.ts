@@ -13,7 +13,9 @@ export function register(
     // direction arrives as CG add data on load, and can be refreshed via update
     const update = (params: unknown) => {
         if (typeof (params as Record<string, unknown>)?.direction === 'string')
-            setDirection((params as Record<string, unknown>).direction as string);
+            setDirection(
+                (params as Record<string, unknown>).direction as string,
+            );
     };
 
     onCGEvent('update', update);

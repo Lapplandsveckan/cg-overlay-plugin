@@ -35,7 +35,12 @@ import {
 import { VideoEffect, type VideoEffectOptions } from './effects/misc/video';
 import VideoManager from './video';
 import { RouteEffect, type RouteEffectOptions } from './effects/misc/route';
-import OverlayManager, { CHANNELS, getGroup, GROUPS, MAIN_SIDES } from './overlay';
+import OverlayManager, {
+    CHANNELS,
+    getGroup,
+    GROUPS,
+    MAIN_SIDES,
+} from './overlay';
 import { getVerseSlides, type VerseLookup } from './bible';
 import { AtemManager } from './atem';
 import { config } from './config';

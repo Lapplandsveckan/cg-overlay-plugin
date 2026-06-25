@@ -19,7 +19,9 @@ export class VideoTransitionOverlayEffect extends Effect {
         this.executor.executeAllocations();
 
         // Pass direction to the template so the animation knows which way to slide.
-        const cmd = CgCommand.add(template, false, { direction: options.direction ?? 'left' });
+        const cmd = CgCommand.add(template, false, {
+            direction: options.direction ?? 'left',
+        });
         cmd.allocate(this.layer);
 
         this.executor.execute(cmd);

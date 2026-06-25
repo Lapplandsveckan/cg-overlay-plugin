@@ -106,17 +106,11 @@ export default class OverlayManager {
     }
 
     public initialize() {
-        this.swish = this.makeSidePair(
-            'overlay-swish',
-            GROUPS.OVERLAY,
-            () => ({ number: '123 607 27 97' }),
-        );
+        this.swish = this.makeSidePair('overlay-swish', GROUPS.OVERLAY, () => ({
+            number: '123 607 27 97',
+        }));
 
-        this.bars = this.makeSidePair(
-            'overlay-bars',
-            GROUPS.BARS,
-            () => ({}),
-        ); // TODO: special group so it is underneeth all overlays
+        this.bars = this.makeSidePair('overlay-bars', GROUPS.BARS, () => ({})); // TODO: special group so it is underneeth all overlays
 
         this.insamling = this.api.createEffect(
             'overlay-insamling',
