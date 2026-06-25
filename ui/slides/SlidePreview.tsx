@@ -2,10 +2,12 @@ import React from 'react';
 import { Box, Typography } from '@mui/material';
 
 export interface SlidePreviewProps {
-    text: string;
+    text?: string;
     reference?: string;
 
     backgroundUrl?: string | null;
+    /** For image slides: thumbnail from CasparCG media, overrides backgroundUrl and hides text. */
+    imageUrl?: string | null;
     aspectRatio?: string;
     minWidth?: number | string;
     selected?: boolean;
@@ -56,9 +58,10 @@ function renderText(text: string): React.ReactNode {
 }
 
 export const SlidePreview: React.FC<SlidePreviewProps> = ({
-    text,
+    text = '',
     reference = '',
     backgroundUrl,
+    imageUrl,
     aspectRatio = '16/9',
     minWidth,
     selected,
@@ -70,10 +73,12 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
             aspectRatio,
             width: '100%',
             minWidth,
-            backgroundColor: '#f87a00',
-            backgroundImage: backgroundUrl
-                ? `url(${backgroundUrl})`
-                : undefined,
+            backgroundColor: '#1a1c22',
+            backgroundImage: imageUrl
+                ? `url(${imageUrl})`
+                : backgroundUrl
+                  ? `url(${backgroundUrl})`
+                  : undefined,
             backgroundSize: 'cover',
             borderRadius: 1,
             overflow: 'hidden',
@@ -85,47 +90,51 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
             containerType: 'size',
         }}
     >
-        <Box
-            sx={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}
-        >
-            <Typography
-                sx={{
-                    maxWidth: '78cqw',
-                    fontFamily: `'Alright Sans', sans-serif`,
-                    fontSize: '7.6cqh',
-                    lineHeight: 1.3,
-                    fontWeight: 400,
-                    textAlign: 'center',
-                    textWrap: 'balance',
-                    color: '#fff',
-                    margin: 0,
-                }}
-            >
-                {renderText(text)}
-            </Typography>
-        </Box>
-        {reference && (
-            <Box
-                sx={{
-                    position: 'absolute',
-                    left: '5cqw',
-                    bottom: '5cqh',
-                    fontFamily: `'Alright Sans', sans-serif`,
-                    fontSize: '4.2cqh',
-                    fontWeight: 300,
-                    letterSpacing: '0.05em',
-                    color: 'rgba(255, 255, 255, 0.75)',
-                    lineHeight: 1,
-                }}
-            >
-                {reference}
-            </Box>
+        {!imageUrl && (
+            <>
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <Typography
+                        sx={{
+                            maxWidth: '78cqw',
+                            fontFamily: `'Alright Sans', sans-serif`,
+                            fontSize: '7.6cqh',
+                            lineHeight: 1.3,
+                            fontWeight: 400,
+                            textAlign: 'center',
+                            textWrap: 'balance',
+                            color: '#fff',
+                            margin: 0,
+                        }}
+                    >
+                        {renderText(text)}
+                    </Typography>
+                </Box>
+                {reference && (
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            left: '5cqw',
+                            bottom: '5cqh',
+                            fontFamily: `'Alright Sans', sans-serif`,
+                            fontSize: '4.2cqh',
+                            fontWeight: 300,
+                            letterSpacing: '0.05em',
+                            color: 'rgba(255, 255, 255, 0.75)',
+                            lineHeight: 1,
+                        }}
+                    >
+                        {reference}
+                    </Box>
+                )}
+            </>
         )}
     </Box>
 );

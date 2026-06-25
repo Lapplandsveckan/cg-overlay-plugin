@@ -22,6 +22,7 @@ import {
     type PlaybackState,
     slideRef,
     slideLabel,
+    slideText,
     useBackgroundImage,
 } from './api';
 import { useTranslation } from '../i18n';
@@ -260,7 +261,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                 </Tooltip>
                 <Box sx={{ flexGrow: 1 }}>
                     <SlidePreview
-                        text={current.text}
+                        text={slideText(current)}
                         reference={slideRef(current)}
                         backgroundUrl={backgroundUrl}
                     />
@@ -310,7 +311,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                     >
                         <Stack spacing={0.5}>
                             <SlidePreview
-                                text={slide.text}
+                                text={slideText(slide)}
                                 reference={slideRef(slide)}
                                 backgroundUrl={backgroundUrl}
                                 selected={slide.id === currentSlideId}
@@ -400,7 +401,7 @@ const PickerView: React.FC<PickerViewProps> = ({
                     <Stack spacing={0.75}>
                         <Box sx={{ position: 'relative' }}>
                             <SlidePreview
-                                text={slide.text}
+                                text={slideText(slide)}
                                 reference={slideRef(slide)}
                                 backgroundUrl={backgroundUrl}
                             />

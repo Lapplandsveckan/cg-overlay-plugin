@@ -26,6 +26,10 @@ export interface PresentationArmEvent {
     ts: number;
 }
 
+type SlideRender =
+    | { kind: 'text'; text: string; reference: string }
+    | { kind: 'image'; mediaId: string };
+
 export const CHANNELS = {
     MAIN: 1,
     VIDEO: 2,
@@ -66,6 +70,8 @@ export default class OverlayManager {
     private videoTransitionState = 0;
 
     private presentationEffect: PresentationOverlayEffect = null;
+    private presentationImageEffect: VideoEffect = null;
+    private presentationKind: 'text' | 'image' | null = null;
     private presentationState: PresentationPlaybackState = {
         playing: false,
         presentationId: null,
@@ -324,27 +330,87 @@ export default class OverlayManager {
     public playSlide(
         presentationId: string,
         slideId: string,
-        render: { text: string; reference: string },
+        render: SlideRender,
     ) {
         const wasPlaying = this.presentationState.playing;
+        const wasKind = this.presentationKind;
 
         this.presentationState = { playing: true, presentationId, slideId };
 
-        if (!this.presentationEffect) {
-            this.presentationEffect = this.api.createEffect(
-                'overlay-presentation',
-                getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION),
-                render,
-            ) as PresentationOverlayEffect;
-        } else {
-            this.presentationEffect.update(render);
-        }
+        if (render.kind === 'text') {
+            if (this.presentationImageEffect) {
+                this.presentationImageEffect.deactivate()?.catch(err => {
+                    this.logger.error(
+                        'Failed to deactivate presentation image effect',
+                    );
+                    this.logger.error(err);
+                });
+                this.presentationImageEffect = null;
+            }
 
-        if (!wasPlaying) {
-            this.presentationEffect.activate()?.catch(err => {
-                this.logger.error('Failed to activate presentation effect');
+            if (!this.presentationEffect) {
+                this.presentationEffect = this.api.createEffect(
+                    'overlay-presentation',
+                    getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION),
+                    { text: render.text, reference: render.reference },
+                ) as PresentationOverlayEffect;
+            } else {
+                this.presentationEffect.update({
+                    text: render.text,
+                    reference: render.reference,
+                });
+            }
+
+            if (!wasPlaying || wasKind !== 'text') {
+                this.presentationEffect.activate()?.catch(err => {
+                    this.logger.error('Failed to activate presentation effect');
+                    this.logger.error(err);
+                });
+            }
+
+            this.presentationKind = 'text';
+        } else {
+            const media = this.api.getFileDatabase().get(render.mediaId);
+            if (!media) {
+                this.logger.error(
+                    `Image slide media not found: ${render.mediaId}`,
+                );
+                return;
+            }
+
+            if (this.presentationImageEffect) {
+                this.presentationImageEffect.deactivate()?.catch(err => {
+                    this.logger.error(
+                        'Failed to deactivate presentation image effect',
+                    );
+                    this.logger.error(err);
+                });
+                this.presentationImageEffect = null;
+            }
+
+            if (wasKind === 'text' && this.presentationEffect) {
+                this.presentationEffect.deactivate()?.catch(err => {
+                    this.logger.error(
+                        'Failed to deactivate presentation effect',
+                    );
+                    this.logger.error(err);
+                });
+            }
+
+            this.presentationImageEffect = this.api.createEffect(
+                'lappis-video',
+                getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION),
+                { media, disposeOnStop: true, holdLastFrame: true },
+            ) as VideoEffect;
+
+            this.presentationImageEffect.activate()?.catch(err => {
+                this.logger.error(
+                    'Failed to activate presentation image effect',
+                );
                 this.logger.error(err);
             });
+
+            this.presentationKind = 'image';
         }
 
         this.broadcastPresentation();
@@ -358,12 +424,23 @@ export default class OverlayManager {
             presentationId: null,
             slideId: null,
         };
+        this.presentationKind = null;
 
         if (this.presentationEffect) {
             this.presentationEffect.deactivate()?.catch(err => {
                 this.logger.error('Failed to deactivate presentation effect');
                 this.logger.error(err);
             });
+        }
+
+        if (this.presentationImageEffect) {
+            this.presentationImageEffect.deactivate()?.catch(err => {
+                this.logger.error(
+                    'Failed to deactivate presentation image effect',
+                );
+                this.logger.error(err);
+            });
+            this.presentationImageEffect = null;
         }
 
         this.broadcastPresentation();
