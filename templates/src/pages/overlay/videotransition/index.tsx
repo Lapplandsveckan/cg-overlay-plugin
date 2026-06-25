@@ -5,12 +5,13 @@ import { handleState } from '../../../lib/overlay/videotransition/animation';
 import { getStylesProxy } from '../../../lib/animation';
 import { CG } from '../../../components/CG';
 
-export const VideoTransitionAnimation: React.FC<{ state: number }> = ({
-    state,
-}) => (
+export const VideoTransitionAnimation: React.FC<{
+    state: number;
+    direction: string;
+}> = ({ state, direction }) => (
     <CG
         state={state}
-        handle={handleState}
+        handle={(tl, s, p, st) => handleState(tl, s, p, st, direction)}
         labels={['start', 'end']}
         styles={getStylesProxy(styles)}
     >
@@ -26,9 +27,10 @@ export const VideoTransitionAnimation: React.FC<{ state: number }> = ({
 
 const Page = () => {
     const [state, setState] = useState(0);
-    useEffect(() => register(setState), []);
+    const [direction, setDirection] = useState('left');
+    useEffect(() => register(setState, setDirection), []);
 
-    return <VideoTransitionAnimation state={state} />;
+    return <VideoTransitionAnimation state={state} direction={direction} />;
 };
 
 export default Page;

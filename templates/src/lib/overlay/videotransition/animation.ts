@@ -3,8 +3,9 @@ export function handleState(
     state: number,
     prevState: number,
     styles: Record<string, string>,
+    direction: string,
 ) {
-    if (state === 0) handleHide(tl, styles);
+    if (state === 0) handleHide(tl, styles, direction);
     if (state === 1) handleShow(tl, styles);
 }
 
@@ -43,14 +44,19 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
     );
 }
 
-function handleHide(tl: gsap.core.Timeline, styles: Record<string, string>) {
-    // tl.clear();
+function handleHide(
+    tl: gsap.core.Timeline,
+    styles: Record<string, string>,
+    direction: string,
+) {
+    // Slide toward the screen's own edge so both sides exit outward.
+    const exitX = direction === 'right' ? '100%' : '-100%';
 
     // Move the logo
     tl.to(
         styles['banner-logo'],
         {
-            left: '-100%',
+            left: exitX,
             ease: 'power1.inOut',
             duration: 0.4,
         },
@@ -61,7 +67,7 @@ function handleHide(tl: gsap.core.Timeline, styles: Record<string, string>) {
     tl.to(
         styles.container,
         {
-            left: '-100%',
+            left: exitX,
             duration: 0.5,
         },
         'end',

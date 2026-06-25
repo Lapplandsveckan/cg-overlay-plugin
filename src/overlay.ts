@@ -1,4 +1,4 @@
-import { type Logger, type PluginAPI } from '@lappis/cg-manager';
+import { type Effect, type Logger, type PluginAPI } from '@lappis/cg-manager';
 import { type SwishOverlayEffect } from './effects/overlay/swish';
 import { type BarsOverlayEffect } from './effects/overlay/bars';
 import { type NamnskyltOverlayEffect } from './effects/overlay/namnskylt';
@@ -9,6 +9,7 @@ import {
 import { type VideoEffect } from './effects/misc/video';
 import type LappisOverlayPlugin from './index';
 import { type PresentationOverlayEffect } from './effects/overlay/presentation';
+import { SidePair } from './effects/side-pair';
 
 // Re-export the canonical slide type from the store; OverlayManager
 // stays narrow and only cares about (presentationId, slideId).
@@ -31,9 +32,12 @@ type SlideRender =
     | { kind: 'image'; mediaId: string };
 
 export const CHANNELS = {
-    MAIN: 1,
-    VIDEO: 2,
+    LEFT: 1,
+    RIGHT: 2,
+    VIDEO: 3,
 };
+
+export const MAIN_SIDES = [CHANNELS.LEFT, CHANNELS.RIGHT] as const;
 
 export const GROUPS = {
     BARS: 'bars',
@@ -56,21 +60,21 @@ export default class OverlayManager {
         this.logger = instance['logger'];
     }
 
-    private swish: SwishOverlayEffect = null;
+    private swish: SidePair<SwishOverlayEffect> = null;
     private swishState = -1;
 
-    private bars: BarsOverlayEffect = null;
+    private bars: SidePair<BarsOverlayEffect> = null;
     private barsState = 0;
 
-    private namnskylt: NamnskyltOverlayEffect = null;
+    private namnskylt: SidePair<NamnskyltOverlayEffect> = null;
 
     private insamling: InsamlingOverlayEffect = null;
     private insamlingState = 0;
 
     private videoTransitionState = 0;
 
-    private presentationEffect: PresentationOverlayEffect = null;
-    private presentationImageEffect: VideoEffect = null;
+    private presentationEffect: SidePair<PresentationOverlayEffect> = null;
+    private presentationImageEffect: SidePair<VideoEffect> = null;
     private presentationKind: 'text' | 'image' | null = null;
     private presentationState: PresentationPlaybackState = {
         playing: false,
@@ -78,20 +82,42 @@ export default class OverlayManager {
         slideId: null,
     };
 
-    public initialize() {
-        this.swish = this.api.createEffect(
-            'overlay-swish',
-            getGroup(CHANNELS.MAIN, GROUPS.OVERLAY),
-            {
-                number: '123 607 27 97',
-            },
-        ) as SwishOverlayEffect;
+    // Build a SidePair targeting LEFT and RIGHT channels with the given group.
+    // optsFor receives the channel number so per-side options (e.g. direction)
+    // can be derived from the side.
+    private makeSidePair<T extends Effect>(
+        effectName: string,
+        group: string,
+        optsFor: (channel: number) => object,
+    ): SidePair<T> {
+        return new SidePair<T>(
+            this.api.createEffect(
+                effectName,
+                getGroup(CHANNELS.LEFT, group),
+                optsFor(CHANNELS.LEFT),
+            ) as T,
+            this.api.createEffect(
+                effectName,
+                getGroup(CHANNELS.RIGHT, group),
+                optsFor(CHANNELS.RIGHT),
+            ) as T,
+            this.logger,
+        );
+    }
 
-        this.bars = this.api.createEffect(
+    public initialize() {
+        this.swish = this.makeSidePair(
+            'overlay-swish',
+            GROUPS.OVERLAY,
+            () => ({ number: '123 607 27 97' }),
+        );
+
+        this.bars = this.makeSidePair(
             'overlay-bars',
-            getGroup(CHANNELS.MAIN, GROUPS.BARS),
-            {},
-        ) as BarsOverlayEffect; // TODO: special group so it is underneeth all overlays
+            GROUPS.BARS,
+            () => ({}),
+        ); // TODO: special group so it is underneeth all overlays
+
         this.insamling = this.api.createEffect(
             'overlay-insamling',
             getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY),
@@ -191,26 +217,19 @@ export default class OverlayManager {
     }
 
     public showNamnskylt(name: string) {
-        this.namnskylt = this.api.createEffect(
+        this.namnskylt = this.makeSidePair(
             'overlay-namnskylt',
-            '1:overlay',
-            { name },
-        ) as NamnskyltOverlayEffect;
-
-        this.namnskylt.activate()?.catch(err => {
-            this.logger.error('Failed to activate namnskylt effect');
-            this.logger.error(err);
-        });
+            GROUPS.OVERLAY,
+            () => ({ name }),
+        );
+        this.namnskylt.activate();
     }
 
     public hideNamnskylt() {
         if (!this.namnskylt) return;
-        const effect = this.namnskylt;
+        const pair = this.namnskylt;
         this.namnskylt = null;
-        effect.deactivate()?.catch(err => {
-            this.logger.error('Failed to deactivate namnskylt effect');
-            this.logger.error(err);
-        });
+        pair.deactivate();
     }
 
     public toggleVideoTransition(skipIntro = false) {
@@ -222,15 +241,15 @@ export default class OverlayManager {
         this.videoTransitionState = 1;
         if (skipIntro) return;
 
-        const overlay = this.api.createEffect(
+        // Each side receives its outward slide direction.
+        const pair = this.makeSidePair(
             'overlay-videotransition',
-            '1:presentation',
-            {},
+            GROUPS.PRESENTATION,
+            channel => ({
+                direction: channel === CHANNELS.LEFT ? 'left' : 'right',
+            }),
         );
-        overlay.activate().catch(err => {
-            this.logger.error('Failed to activate videotransition effect');
-            this.logger.error(err);
-        });
+        pair.activate();
     }
 
     public toggleSwish(number?: string, labels?: string, skipFirst?: boolean) {
@@ -248,22 +267,13 @@ export default class OverlayManager {
 
         switch (this.swishState) {
             case 0:
-                this.swish.activate().catch(err => {
-                    this.logger.error('Failed to activate swish effect');
-                    this.logger.error(err);
-                });
+                this.swish.activate();
                 break;
             case 1:
-                this.swish.minimize().catch(err => {
-                    this.logger.error('Failed to activate swish effect');
-                    this.logger.error(err);
-                });
+                this.swish.each(e => e.minimize(), 'minimize');
                 break;
             case 2:
-                this.swish.deactivate().catch(err => {
-                    this.logger.error('Failed to deactivate swish effect');
-                    this.logger.error(err);
-                });
+                this.swish.deactivate();
                 break;
         }
     }
@@ -273,16 +283,10 @@ export default class OverlayManager {
 
         switch (this.barsState) {
             case 0:
-                this.bars.deactivate().catch(err => {
-                    this.logger.error('Failed to deactivate bars effect');
-                    this.logger.error(err);
-                });
+                this.bars.deactivate();
                 break;
             case 1:
-                this.bars.activate().catch(err => {
-                    this.logger.error('Failed to activate bars effect');
-                    this.logger.error(err);
-                });
+                this.bars.activate();
                 break;
         }
     }
@@ -345,21 +349,19 @@ export default class OverlayManager {
 
         if (render.kind === 'text') {
             if (this.presentationImageEffect) {
-                this.presentationImageEffect.deactivate()?.catch(err => {
-                    this.logger.error(
-                        'Failed to deactivate presentation image effect',
-                    );
-                    this.logger.error(err);
-                });
+                this.presentationImageEffect.deactivate();
                 this.presentationImageEffect = null;
             }
 
             if (!this.presentationEffect) {
-                this.presentationEffect = this.api.createEffect(
+                this.presentationEffect = this.makeSidePair(
                     'overlay-presentation',
-                    getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
-                    { text: render.text, reference: render.reference },
-                ) as PresentationOverlayEffect;
+                    GROUPS.PRESENTATION,
+                    () => ({
+                        text: render.text,
+                        reference: render.reference,
+                    }),
+                );
             } else {
                 this.presentationEffect.update({
                     text: render.text,
@@ -368,10 +370,7 @@ export default class OverlayManager {
             }
 
             if (!wasPlaying || wasKind !== 'text') {
-                this.presentationEffect.activate()?.catch(err => {
-                    this.logger.error('Failed to activate presentation effect');
-                    this.logger.error(err);
-                });
+                this.presentationEffect.activate();
             }
 
             this.presentationKind = 'text';
@@ -385,36 +384,21 @@ export default class OverlayManager {
             }
 
             if (this.presentationImageEffect) {
-                this.presentationImageEffect.deactivate()?.catch(err => {
-                    this.logger.error(
-                        'Failed to deactivate presentation image effect',
-                    );
-                    this.logger.error(err);
-                });
+                this.presentationImageEffect.deactivate();
                 this.presentationImageEffect = null;
             }
 
             if (wasKind === 'text' && this.presentationEffect) {
-                this.presentationEffect.deactivate()?.catch(err => {
-                    this.logger.error(
-                        'Failed to deactivate presentation effect',
-                    );
-                    this.logger.error(err);
-                });
+                this.presentationEffect.deactivate();
             }
 
-            this.presentationImageEffect = this.api.createEffect(
+            this.presentationImageEffect = this.makeSidePair(
                 'lappis-video',
-                getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
-                { media, disposeOnStop: true, holdLastFrame: true },
-            ) as VideoEffect;
+                GROUPS.PRESENTATION,
+                () => ({ media, disposeOnStop: true, holdLastFrame: true }),
+            );
 
-            this.presentationImageEffect.activate()?.catch(err => {
-                this.logger.error(
-                    'Failed to activate presentation image effect',
-                );
-                this.logger.error(err);
-            });
+            this.presentationImageEffect.activate();
 
             this.presentationKind = 'image';
         }
@@ -434,19 +418,11 @@ export default class OverlayManager {
         this.plugin.atem.returnToPreview();
 
         if (this.presentationEffect) {
-            this.presentationEffect.deactivate()?.catch(err => {
-                this.logger.error('Failed to deactivate presentation effect');
-                this.logger.error(err);
-            });
+            this.presentationEffect.deactivate();
         }
 
         if (this.presentationImageEffect) {
-            this.presentationImageEffect.deactivate()?.catch(err => {
-                this.logger.error(
-                    'Failed to deactivate presentation image effect',
-                );
-                this.logger.error(err);
-            });
+            this.presentationImageEffect.deactivate();
             this.presentationImageEffect = null;
         }
 
