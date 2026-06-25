@@ -42,6 +42,12 @@ export class AtemManager {
         this.connection.changeProgramInput(previewInput);
     }
 
+    public ensureVideoProgram() {
+        if (!this.connected) return;
+        if (this.state.programInput !== config.atem.videoInput)
+            this.setVideoProgram();
+    }
+
     private get state() {
         return this.connection.state.video.mixEffects[0];
     }

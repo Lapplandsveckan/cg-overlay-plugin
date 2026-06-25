@@ -88,6 +88,7 @@ export default class OverlayManager {
 
     private presentationEffect: PresentationOverlayEffect = null;
     private presentationImageEffect: VideoEffect = null;
+    private presentationWallRoute: RouteEffect = null;
     private presentationKind: 'text' | 'image' | null = null;
     private presentationState: PresentationPlaybackState = {
         playing: false,
@@ -147,6 +148,11 @@ export default class OverlayManager {
         if (this.videoTransition) {
             this.videoTransition.dispose();
             this.videoTransition = null;
+        }
+
+        if (this.presentationWallRoute) {
+            this.presentationWallRoute.dispose();
+            this.presentationWallRoute = null;
         }
 
         if (this.presentationEffect) {
@@ -474,6 +480,28 @@ export default class OverlayManager {
 
         this.presentationState = { playing: true, presentationId, slideId };
 
+        // On first slide: route ch2 → wall and grab ATEM.
+        // On subsequent slides: re-grab ATEM only if operator cut away.
+        if (!this.presentationWallRoute) {
+            const width = 0.54;
+            this.presentationWallRoute = this.api.createEffect(
+                'lappis-route',
+                getGroup(CHANNELS.WALL, GROUPS.VIDEO),
+                {
+                    source: new BasicChannel(CHANNELS.VIDEO),
+                    transform: [0, 0, 1, 1, 0.5 - width / 2, 0, 0.5 + width / 2, 1],
+                    disposeOnStop: true,
+                },
+            ) as RouteEffect;
+            this.presentationWallRoute.activate()?.catch(err => {
+                this.logger.error('Failed to activate presentation wall route');
+                this.logger.error(err);
+            });
+            this.plugin.atem.setVideoProgram();
+        } else {
+            this.plugin.atem.ensureVideoProgram();
+        }
+
         if (render.kind === 'text') {
             if (this.presentationImageEffect) {
                 this.presentationImageEffect.deactivate()?.catch(err => {
@@ -488,7 +516,7 @@ export default class OverlayManager {
             if (!this.presentationEffect) {
                 this.presentationEffect = this.api.createEffect(
                     'overlay-presentation',
-                    getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION),
+                    getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
                     { text: render.text, reference: render.reference },
                 ) as PresentationOverlayEffect;
             } else {
@@ -536,7 +564,7 @@ export default class OverlayManager {
 
             this.presentationImageEffect = this.api.createEffect(
                 'lappis-video',
-                getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION),
+                getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
                 { media, disposeOnStop: true, holdLastFrame: true },
             ) as VideoEffect;
 
@@ -562,6 +590,17 @@ export default class OverlayManager {
             slideId: null,
         };
         this.presentationKind = null;
+
+        if (this.presentationWallRoute) {
+            this.presentationWallRoute.deactivate()?.catch(err => {
+                this.logger.error(
+                    'Failed to deactivate presentation wall route',
+                );
+                this.logger.error(err);
+            });
+            this.presentationWallRoute = null;
+            this.plugin.atem.returnToPreview();
+        }
 
         if (this.presentationEffect) {
             this.presentationEffect.deactivate()?.catch(err => {
