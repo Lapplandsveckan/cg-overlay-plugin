@@ -35,7 +35,7 @@ import {
 import { VideoEffect, type VideoEffectOptions } from './effects/misc/video';
 import VideoManager from './video';
 import { RouteEffect, type RouteEffectOptions } from './effects/misc/route';
-import OverlayManager, { CHANNELS, getGroup, GROUPS } from './overlay';
+import OverlayManager, { CHANNELS, getGroup, GROUPS, MAIN_SIDES } from './overlay';
 import { getVerseSlides, type VerseLookup } from './bible';
 import { AtemManager } from './atem';
 import { config } from './config';
@@ -66,7 +66,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     public static get minChannels() {
-        return 2;
+        return 3;
     }
 
     public getInjectionZone(zone: UI_INJECTION_ZONE, key: string) {
@@ -315,10 +315,12 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     public registerEffectGroups() {
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.VIDEO)); // main video
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.BARS)); // main video
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.OVERLAY)); // main overlay
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION)); // main presentation
+        for (const side of MAIN_SIDES) {
+            this.api.getEffectGroup(getGroup(side, GROUPS.VIDEO));
+            this.api.getEffectGroup(getGroup(side, GROUPS.BARS));
+            this.api.getEffectGroup(getGroup(side, GROUPS.OVERLAY));
+            this.api.getEffectGroup(getGroup(side, GROUPS.PRESENTATION));
+        }
 
         this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.VIDEO)); // video-out
         this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY)); // video-out

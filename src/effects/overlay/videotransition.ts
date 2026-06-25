@@ -1,7 +1,8 @@
 import { CgCommand, Effect, type EffectGroup } from '@lappis/cg-manager';
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface VideoTransitionOverlayEffectOptions {}
+export interface VideoTransitionOverlayEffectOptions {
+    direction?: 'left' | 'right';
+}
 
 export class VideoTransitionOverlayEffect extends Effect {
     private options: VideoTransitionOverlayEffectOptions;
@@ -17,7 +18,8 @@ export class VideoTransitionOverlayEffect extends Effect {
         this.allocateLayers(1);
         this.executor.executeAllocations();
 
-        const cmd = CgCommand.add(template, false);
+        // Pass direction to the template so the animation knows which way to slide.
+        const cmd = CgCommand.add(template, false, { direction: options.direction ?? 'left' });
         cmd.allocate(this.layer);
 
         this.executor.execute(cmd);
@@ -51,6 +53,6 @@ export class VideoTransitionOverlayEffect extends Effect {
     }
 
     public getMetadata(): Record<string, unknown> {
-        return {};
+        return { direction: this.options.direction };
     }
 }
