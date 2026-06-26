@@ -1,11 +1,15 @@
 import { type Effect, type Logger } from '@lappis/cg-manager';
 
 export class SidePair<T extends Effect> {
-    constructor(
-        public readonly left: T,
-        public readonly right: T,
-        private logger: Logger,
-    ) {}
+    readonly left: T;
+    readonly right: T;
+    private logger: Logger;
+
+    constructor(left: T, right: T, logger: Logger) {
+        this.left = left;
+        this.right = right;
+        this.logger = logger;
+    }
 
     private fan(label: string, fn: (e: T) => unknown) {
         return Promise.all([fn(this.left), fn(this.right)]).catch(err => {
