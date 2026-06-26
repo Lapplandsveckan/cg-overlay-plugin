@@ -68,8 +68,8 @@ export default class OverlayManager {
 
     private videoTransitionState = 0;
 
-    private presentationEffect: SidePair<PresentationOverlayEffect> = null;
-    private presentationImageEffect: SidePair<VideoEffect> = null;
+    private presentationEffect: PresentationOverlayEffect = null;
+    private presentationImageEffect: VideoEffect = null;
     private presentationKind: 'text' | 'image' | null = null;
     private presentationState: PresentationPlaybackState = {
         playing: false,
@@ -326,14 +326,11 @@ export default class OverlayManager {
             }
 
             if (!this.presentationEffect) {
-                this.presentationEffect = this.makeSidePair(
+                this.presentationEffect = this.api.createEffect(
                     'overlay-presentation',
-                    GROUPS.PRESENTATION,
-                    () => ({
-                        text: render.text,
-                        reference: render.reference,
-                    }),
-                );
+                    getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
+                    { text: render.text, reference: render.reference },
+                ) as PresentationOverlayEffect;
             } else {
                 this.presentationEffect.update({
                     text: render.text,
@@ -364,11 +361,11 @@ export default class OverlayManager {
                 this.presentationEffect.deactivate();
             }
 
-            this.presentationImageEffect = this.makeSidePair(
+            this.presentationImageEffect = this.api.createEffect(
                 'lappis-video',
-                GROUPS.PRESENTATION,
-                () => ({ media, disposeOnStop: true, holdLastFrame: true }),
-            );
+                getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
+                { media, disposeOnStop: true, holdLastFrame: true },
+            ) as VideoEffect;
 
             this.presentationImageEffect.activate();
 
