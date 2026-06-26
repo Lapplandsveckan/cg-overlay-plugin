@@ -168,7 +168,8 @@
         "prev": "Föregående (←)",
         "next": "Nästa (→ / Mellanslag)",
         "noSlides": "Inga slides att spela.",
-        "startFromHere": "Starta härifrån"
+        "startFromHere": "Starta härifrån",
+        "grabAttentionHint": "Byt till sliden i mixern vid byte. Håll Shift för att invertera för ett enda steg."
     },
     "presentationIndex": {
         "heading": "Presentationer",

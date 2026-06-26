@@ -123,11 +123,14 @@ export const SlidesRundownItem: React.FC<SlidesRundownItemProps> = ({
                 onStop={() => {
                     stopPlayback(conn).catch(console.error);
                 }}
-                onPlay={slideId => {
+                onPlay={(slideId, grabAttention) => {
                     if (!presentationId) return;
-                    playSlide(conn, presentationId, slideId).catch(
-                        console.error,
-                    );
+                    playSlide(
+                        conn,
+                        presentationId,
+                        slideId,
+                        grabAttention,
+                    ).catch(console.error);
                 }}
             />
         </>

@@ -168,7 +168,8 @@
         "prev": "Previous (←)",
         "next": "Next (→ / Space)",
         "noSlides": "No slides to play.",
-        "startFromHere": "Start from here"
+        "startFromHere": "Start from here",
+        "grabAttentionHint": "Cut the switcher to the slide on change. Hold Shift to invert for one advance."
     },
     "presentationIndex": {
         "heading": "Presentations",

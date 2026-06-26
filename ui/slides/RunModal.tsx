@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+/* eslint-disable max-lines */
+import React, { useEffect, useState } from 'react';
 import {
     Box,
     Button,
@@ -14,6 +15,8 @@ import {
 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import FlashOffIcon from '@mui/icons-material/FlashOff';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SlidePreview from './SlidePreview';
 import {
@@ -34,7 +37,7 @@ export interface RunModalProps {
 
     onClose: () => void;
     onStop: () => void;
-    onPlay: (slideId: string) => void;
+    onPlay: (slideId: string, grabAttention: boolean) => void;
 }
 
 export const RunModal: React.FC<RunModalProps> = ({
@@ -48,6 +51,7 @@ export const RunModal: React.FC<RunModalProps> = ({
     const { t } = useTranslation('cg-overlay-plugin');
     const slides = presentation?.slides ?? [];
     const backgroundUrl = useBackgroundImage();
+    const [grabAttention, setGrabAttention] = useState(true);
 
     // "Playing here" = backend reports playing AND the playing presentation
     // matches the one this modal is currently controlling.
@@ -63,16 +67,20 @@ export const RunModal: React.FC<RunModalProps> = ({
     const atStart = currentIndex <= 0;
     const atEnd = currentIndex < 0 || currentIndex >= slides.length - 1;
 
-    const handleNext = () => {
-        if (!playingHere) return;
-        const next = slides[currentIndex + 1];
-        if (next) onPlay(next.id);
+    const play = (slideId: string, shiftHeld = false) => {
+        onPlay(slideId, shiftHeld ? !grabAttention : grabAttention);
     };
 
-    const handlePrev = () => {
+    const handleNext = (shiftHeld = false) => {
+        if (!playingHere) return;
+        const next = slides[currentIndex + 1];
+        if (next) play(next.id, shiftHeld);
+    };
+
+    const handlePrev = (shiftHeld = false) => {
         if (!playingHere) return;
         const prev = slides[currentIndex - 1];
-        if (prev) onPlay(prev.id);
+        if (prev) play(prev.id, shiftHeld);
     };
 
     useEffect(() => {
@@ -100,16 +108,16 @@ export const RunModal: React.FC<RunModalProps> = ({
                 e.key === 'PageDown'
             ) {
                 e.preventDefault();
-                if (!atEnd) handleNext();
+                if (!atEnd) handleNext(e.shiftKey);
             } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
                 e.preventDefault();
-                if (!atStart) handlePrev();
+                if (!atStart) handlePrev(e.shiftKey);
             }
         };
 
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
-    }, [open, playingHere, atStart, atEnd, currentIndex]);
+    }, [open, playingHere, atStart, atEnd, currentIndex, grabAttention]);
 
     const thumbnailRef = useThumbnailScroll(
         playingHere ? (playback?.slideId ?? null) : null,
@@ -150,6 +158,20 @@ export const RunModal: React.FC<RunModalProps> = ({
                         )}
                     </Stack>
                     <Stack direction="row" spacing={1} alignItems="center">
+                        <Tooltip title={t('runModal.grabAttentionHint')}>
+                            <IconButton
+                                size="small"
+                                onClick={() => setGrabAttention(g => !g)}
+                                color={grabAttention ? 'warning' : 'default'}
+                                sx={{ opacity: grabAttention ? 1 : 0.5 }}
+                            >
+                                {grabAttention ? (
+                                    <FlashOnIcon sx={{ fontSize: 20 }} />
+                                ) : (
+                                    <FlashOffIcon sx={{ fontSize: 20 }} />
+                                )}
+                            </IconButton>
+                        </Tooltip>
                         {playingHere && (
                             <Typography variant="body2" color="text.secondary">
                                 {`${currentIndex + 1} / ${slides.length}`}
@@ -196,14 +218,18 @@ export const RunModal: React.FC<RunModalProps> = ({
                         atEnd={atEnd}
                         thumbnailRef={thumbnailRef}
                         backgroundUrl={backgroundUrl}
-                        onNext={handleNext}
-                        onPrev={handlePrev}
-                        onJump={onPlay}
+                        onNext={shiftHeld => handleNext(shiftHeld)}
+                        onPrev={shiftHeld => handlePrev(shiftHeld)}
+                        onJump={(slideId, shiftHeld) =>
+                            play(slideId, shiftHeld)
+                        }
                     />
                 ) : (
                     <PickerView
                         slides={slides}
-                        onPlay={onPlay}
+                        onPlay={(slideId, shiftHeld) =>
+                            play(slideId, shiftHeld)
+                        }
                         backgroundUrl={backgroundUrl}
                     />
                 )}
@@ -220,9 +246,9 @@ interface PlayingViewProps {
     atEnd: boolean;
     thumbnailRef: React.RefObject<HTMLDivElement>;
     backgroundUrl?: string | null;
-    onNext: () => void;
-    onPrev: () => void;
-    onJump: (slideId: string) => void;
+    onNext: (shiftHeld: boolean) => void;
+    onPrev: (shiftHeld: boolean) => void;
+    onJump: (slideId: string, shiftHeld: boolean) => void;
 }
 
 const PlayingView: React.FC<PlayingViewProps> = ({
@@ -244,7 +270,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                 <Tooltip title={t('runModal.prev')}>
                     <span>
                         <IconButton
-                            onClick={onPrev}
+                            onClick={e => onPrev(e.shiftKey)}
                             disabled={atStart}
                             sx={{
                                 width: 56,
@@ -270,7 +296,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                 <Tooltip title={t('runModal.next')}>
                     <span>
                         <IconButton
-                            onClick={onNext}
+                            onClick={e => onNext(e.shiftKey)}
                             disabled={atEnd}
                             sx={{
                                 width: 56,
@@ -302,7 +328,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                     <Box
                         key={slide.id}
                         data-slide-thumb-id={slide.id}
-                        onClick={() => onJump(slide.id)}
+                        onClick={e => onJump(slide.id, e.shiftKey)}
                         sx={{
                             flexShrink: 0,
                             width: 200,
@@ -340,7 +366,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
 interface PickerViewProps {
     slides: Slide[];
     backgroundUrl?: string | null;
-    onPlay: (slideId: string) => void;
+    onPlay: (slideId: string, shiftHeld: boolean) => void;
 }
 
 const PickerView: React.FC<PickerViewProps> = ({
@@ -377,13 +403,13 @@ const PickerView: React.FC<PickerViewProps> = ({
             {slides.map((slide, idx) => (
                 <Box
                     key={slide.id}
-                    onClick={() => onPlay(slide.id)}
+                    onClick={e => onPlay(slide.id, e.shiftKey)}
                     role="button"
                     tabIndex={0}
                     onKeyDown={e => {
                         if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            onPlay(slide.id);
+                            onPlay(slide.id, e.shiftKey);
                         }
                     }}
                     sx={{

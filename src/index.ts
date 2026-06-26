@@ -446,6 +446,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                     action: string;
                     presentationId?: string;
                     slideId?: string;
+                    grabAttention?: boolean;
                 };
                 switch (data.action) {
                     case 'play': {
@@ -459,20 +460,28 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                             s => s.id === data.slideId,
                         );
                         if (!slide) return null;
+                        const grab = data.grabAttention ?? true;
                         if (slide.type === 'image') {
-                            this.overlay.playSlide(presentation.id, slide.id, {
-                                kind: 'image',
-                                mediaId: slide.mediaId,
-                            });
+                            this.overlay.playSlide(
+                                presentation.id,
+                                slide.id,
+                                { kind: 'image', mediaId: slide.mediaId },
+                                grab,
+                            );
                         } else {
-                            this.overlay.playSlide(presentation.id, slide.id, {
-                                kind: 'text',
-                                text: slide.text,
-                                reference:
-                                    slide.type === 'bible'
-                                        ? slide.reference
-                                        : '',
-                            });
+                            this.overlay.playSlide(
+                                presentation.id,
+                                slide.id,
+                                {
+                                    kind: 'text',
+                                    text: slide.text,
+                                    reference:
+                                        slide.type === 'bible'
+                                            ? slide.reference
+                                            : '',
+                                },
+                                grab,
+                            );
                         }
                         break;
                     }

@@ -149,12 +149,14 @@ export function playSlide(
     conn: any,
     presentationId: string,
     slideId: string,
+    grabAttention = true,
 ): Promise<PlaybackState | null> {
     return conn
         .rawRequest(`${ROOT}/slides`, 'ACTION', {
             action: 'play',
             presentationId,
             slideId,
+            grabAttention,
         })
         .then((res: any) => res?.data ?? null);
 }

@@ -329,16 +329,19 @@ export default class OverlayManager {
         presentationId: string,
         slideId: string,
         render: SlideRender,
+        grabAttention = true,
     ) {
         const wasPlaying = this.presentationState.playing;
         const wasKind = this.presentationKind;
 
         this.presentationState = { playing: true, presentationId, slideId };
 
-        if (!wasPlaying) {
-            this.plugin.atem.setVideoProgram();
-        } else {
-            this.plugin.atem.ensureVideoProgram();
+        if (grabAttention) {
+            if (!wasPlaying) {
+                this.plugin.atem.setVideoProgram();
+            } else {
+                this.plugin.atem.ensureVideoProgram();
+            }
         }
 
         if (render.kind === 'text') {
