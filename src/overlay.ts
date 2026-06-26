@@ -1,6 +1,5 @@
 import { type Effect, type Logger, type PluginAPI } from '@lappis/cg-manager';
 import { type SwishOverlayEffect } from './effects/overlay/swish';
-import { type BarsOverlayEffect } from './effects/overlay/bars';
 import { type NamnskyltOverlayEffect } from './effects/overlay/namnskylt';
 import {
     type InsamlingOverlayEffect,
@@ -40,7 +39,6 @@ export const CHANNELS = {
 export const MAIN_SIDES = [CHANNELS.LEFT, CHANNELS.RIGHT] as const;
 
 export const GROUPS = {
-    BARS: 'bars',
     OVERLAY: 'overlay',
     VIDEO: 'video',
     PRESENTATION: 'presentation',
@@ -62,9 +60,6 @@ export default class OverlayManager {
 
     private swish: SidePair<SwishOverlayEffect> = null;
     private swishState = -1;
-
-    private bars: SidePair<BarsOverlayEffect> = null;
-    private barsState = 0;
 
     private namnskylt: SidePair<NamnskyltOverlayEffect> = null;
 
@@ -110,8 +105,6 @@ export default class OverlayManager {
             number: '123 607 27 97',
         }));
 
-        this.bars = this.makeSidePair('overlay-bars', GROUPS.BARS, () => ({})); // TODO: special group so it is underneeth all overlays
-
         this.insamling = this.api.createEffect(
             'overlay-insamling',
             getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY),
@@ -123,11 +116,6 @@ export default class OverlayManager {
         if (this.swish) {
             this.swish.dispose();
             this.swish = null;
-        }
-
-        if (this.bars) {
-            this.bars.dispose();
-            this.bars = null;
         }
 
         if (this.insamling) {
@@ -268,19 +256,6 @@ export default class OverlayManager {
                 break;
             case 2:
                 this.swish.deactivate();
-                break;
-        }
-    }
-
-    public toggleBars() {
-        this.barsState = 1 - this.barsState;
-
-        switch (this.barsState) {
-            case 0:
-                this.bars.deactivate();
-                break;
-            case 1:
-                this.bars.activate();
                 break;
         }
     }

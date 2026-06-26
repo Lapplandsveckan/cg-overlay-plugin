@@ -1,11 +1,4 @@
 {
-    "bars": {
-        "heading": "Bars",
-        "description": "Växla kinematografiska letterbox-bars i utdatan.",
-        "titleLabel": "Titel",
-        "titleHelper": "Visas i rundown:en.",
-        "cinematicBars": "Kinematografiska bars"
-    },
     "namnskylt": {
         "heading": "Namnskylt",
         "nameLabel": "Namn",

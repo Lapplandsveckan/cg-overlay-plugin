@@ -21,10 +21,6 @@ import {
     type VideoTransitionOverlayEffectOptions,
 } from './effects/overlay/videotransition';
 import {
-    BarsOverlayEffect,
-    type BarsOverlayEffectOptions,
-} from './effects/overlay/bars';
-import {
     InsamlingOverlayEffect,
     type InsamlingOverlayEffectOptions,
 } from './effects/overlay/insamling';
@@ -179,16 +175,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
 
         this.api.registerEffect(
-            'overlay-bars',
-            (group, options) =>
-                new BarsOverlayEffect(
-                    group,
-                    options as BarsOverlayEffectOptions,
-                    this.templates.getFilePath('overlay/bars'),
-                ),
-        );
-
-        this.api.registerEffect(
             'overlay-insamling',
             (group, options) =>
                 new InsamlingOverlayEffect(
@@ -284,10 +270,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             this.overlay.toggleSwish(number, labels, skipFirst);
         });
 
-        registerRundownAction('bars', async () => {
-            this.overlay.toggleBars();
-        });
-
         registerRundownAction('insamling', async rundown => {
             this.overlay.toggleInsamling(rundown.data);
         });
@@ -322,7 +304,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public registerEffectGroups() {
         for (const side of MAIN_SIDES) {
             this.api.getEffectGroup(getGroup(side, GROUPS.VIDEO));
-            this.api.getEffectGroup(getGroup(side, GROUPS.BARS));
             this.api.getEffectGroup(getGroup(side, GROUPS.OVERLAY));
             this.api.getEffectGroup(getGroup(side, GROUPS.PRESENTATION));
         }
@@ -335,14 +316,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public registerRoutes() {
         const bgData = buildBackgroundData(__dirname);
         this.api.registerRoute('assets/background', async () => bgData, 'GET');
-
-        this.api.registerRoute(
-            'bars',
-            async () => {
-                this.overlay.toggleBars();
-            },
-            'ACTION',
-        );
 
         this.api.registerRoute(
             'swish',
