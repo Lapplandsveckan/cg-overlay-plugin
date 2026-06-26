@@ -22,13 +22,34 @@ import SlidePreview from './SlidePreview';
 import {
     type Presentation,
     type Slide,
+    type ImageSlide,
     type PlaybackState,
     slideRef,
     slideLabel,
     slideText,
     useBackgroundImage,
+    useImageThumbnails,
 } from './api';
+
 import { useTranslation } from '../i18n';
+
+function slidePreviewProps(
+    slide: Slide,
+    thumbnails: Record<string, string>,
+    backgroundUrl?: string | null,
+) {
+    if (slide.type === 'image')
+        return {
+            imageUrl: (thumbnails[(slide as ImageSlide).mediaId] ?? null) as
+                | string
+                | null,
+        };
+    return {
+        text: slideText(slide),
+        reference: slideRef(slide),
+        backgroundUrl,
+    };
+}
 
 export interface RunModalProps {
     open: boolean;
@@ -52,6 +73,10 @@ export const RunModal: React.FC<RunModalProps> = ({
     const slides = presentation?.slides ?? [];
     const backgroundUrl = useBackgroundImage();
     const [grabAttention, setGrabAttention] = useState(true);
+    const imageMediaIds = slides
+        .filter((s): s is ImageSlide => s.type === 'image')
+        .map(s => s.mediaId);
+    const thumbnails = useImageThumbnails(imageMediaIds);
 
     // "Playing here" = backend reports playing AND the playing presentation
     // matches the one this modal is currently controlling.
@@ -218,6 +243,7 @@ export const RunModal: React.FC<RunModalProps> = ({
                         atEnd={atEnd}
                         thumbnailRef={thumbnailRef}
                         backgroundUrl={backgroundUrl}
+                        thumbnails={thumbnails}
                         onNext={shiftHeld => handleNext(shiftHeld)}
                         onPrev={shiftHeld => handlePrev(shiftHeld)}
                         onJump={(slideId, shiftHeld) =>
@@ -231,6 +257,7 @@ export const RunModal: React.FC<RunModalProps> = ({
                             play(slideId, shiftHeld)
                         }
                         backgroundUrl={backgroundUrl}
+                        thumbnails={thumbnails}
                     />
                 )}
             </DialogContent>
@@ -246,6 +273,7 @@ interface PlayingViewProps {
     atEnd: boolean;
     thumbnailRef: React.RefObject<HTMLDivElement>;
     backgroundUrl?: string | null;
+    thumbnails: Record<string, string>;
     onNext: (shiftHeld: boolean) => void;
     onPrev: (shiftHeld: boolean) => void;
     onJump: (slideId: string, shiftHeld: boolean) => void;
@@ -259,6 +287,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
     atEnd,
     thumbnailRef,
     backgroundUrl,
+    thumbnails,
     onNext,
     onPrev,
     onJump,
@@ -288,9 +317,11 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                 </Tooltip>
                 <Box sx={{ flexGrow: 1 }}>
                     <SlidePreview
-                        text={slideText(current)}
-                        reference={slideRef(current)}
-                        backgroundUrl={backgroundUrl}
+                        {...slidePreviewProps(
+                            current,
+                            thumbnails,
+                            backgroundUrl,
+                        )}
                     />
                 </Box>
                 <Tooltip title={t('runModal.next')}>
@@ -338,9 +369,11 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                     >
                         <Stack spacing={0.5}>
                             <SlidePreview
-                                text={slideText(slide)}
-                                reference={slideRef(slide)}
-                                backgroundUrl={backgroundUrl}
+                                {...slidePreviewProps(
+                                    slide,
+                                    thumbnails,
+                                    backgroundUrl,
+                                )}
                                 selected={slide.id === currentSlideId}
                                 dimmed={slide.id !== currentSlideId}
                             />
@@ -366,12 +399,14 @@ const PlayingView: React.FC<PlayingViewProps> = ({
 interface PickerViewProps {
     slides: Slide[];
     backgroundUrl?: string | null;
+    thumbnails: Record<string, string>;
     onPlay: (slideId: string, shiftHeld: boolean) => void;
 }
 
 const PickerView: React.FC<PickerViewProps> = ({
     slides,
     backgroundUrl,
+    thumbnails,
     onPlay,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
@@ -428,9 +463,11 @@ const PickerView: React.FC<PickerViewProps> = ({
                     <Stack spacing={0.75}>
                         <Box sx={{ position: 'relative' }}>
                             <SlidePreview
-                                text={slideText(slide)}
-                                reference={slideRef(slide)}
-                                backgroundUrl={backgroundUrl}
+                                {...slidePreviewProps(
+                                    slide,
+                                    thumbnails,
+                                    backgroundUrl,
+                                )}
                             />
                             <Box
                                 className="picker-overlay"

@@ -12,6 +12,7 @@ import {
     slideRef,
     slideText,
     useBackgroundImage,
+    useImageThumbnails,
     usePresentations,
 } from './slides/api';
 import { slidesEditorUrl, pluginHomeUrl } from './slides/urls';
@@ -26,6 +27,9 @@ const PresentationCard: React.FC<PresentationCardProps> = ({
     const { t } = useTranslation('cg-overlay-plugin');
     const firstSlide = presentation.slides[0];
     const backgroundUrl = useBackgroundImage();
+    const coverMediaIds =
+        firstSlide?.type === 'image' ? [firstSlide.mediaId] : [];
+    const coverThumbs = useImageThumbnails(coverMediaIds);
     return (
         <Box
             draggable
@@ -66,11 +70,19 @@ const PresentationCard: React.FC<PresentationCardProps> = ({
                     }}
                 >
                     {firstSlide ? (
-                        <SlidePreview
-                            text={slideText(firstSlide)}
-                            reference={slideRef(firstSlide)}
-                            backgroundUrl={backgroundUrl}
-                        />
+                        firstSlide.type === 'image' ? (
+                            <SlidePreview
+                                imageUrl={
+                                    coverThumbs[firstSlide.mediaId] ?? null
+                                }
+                            />
+                        ) : (
+                            <SlidePreview
+                                text={slideText(firstSlide)}
+                                reference={slideRef(firstSlide)}
+                                backgroundUrl={backgroundUrl}
+                            />
+                        )
                     ) : (
                         <Box
                             sx={{

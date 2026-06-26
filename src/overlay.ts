@@ -306,6 +306,7 @@ export default class OverlayManager {
         render: SlideRender,
         grabAttention = true,
     ) {
+        const prevState = { ...this.presentationState };
         const wasPlaying = this.presentationState.playing;
         const wasKind = this.presentationKind;
 
@@ -347,8 +348,17 @@ export default class OverlayManager {
             const media = this.api.getFileDatabase().get(render.mediaId);
             if (!media) {
                 this.logger.error(
-                    `Image slide media not found: ${render.mediaId}`,
+                    `Image slide media not found: "${render.mediaId}" — ` +
+                        `check CasparCG has scanned the file (scan-timing race?) ` +
+                        `or that the mediaId casing is correct`,
                 );
+                // Restore pre-call state: no effects were touched yet, so only
+                // undo the state mutation and the ATEM switch we may have made.
+                this.presentationState = prevState;
+                if (!wasPlaying && grabAttention) {
+                    this.plugin.atem.returnToPreview();
+                }
+                this.broadcastPresentation();
                 return;
             }
 

@@ -2,6 +2,54 @@ import { useEffect, useState } from 'react';
 
 import { useSocket } from '@web-lib';
 
+// ---------- Thumbnail helpers ----------
+
+function bytesToBase64(bytes: number[]): string {
+    const CHUNK = 0x8000;
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += CHUNK)
+        binary += String.fromCharCode.apply(null, bytes.slice(i, i + CHUNK));
+    return btoa(binary);
+}
+
+export function buildThumbnailUrl(clip: any): string | null {
+    const thumb = clip?._attachments?.['thumb.png'];
+    if (!thumb) return null;
+    return `data:${thumb.content_type};base64,${bytesToBase64(thumb.data.data)}`;
+}
+
+export function useImageThumbnails(mediaIds: string[]): Record<string, string> {
+    const conn = useSocket();
+    const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        if (mediaIds.length === 0) {
+            setThumbnails({});
+            return;
+        }
+
+        const refresh = () =>
+            (conn as any).caspar
+                .getMedia()
+                .then((media: Map<string, any>) => {
+                    const map: Record<string, string> = {};
+                    for (const [mid, item] of media) {
+                        const url = buildThumbnailUrl(item);
+                        if (url) map[mid] = url;
+                    }
+                    setThumbnails(map);
+                })
+                .catch(console.error);
+
+        refresh();
+        (conn as any).caspar.on('media', refresh);
+        return () => (conn as any).caspar.off('media', refresh);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mediaIds.join(',')]);
+
+    return thumbnails;
+}
+
 export interface BibleSlide {
     type: 'bible';
     id: string;

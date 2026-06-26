@@ -423,16 +423,31 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                 };
                 switch (data.action) {
                     case 'play': {
-                        if (!data.presentationId || !data.slideId) return null;
+                        if (!data.presentationId || !data.slideId) {
+                            this.logger.warn(
+                                'slides play: missing presentationId or slideId',
+                            );
+                            return null;
+                        }
                         await this.presentations.ready;
                         const presentation = this.presentations.get(
                             data.presentationId,
                         );
-                        if (!presentation) return null;
+                        if (!presentation) {
+                            this.logger.warn(
+                                `slides play: presentation ${data.presentationId} not found`,
+                            );
+                            return null;
+                        }
                         const slide = presentation.slides.find(
                             s => s.id === data.slideId,
                         );
-                        if (!slide) return null;
+                        if (!slide) {
+                            this.logger.warn(
+                                `slides play: slide ${data.slideId} not found`,
+                            );
+                            return null;
+                        }
                         const grab = data.grabAttention ?? true;
                         if (slide.type === 'image') {
                             this.overlay.playSlide(

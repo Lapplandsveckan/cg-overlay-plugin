@@ -38,22 +38,17 @@ import {
     type ImageSlide,
     type Slide,
     type TextSlide,
+    buildThumbnailUrl,
     slideLabel,
     updatePresentation,
     deletePresentation,
     usePresentation,
     useBackgroundImage,
+    useImageThumbnails,
     fetchBibleSlides,
 } from './api';
 import { BOOKS, TRANSLATIONS } from './bible-api';
 import { pluginHomeUrl } from './urls';
-
-function buildThumbnailUrl(clip: any): string | null {
-    const thumb = clip?._attachments?.['thumb.png'];
-    if (!thumb) return null;
-    const base64 = btoa(String.fromCharCode(...thumb.data.data));
-    return `data:${thumb.content_type};base64,${base64}`;
-}
 
 function isImageMedia(item: any): boolean {
     if (!item.mediainfo?.streams) return false;
@@ -247,10 +242,6 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
     const [editing, setEditing] = useState<Slide | null>(null);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [imageThumbnails, setImageThumbnails] = useState<
-        Record<string, string>
-    >({});
-
     const imageMediaIds = useMemo(
         () =>
             (remote?.slides ?? [])
@@ -258,27 +249,7 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                 .map(s => (s as ImageSlide).mediaId),
         [remote?.slides],
     );
-
-    useEffect(() => {
-        if (imageMediaIds.length === 0) return;
-
-        const refresh = () =>
-            (conn as any).caspar
-                .getMedia()
-                .then((media: Map<string, any>) => {
-                    const map: Record<string, string> = {};
-                    for (const [mid, item] of media) {
-                        const url = buildThumbnailUrl(item);
-                        if (url) map[mid] = url;
-                    }
-                    setImageThumbnails(map);
-                })
-                .catch(console.error);
-
-        refresh();
-        (conn as any).caspar.on('media', refresh);
-        return () => (conn as any).caspar.off('media', refresh);
-    }, [imageMediaIds.join(',')]);
+    const imageThumbnails = useImageThumbnails(imageMediaIds);
 
     const handleRename = async (title: string) => {
         setRenameOpen(false);

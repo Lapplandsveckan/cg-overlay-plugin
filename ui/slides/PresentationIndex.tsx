@@ -20,6 +20,7 @@ import {
     createPresentation,
     usePresentations,
     useBackgroundImage,
+    useImageThumbnails,
     slideRef,
     slideText,
 } from './api';
@@ -202,6 +203,9 @@ const PresentationTile: React.FC<{
 }> = ({ presentation, backgroundUrl }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const firstSlide = presentation.slides[0];
+    const coverMediaIds =
+        firstSlide?.type === 'image' ? [firstSlide.mediaId] : [];
+    const coverThumbs = useImageThumbnails(coverMediaIds);
     return (
         <Stack
             spacing={1}
@@ -225,11 +229,17 @@ const PresentationTile: React.FC<{
                 }}
             >
                 {firstSlide ? (
-                    <SlidePreview
-                        text={slideText(firstSlide)}
-                        reference={slideRef(firstSlide)}
-                        backgroundUrl={backgroundUrl}
-                    />
+                    firstSlide.type === 'image' ? (
+                        <SlidePreview
+                            imageUrl={coverThumbs[firstSlide.mediaId] ?? null}
+                        />
+                    ) : (
+                        <SlidePreview
+                            text={slideText(firstSlide)}
+                            reference={slideRef(firstSlide)}
+                            backgroundUrl={backgroundUrl}
+                        />
+                    )
                 ) : (
                     <Box
                         sx={{
