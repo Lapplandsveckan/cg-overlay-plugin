@@ -47,6 +47,13 @@ export const GROUPS = {
 export const getGroup = (channel: number, group: string) =>
     `${channel}:${group}`;
 
+// Time for both LEFT and RIGHT templates to finish loading (CG ADD) before we
+// fire CG PLAY, so the two halves animate in together instead of offset.
+export const LOAD_DELAY = 200;
+
+const delay = (ms: number) =>
+    new Promise<void>(resolve => setTimeout(resolve, ms));
+
 export default class OverlayManager {
     private api: PluginAPI;
     private logger: Logger;
@@ -98,6 +105,17 @@ export default class OverlayManager {
             ) as T,
             this.logger,
         );
+    }
+
+    // Wait for both LEFT and RIGHT templates to finish loading (CG ADD) before
+    // playing. Disposes the pair if it is superseded during the wait window.
+    private async loadThenActivate(
+        pair: SidePair<Effect>,
+        isCurrent: () => boolean,
+    ) {
+        await delay(LOAD_DELAY);
+        if (isCurrent()) pair.activate();
+        else pair.dispose();
     }
 
     public initialize() {
@@ -199,12 +217,13 @@ export default class OverlayManager {
     }
 
     public showNamnskylt(name: string) {
-        this.namnskylt = this.makeSidePair(
+        const pair = this.makeSidePair<NamnskyltOverlayEffect>(
             'overlay-namnskylt',
             GROUPS.OVERLAY,
             () => ({ name }),
         );
-        this.namnskylt.activate();
+        this.namnskylt = pair;
+        this.loadThenActivate(pair, () => this.namnskylt === pair);
     }
 
     public hideNamnskylt() {
@@ -231,7 +250,7 @@ export default class OverlayManager {
                 direction: channel === CHANNELS.LEFT ? 'left' : 'right',
             }),
         );
-        pair.activate();
+        this.loadThenActivate(pair, () => this.videoTransitionState === 1);
     }
 
     public toggleSwish(number?: string, labels?: string, skipFirst?: boolean) {
