@@ -45,12 +45,6 @@ export class VideoTransitionOverlayEffect extends Effect {
 
     public deactivate() {
         if (!super.deactivate()) return;
-
-        setTimeout(() => {
-            if (this.active) return;
-            this.dispose();
-        }, 500);
-
         return this.executor.execute(CgCommand.stop().allocate(this.layer));
     }
 

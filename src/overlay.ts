@@ -1,6 +1,7 @@
 import { type Effect, type Logger, type PluginAPI } from '@lappis/cg-manager';
 import { type SwishOverlayEffect } from './effects/overlay/swish';
 import { type NamnskyltOverlayEffect } from './effects/overlay/namnskylt';
+import { type VideoTransitionOverlayEffect } from './effects/overlay/videotransition';
 import {
     type InsamlingOverlayEffect,
     type InsamlingOverlayEffectOptions,
@@ -68,12 +69,13 @@ export default class OverlayManager {
     private swish: SidePair<SwishOverlayEffect> = null;
     private swishState = -1;
 
+    private videoTransition: SidePair<VideoTransitionOverlayEffect> = null;
+    private videoTransitionState = 0;
+
     private namnskylt: SidePair<NamnskyltOverlayEffect> = null;
 
     private insamling: InsamlingOverlayEffect = null;
     private insamlingState = 0;
-
-    private videoTransitionState = 0;
 
     private presentationEffect: PresentationOverlayEffect = null;
     private presentationImageEffect: VideoEffect = null;
@@ -123,6 +125,14 @@ export default class OverlayManager {
             number: '123 607 27 97',
         }));
 
+        this.videoTransition = this.makeSidePair<VideoTransitionOverlayEffect>(
+            'overlay-videotransition',
+            GROUPS.PRESENTATION,
+            channel => ({
+                direction: channel === CHANNELS.LEFT ? 'left' : 'right',
+            }),
+        );
+
         this.insamling = this.api.createEffect(
             'overlay-insamling',
             getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY),
@@ -134,6 +144,11 @@ export default class OverlayManager {
         if (this.swish) {
             this.swish.dispose();
             this.swish = null;
+        }
+
+        if (this.videoTransition) {
+            this.videoTransition.dispose();
+            this.videoTransition = null;
         }
 
         if (this.insamling) {
@@ -242,15 +257,7 @@ export default class OverlayManager {
         this.videoTransitionState = 1;
         if (skipIntro) return;
 
-        // Each side receives its outward slide direction.
-        const pair = this.makeSidePair(
-            'overlay-videotransition',
-            GROUPS.PRESENTATION,
-            channel => ({
-                direction: channel === CHANNELS.LEFT ? 'left' : 'right',
-            }),
-        );
-        this.loadThenActivate(pair, () => this.videoTransitionState === 1);
+        this.videoTransition.activate();
     }
 
     public toggleSwish(number?: string, labels?: string, skipFirst?: boolean) {
