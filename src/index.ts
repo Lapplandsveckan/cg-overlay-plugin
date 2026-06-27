@@ -42,7 +42,7 @@ import { AtemManager } from './atem';
 import { config } from './config';
 import { NamnskyltPresetStore } from './namnskylt-presets';
 import { PresentationStore } from './presentations';
-import { buildBackgroundData } from './assets';
+import { buildBackgroundData, readImageData } from './assets';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -316,6 +316,17 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public registerRoutes() {
         const bgData = buildBackgroundData(__dirname);
         this.api.registerRoute('assets/background', async () => bgData, 'GET');
+        this.api.registerRoute(
+            'assets/media',
+            async req => {
+                const mediaId = (req.data as any)?.mediaId;
+                if (!mediaId) return null;
+                const doc = this.api.getFileDatabase().get(mediaId);
+                if (!doc?.mediaPath) return null;
+                return readImageData(doc.mediaPath);
+            },
+            'ACTION',
+        );
 
         this.api.registerRoute(
             'swish',

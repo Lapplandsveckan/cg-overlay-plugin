@@ -28,6 +28,7 @@ import {
     slideLabel,
     slideText,
     useBackgroundImage,
+    useFullImage,
     useImageThumbnails,
 } from './api';
 
@@ -88,6 +89,9 @@ export const RunModal: React.FC<RunModalProps> = ({
         ? slides.findIndex(s => s.id === playback?.slideId)
         : -1;
     const current = currentIndex >= 0 ? slides[currentIndex] : null;
+    const currentFullUrl = useFullImage(
+        current?.type === 'image' ? current.mediaId : null,
+    );
 
     const atStart = currentIndex <= 0;
     const atEnd = currentIndex < 0 || currentIndex >= slides.length - 1;
@@ -244,6 +248,7 @@ export const RunModal: React.FC<RunModalProps> = ({
                         thumbnailRef={thumbnailRef}
                         backgroundUrl={backgroundUrl}
                         thumbnails={thumbnails}
+                        currentFullUrl={currentFullUrl}
                         onNext={shiftHeld => handleNext(shiftHeld)}
                         onPrev={shiftHeld => handlePrev(shiftHeld)}
                         onJump={(slideId, shiftHeld) =>
@@ -274,6 +279,7 @@ interface PlayingViewProps {
     thumbnailRef: React.RefObject<HTMLDivElement>;
     backgroundUrl?: string | null;
     thumbnails: Record<string, string>;
+    currentFullUrl?: string | null;
     onNext: (shiftHeld: boolean) => void;
     onPrev: (shiftHeld: boolean) => void;
     onJump: (slideId: string, shiftHeld: boolean) => void;
@@ -287,6 +293,7 @@ const PlayingView: React.FC<PlayingViewProps> = ({
     atEnd,
     thumbnailRef,
     backgroundUrl,
+    currentFullUrl,
     thumbnails,
     onNext,
     onPrev,
@@ -322,6 +329,9 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                             thumbnails,
                             backgroundUrl,
                         )}
+                        {...(currentFullUrl
+                            ? { imageUrl: currentFullUrl }
+                            : {})}
                     />
                 </Box>
                 <Tooltip title={t('runModal.next')}>

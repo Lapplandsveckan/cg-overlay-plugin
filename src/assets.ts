@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import { noTryAsync } from 'no-try';
 
 // SVG viewBox mirrors the 16:9 aspect ratio.
 // Bubble position mirrors BubbleWatermark.module.css:
@@ -28,4 +29,23 @@ export function buildBackgroundData(dir: string): {
         ].join(''),
     ).toString('base64');
     return { data, mimeType: 'image/svg+xml' };
+}
+
+const MIME_MAP: Record<string, string> = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp',
+    '.gif': 'image/gif',
+};
+
+export async function readImageData(
+    filePath: string,
+): Promise<{ data: string; mimeType: string } | null> {
+    const [err, buf] = await noTryAsync(() => fs.promises.readFile(filePath));
+    if (err || !buf) return null;
+    const mimeType =
+        MIME_MAP[path.extname(filePath).toLowerCase()] ??
+        'application/octet-stream';
+    return { data: buf.toString('base64'), mimeType };
 }

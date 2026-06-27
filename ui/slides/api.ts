@@ -115,6 +115,7 @@ export function slideLabel(slide: Slide): string {
 const ROOT = '/api/plugin/lappis';
 
 let backgroundCache: Promise<string | null> | null = null;
+const fullImageCache = new Map<string, Promise<string | null>>();
 
 export function useBackgroundImage(): string | null {
     const conn = useSocket();
@@ -135,6 +136,43 @@ export function useBackgroundImage(): string | null {
             });
         backgroundCache.then(setUrl);
     }, [conn]);
+    return url;
+}
+
+export function useFullImage(mediaId: string | null): string | null {
+    const conn = useSocket();
+    const [url, setUrl] = useState<string | null>(null);
+    useEffect(() => {
+        if (!mediaId) {
+            setUrl(null);
+            return;
+        }
+        let cancelled = false;
+        if (!fullImageCache.has(mediaId)) {
+            fullImageCache.set(
+                mediaId,
+                conn
+                    .rawRequest(`${ROOT}/assets/media`, 'ACTION', { mediaId })
+                    .then((res: any) => {
+                        const { data, mimeType } = res?.data ?? {};
+                        return data && mimeType
+                            ? `data:${mimeType};base64,${data}`
+                            : null;
+                    })
+                    .catch((e: any) => {
+                        console.error(e);
+                        fullImageCache.delete(mediaId);
+                        return null;
+                    }),
+            );
+        }
+        fullImageCache.get(mediaId)!.then(u => {
+            if (!cancelled) setUrl(u);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [conn, mediaId]);
     return url;
 }
 
