@@ -1313,10 +1313,10 @@
     node-addon-api "^5.0.0"
     pkg-prebuilds "^0.2.1"
 
-"@lappis/cg-manager@^0.0.40":
-  version "0.0.40"
-  resolved "https://registry.yarnpkg.com/@lappis/cg-manager/-/cg-manager-0.0.40.tgz#eb766e041ae12a4879b0b8b2934db01c5329c559"
-  integrity sha512-2847dzH8Op1bSS2xYKaxIsoL/oUpFkS+NsOxIEf1NhhqACZHt0Ys718gb018dcB92pshGXxPZjHo+fWYpIBg1Q==
+"@lappis/cg-manager@^0.0.46":
+  version "0.0.46"
+  resolved "https://registry.yarnpkg.com/@lappis/cg-manager/-/cg-manager-0.0.46.tgz#961f314d268a50ad6bd9fc4e7dccac148454e880"
+  integrity sha512-n35Fc3tIZ4C1CImmWOWn7xTYBlGj9QTvOxL2CX651k/UEQM3pvf36yI6iliWMe6/nLhnPyYDlUciuucMC1LnSQ==
   dependencies:
     archiver "^7.0.1"
     babel-loader "^8.2.5"

@@ -80,7 +80,13 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     protected onEnable() {
-        this.templates = new Templates(() => this.overlay.initialize());
+        // Only send CG ADD commands once both the local template HTTP server is
+        // up AND CasparCG is connected. awaitConnection() resolves immediately
+        // if already connected, so this is a no-op on reconnect paths.
+        this.templates = new Templates(async () => {
+            await this.api.awaitConnection();
+            if (this.overlay) this.overlay.initialize();
+        });
         this.video = new VideoManager(this);
         this.overlay = new OverlayManager(this);
         this.atem = new AtemManager();
