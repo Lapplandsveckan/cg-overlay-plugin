@@ -6,11 +6,13 @@ import { offCGEvent, onCGEvent } from '../../cg';
 
 type StringHandler = (value: string) => void;
 type NumberHandler = (value: number) => void;
+type BoolHandler = (value: boolean) => void;
 
 export function register(
     setState: NumberHandler,
     setText: StringHandler,
     setReference: StringHandler,
+    setHeading: BoolHandler,
 ) {
     const states = [() => setState(0), () => setState(1)];
 
@@ -18,6 +20,7 @@ export function register(
         if (typeof params?.text === 'string') setText(params.text);
         if (typeof params?.reference === 'string')
             setReference(params.reference);
+        if (typeof params?.heading === 'boolean') setHeading(params.heading);
     };
     onCGEvent('update', update);
 

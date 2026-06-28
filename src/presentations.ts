@@ -27,13 +27,19 @@ export interface TextSlide {
     text: string;
 }
 
+export interface HeadingSlide {
+    type: 'heading';
+    id: string;
+    text: string;
+}
+
 export interface ImageSlide {
     type: 'image';
     id: string;
     mediaId: string;
 }
 
-export type Slide = BibleSlide | TextSlide | ImageSlide;
+export type Slide = BibleSlide | TextSlide | HeadingSlide | ImageSlide;
 
 export interface Presentation {
     id: string;
@@ -197,6 +203,13 @@ function sanitizeSlide(raw: any): Slide | null {
     if (type === 'text') {
         return {
             type: 'text',
+            id: raw.id,
+            text: typeof raw.text === 'string' ? raw.text : '',
+        };
+    }
+    if (type === 'heading') {
+        return {
+            type: 'heading',
             id: raw.id,
             text: typeof raw.text === 'string' ? raw.text : '',
         };

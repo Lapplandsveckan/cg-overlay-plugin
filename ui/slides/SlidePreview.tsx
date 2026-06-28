@@ -4,6 +4,7 @@ import { Box, Typography } from '@mui/material';
 export interface SlidePreviewProps {
     text?: string;
     reference?: string;
+    heading?: boolean;
 
     backgroundUrl?: string | null;
     /** For image slides: thumbnail from CasparCG media, overrides backgroundUrl and hides text. */
@@ -60,6 +61,7 @@ function renderText(text: string): React.ReactNode {
 export const SlidePreview: React.FC<SlidePreviewProps> = ({
     text = '',
     reference = '',
+    heading = false,
     backgroundUrl,
     imageUrl,
     aspectRatio = '16/9',
@@ -105,9 +107,9 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
                         sx={{
                             maxWidth: '78cqw',
                             fontFamily: `'Alright Sans', sans-serif`,
-                            fontSize: '7.6cqh',
+                            fontSize: heading ? '11.5cqh' : '7.6cqh',
                             lineHeight: 1.3,
-                            fontWeight: 400,
+                            fontWeight: heading ? 700 : 400,
                             textAlign: 'center',
                             textWrap: 'balance',
                             color: '#fff',

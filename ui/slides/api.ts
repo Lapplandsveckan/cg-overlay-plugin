@@ -67,13 +67,19 @@ export interface TextSlide {
     text: string;
 }
 
+export interface HeadingSlide {
+    type: 'heading';
+    id: string;
+    text: string;
+}
+
 export interface ImageSlide {
     type: 'image';
     id: string;
     mediaId: string;
 }
 
-export type Slide = BibleSlide | TextSlide | ImageSlide;
+export type Slide = BibleSlide | TextSlide | HeadingSlide | ImageSlide;
 
 export interface Presentation {
     id: string;
@@ -109,6 +115,7 @@ export function slideText(slide: Slide): string {
 export function slideLabel(slide: Slide): string {
     if (slide.type === 'bible') return slide.reference;
     if (slide.type === 'image') return 'Image';
+    if (slide.type === 'heading') return 'Heading';
     return 'Text';
 }
 

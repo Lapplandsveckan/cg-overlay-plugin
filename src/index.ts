@@ -483,6 +483,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                                         slide.type === 'bible'
                                             ? slide.reference
                                             : '',
+                                    heading: slide.type === 'heading',
                                 },
                                 grab,
                             );

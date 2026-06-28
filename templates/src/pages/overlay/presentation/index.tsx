@@ -10,6 +10,7 @@ interface PresentationAnimationProps {
     state: number;
     text: string;
     reference: string;
+    heading: boolean;
 }
 
 // Verse-number marker emitted by the server: ⟨N⟩<verse text…>
@@ -42,6 +43,7 @@ export const PresentationAnimation: React.FC<PresentationAnimationProps> = ({
     state,
     text,
     reference,
+    heading,
 }) => (
     <CG
         state={state}
@@ -50,7 +52,11 @@ export const PresentationAnimation: React.FC<PresentationAnimationProps> = ({
         styles={getStylesProxy(styles)}
     >
         <div className={styles.presentation__main}>
-            <div className={styles.presentation__text}>{renderText(text)}</div>
+            <div
+                className={`${styles.presentation__text}${heading ? ` ${styles['presentation__text--heading']}` : ''}`}
+            >
+                {renderText(text)}
+            </div>
             <div className={styles.presentation__reference}>{reference}</div>
             <BubbleWatermark />
         </div>
@@ -61,13 +67,15 @@ const Page = () => {
     const [state, setState] = useState(0);
     const [text, setText] = useState('');
     const [reference, setReference] = useState('');
-    useEffect(() => register(setState, setText, setReference), []);
+    const [heading, setHeading] = useState(false);
+    useEffect(() => register(setState, setText, setReference, setHeading), []);
 
     return (
         <PresentationAnimation
             state={state}
             text={text}
             reference={reference}
+            heading={heading}
         />
     );
 };

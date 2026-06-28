@@ -3,6 +3,7 @@ import { CgCommand, Effect, type EffectGroup } from '@lappis/cg-manager';
 export interface PresentationOverlayEffectOptions {
     text: string;
     reference: string;
+    heading?: boolean;
 }
 
 export class PresentationOverlayEffect extends Effect {
@@ -52,6 +53,7 @@ export class PresentationOverlayEffect extends Effect {
         return {
             text: this.options.text,
             reference: this.options.reference,
+            heading: this.options.heading,
         };
     }
 }

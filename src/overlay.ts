@@ -28,7 +28,7 @@ export interface PresentationArmEvent {
 }
 
 type SlideRender =
-    | { kind: 'text'; text: string; reference: string }
+    | { kind: 'text'; text: string; reference: string; heading?: boolean }
     | { kind: 'image'; mediaId: string };
 
 export const CHANNELS = {
@@ -361,12 +361,17 @@ export default class OverlayManager {
                 this.presentationEffect = this.api.createEffect(
                     'overlay-presentation',
                     getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
-                    { text: render.text, reference: render.reference },
+                    {
+                        text: render.text,
+                        reference: render.reference,
+                        heading: render.heading,
+                    },
                 ) as PresentationOverlayEffect;
             } else {
                 this.presentationEffect.update({
                     text: render.text,
                     reference: render.reference,
+                    heading: render.heading,
                 });
             }
 

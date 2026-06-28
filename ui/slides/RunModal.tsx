@@ -48,6 +48,7 @@ function slidePreviewProps(
     return {
         text: slideText(slide),
         reference: slideRef(slide),
+        heading: slide.type === 'heading',
         backgroundUrl,
     };
 }

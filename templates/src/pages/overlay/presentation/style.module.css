@@ -30,6 +30,11 @@
     color: #fff;
 }
 
+.presentation__text--heading {
+    font-size: 11.5vh;
+    font-weight: 700;
+}
+
 .presentation__verse-number {
     font-size: 0.55em;
     vertical-align: super;

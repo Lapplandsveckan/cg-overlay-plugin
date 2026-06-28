@@ -35,6 +35,7 @@ import NameDialog from './NameDialog';
 import SlidePreview from './SlidePreview';
 import {
     type BibleSlide,
+    type HeadingSlide,
     type ImageSlide,
     type Slide,
     type TextSlide,
@@ -538,6 +539,7 @@ const SlideCard: React.FC<SlideCardProps> = ({
                         reference={
                             slide.type === 'bible' ? slide.reference : ''
                         }
+                        heading={slide.type === 'heading'}
                         backgroundUrl={backgroundUrl}
                     />
                 )}
@@ -613,7 +615,9 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
-    const [mode, setMode] = useState<'bible' | 'text' | 'image'>('bible');
+    const [mode, setMode] = useState<'bible' | 'text' | 'heading' | 'image'>(
+        'bible',
+    );
 
     // Bible state
     const [translation, setTranslation] = useState(TRANSLATIONS[0].id);
@@ -683,6 +687,16 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
         setTextContent('');
     };
 
+    const handleSubmitHeading = () => {
+        const slide: HeadingSlide = {
+            type: 'heading',
+            id: makeSlideId(),
+            text: textContent.trim(),
+        };
+        onAdd([slide]);
+        setTextContent('');
+    };
+
     return (
         <Dialog
             open={open}
@@ -695,6 +709,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                     e.preventDefault();
                     if (mode === 'bible') handleSubmitBible();
                     else if (mode === 'text') handleSubmitText();
+                    else if (mode === 'heading') handleSubmitHeading();
                 },
             }}
         >
@@ -719,6 +734,16 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                             onClick={() => setMode('text')}
                         >
                             {t('presentationEditor.textSlide')}
+                        </Button>
+                        <Button
+                            type="button"
+                            size="small"
+                            variant={
+                                mode === 'heading' ? 'contained' : 'outlined'
+                            }
+                            onClick={() => setMode('heading')}
+                        >
+                            {t('presentationEditor.headingSlide')}
                         </Button>
                         <Button
                             type="button"
@@ -885,6 +910,21 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                         />
                     )}
 
+                    {mode === 'heading' && (
+                        <TextField
+                            label={t('presentationEditor.headingLabel')}
+                            value={textContent}
+                            onChange={e => setTextContent(e.target.value)}
+                            multiline
+                            minRows={2}
+                            fullWidth
+                            autoFocus
+                            placeholder={t(
+                                'presentationEditor.headingPlaceholder',
+                            )}
+                        />
+                    )}
+
                     {mode === 'image' && (
                         <ImagePicker
                             selectedId={null}
@@ -919,6 +959,15 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                     </Button>
                 )}
                 {mode === 'text' && (
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={!textContent.trim()}
+                    >
+                        {t('panel.add')}
+                    </Button>
+                )}
+                {mode === 'heading' && (
                     <Button
                         type="submit"
                         variant="contained"
@@ -1000,6 +1049,7 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
                             <SlidePreview
                                 text={text}
                                 reference={reference}
+                                heading={slide.type === 'heading'}
                                 backgroundUrl={backgroundUrl}
                             />
 
