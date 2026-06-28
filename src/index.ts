@@ -9,6 +9,10 @@ import {
 import { type RundownItem } from '@lappis/cg-manager/dist/types/rundown';
 import { Templates } from './templates';
 import {
+    BarsOverlayEffect,
+    type BarsOverlayEffectOptions,
+} from './effects/overlay/bars';
+import {
     SwishOverlayEffect,
     type SwishOverlayEffectOptions,
 } from './effects/overlay/swish';
@@ -151,6 +155,16 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     private registerEffects() {
         // TODO: sanitize options input, verify that the options are valid
         this.api.registerEffect(
+            'overlay-bars',
+            (group, options) =>
+                new BarsOverlayEffect(
+                    group,
+                    options as BarsOverlayEffectOptions,
+                    this.templates.getFilePath('overlay/bars'),
+                ),
+        );
+
+        this.api.registerEffect(
             'overlay-swish',
             (group, options) =>
                 new SwishOverlayEffect(
@@ -271,6 +285,10 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             { stop: () => this.overlay.hideNamnskylt() },
         );
 
+        registerRundownAction('bars', async () => {
+            this.overlay.toggleBars();
+        });
+
         registerRundownAction('swish', async rundown => {
             const { number, labels, highlightIntro } = rundown.data;
             this.overlay.toggleSwish(number, labels, highlightIntro);
@@ -329,6 +347,14 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                 const doc = this.api.getFileDatabase().get(mediaId);
                 if (!doc?.mediaPath) return null;
                 return readImageData(doc.mediaPath);
+            },
+            'ACTION',
+        );
+
+        this.api.registerRoute(
+            'bars',
+            async () => {
+                this.overlay.toggleBars();
             },
             'ACTION',
         );

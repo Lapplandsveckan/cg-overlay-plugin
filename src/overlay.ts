@@ -1,4 +1,5 @@
 import { type Effect, type Logger, type PluginAPI } from '@lappis/cg-manager';
+import { type BarsOverlayEffect } from './effects/overlay/bars';
 import { type SwishOverlayEffect } from './effects/overlay/swish';
 import { type NamnskyltOverlayEffect } from './effects/overlay/namnskylt';
 import { type VideoTransitionOverlayEffect } from './effects/overlay/videotransition';
@@ -67,6 +68,9 @@ export default class OverlayManager {
         this.logger = instance['logger'];
     }
 
+    private bars: SidePair<BarsOverlayEffect> = null;
+    private barsState = 0;
+
     private swish: SidePair<SwishOverlayEffect> = null;
     private swishState = -1;
 
@@ -122,6 +126,8 @@ export default class OverlayManager {
     }
 
     public initialize() {
+        this.bars = this.makeSidePair('overlay-bars', GROUPS.BARS, () => ({}));
+
         this.swish = this.makeSidePair('overlay-swish', GROUPS.OVERLAY, () => ({
             number: '123 607 27 97',
         }));
@@ -142,6 +148,11 @@ export default class OverlayManager {
     }
 
     public dispose() {
+        if (this.bars) {
+            this.bars.dispose();
+            this.bars = null;
+        }
+
         if (this.swish) {
             this.swish.dispose();
             this.swish = null;
@@ -247,6 +258,19 @@ export default class OverlayManager {
         const pair = this.namnskylt;
         this.namnskylt = null;
         pair.deactivate();
+    }
+
+    public toggleBars() {
+        this.barsState = 1 - this.barsState;
+
+        switch (this.barsState) {
+            case 0:
+                this.bars.deactivate();
+                break;
+            case 1:
+                this.bars.activate();
+                break;
+        }
     }
 
     public toggleVideoTransition(skipIntro = false) {

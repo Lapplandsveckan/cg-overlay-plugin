@@ -1,4 +1,11 @@
 {
+    "bars": {
+        "heading": "Bars",
+        "description": "Toggle cinematic black letterbox bars on the output.",
+        "titleLabel": "Title",
+        "titleHelper": "Shown in the rundown.",
+        "cinematicBars": "Cinematic bars"
+    },
     "namnskylt": {
         "heading": "Namnskylt",
         "nameLabel": "Name",
