@@ -347,7 +347,7 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
         const oldIndex = orderedSlides.findIndex(s => s.id === active.id);
         const newIndex = orderedSlides.findIndex(s => s.id === over.id);
         if (oldIndex === -1 || newIndex === -1) return;
-        
+
         const next = arrayMove(orderedSlides, oldIndex, newIndex);
         setOrderedSlides(next);
         persistSlides(next);

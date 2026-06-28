@@ -7,15 +7,16 @@ import { offCGEvent, onCGEvent } from '../../cg';
 export function register(
     setState: (state: number) => void,
     setDirection: (direction: string) => void,
+    setFast: (fast: boolean) => void,
 ) {
     const states = [() => setState(0), () => setState(1)];
 
-    // direction arrives as CG add data on load, and can be refreshed via update
+    // direction and fast arrive as CG add data on load, refreshed via update
     const update = (params: unknown) => {
-        if (typeof (params as Record<string, unknown>)?.direction === 'string')
-            setDirection(
-                (params as Record<string, unknown>).direction as string,
-            );
+        const p = params as Record<string, unknown>;
+        if (typeof p?.direction === 'string')
+            setDirection(p.direction as string);
+        if (typeof p?.fast === 'boolean') setFast(p.fast as boolean);
     };
 
     onCGEvent('update', update);

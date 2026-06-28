@@ -81,6 +81,7 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
     const [playNow, setPlayNow] = useState(
         entry.data?.options?.playNow ?? false,
     );
+    const [fast, setFast] = useState(entry.data?.options?.fast ?? false);
 
     useEffect(() => {
         if (!entry.data?.clip) return;
@@ -99,7 +100,7 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
         };
     }, [entry.data?.clip]);
 
-    const additionalOptionsActive = playNow || skipIntro || loop;
+    const additionalOptionsActive = playNow || skipIntro || loop || fast;
 
     return (
         <Stack spacing={2.5}>
@@ -185,6 +186,17 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                                 />
                             }
                         />
+                        <FormControlLabel
+                            label={t('playVideo.fastLabel')}
+                            title={t('playVideo.fastTitle')}
+                            control={
+                                <Checkbox
+                                    size="small"
+                                    checked={fast}
+                                    onChange={e => setFast(e.target['checked'])}
+                                />
+                            }
+                        />
                     </FormGroup>
                 </AccordionDetails>
             </Accordion>
@@ -201,6 +213,7 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                                 loop,
                                 skipIntro,
                                 playNow,
+                                fast,
                             },
                         },
                         ...(instant ? {} : { title }),

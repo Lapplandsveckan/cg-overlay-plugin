@@ -47,6 +47,8 @@
         "skipIntroTitle": "Skip the lead-in animation of the clip.",
         "loopLabel": "Loop",
         "loopTitle": "Loop the clip until manually stopped.",
+        "fastLabel": "Quick transition",
+        "fastTitle": "Sweep the transition through instead of holding it — for presentations and images.",
         "label": "Play video",
         "playNowChip": "Skip queue",
         "noClip": "No clip selected"

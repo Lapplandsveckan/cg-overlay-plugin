@@ -56,6 +56,12 @@ export const LOAD_DELAY = 200;
 // Delay before cutting ATEM to the slides channel on first play, giving
 // CasparCG time to render the new slide before it goes to air.
 export const ATEM_CUT_DELAY = 300;
+// How long to hold the video transition cover before cutting ATEM to the source.
+export const VIDEO_TRANSITION_CUT_DELAY = 3000;
+// Delay for fast-sweep transitions: cut while the screen is covered.
+// The slide-in animation is 350ms, but starts after CG round-trip latency;
+// 500ms gives a comfortable margin while still landing before the exit begins.
+export const FAST_TRANSITION_CUT_DELAY = 500;
 
 const delay = (ms: number) =>
     new Promise<void>(resolve => setTimeout(resolve, ms));
@@ -190,25 +196,26 @@ export default class OverlayManager {
         return this.videoSession;
     }
 
-    public startVideoSession(atem = false, skipIntro = false) {
+    public startVideoSession(atem = false, skipIntro = false, fast = false) {
         if (this.videoSession) return Promise.resolve();
 
         this.videoSession = { stop: () => null };
         if (this.videoTransitionState !== 1)
-            this.toggleVideoTransition(skipIntro);
+            this.toggleVideoTransition(skipIntro, fast);
 
         if (skipIntro) {
             if (atem) this.plugin.atem.setVideoProgram();
             return Promise.resolve();
         }
 
+        const holdMs = fast ? FAST_TRANSITION_CUT_DELAY : VIDEO_TRANSITION_CUT_DELAY;
         return new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(() => {
                 this.videoSession.stop = () => null;
                 resolve();
 
                 if (atem) this.plugin.atem.setVideoProgram();
-            }, 3000);
+            }, holdMs);
 
             this.videoSession.stop = () => {
                 clearTimeout(timeout);
@@ -276,7 +283,7 @@ export default class OverlayManager {
         }
     }
 
-    public toggleVideoTransition(skipIntro = false) {
+    public toggleVideoTransition(skipIntro = false, fast = false) {
         if (this.videoTransitionState === 1) {
             this.videoTransitionState = 0;
             return;
@@ -285,6 +292,7 @@ export default class OverlayManager {
         this.videoTransitionState = 1;
         if (skipIntro) return;
 
+        this.videoTransition.update({ fast });
         this.videoTransition.activate();
     }
 

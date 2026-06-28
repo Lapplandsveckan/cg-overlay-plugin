@@ -9,6 +9,7 @@ interface VideoInfo {
         queueId: string;
         loop?: boolean;
         skipIntro?: boolean;
+        fast?: boolean;
     };
 }
 
@@ -99,7 +100,11 @@ export default class VideoManager {
         const [error] = await noTryAsync(() =>
             this.plugin
                 .getOverlayManager()
-                .startVideoSession(true, video.metadata.skipIntro),
+                .startVideoSession(
+                    true,
+                    video.metadata.skipIntro,
+                    video.metadata.fast,
+                ),
         );
         if (error) {
             this.plugin

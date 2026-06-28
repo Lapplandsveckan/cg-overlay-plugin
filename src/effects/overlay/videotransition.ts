@@ -1,7 +1,13 @@
 import { CgCommand, Effect, type EffectGroup } from '@lappis/cg-manager';
 
+// How long the normal transition holds before triggering its slide-off exit.
+const HOLD_DURATION = 3000;
+// How long the fast sweep animation runs before the effect self-resets.
+const SWEEP_DURATION = 800;
+
 export interface VideoTransitionOverlayEffectOptions {
     direction?: 'left' | 'right';
+    fast?: boolean;
 }
 
 export class VideoTransitionOverlayEffect extends Effect {
@@ -21,6 +27,7 @@ export class VideoTransitionOverlayEffect extends Effect {
         // Pass direction to the template so the animation knows which way to slide.
         const cmd = CgCommand.add(template, false, {
             direction: options.direction ?? 'left',
+            fast: options.fast ?? false,
         });
         cmd.allocate(this.layer);
 
@@ -32,13 +39,23 @@ export class VideoTransitionOverlayEffect extends Effect {
         return this.layers[0];
     }
 
+    public update(opts: { fast?: boolean }) {
+        if (opts.fast !== undefined) this.options.fast = opts.fast;
+        return this.executor.execute(
+            CgCommand.update({ fast: this.options.fast ?? false }).allocate(
+                this.layer,
+            ),
+        );
+    }
+
     public activate() {
         if (!super.activate()) return;
 
+        const holdMs = this.options.fast ? SWEEP_DURATION : HOLD_DURATION;
         setTimeout(() => {
             if (!this.active) return;
             this.deactivate();
-        }, 3000);
+        }, holdMs);
 
         return this.executor.execute(CgCommand.play().allocate(this.layer));
     }
@@ -49,6 +66,6 @@ export class VideoTransitionOverlayEffect extends Effect {
     }
 
     public getMetadata(): Record<string, unknown> {
-        return { direction: this.options.direction };
+        return { direction: this.options.direction, fast: this.options.fast };
     }
 }

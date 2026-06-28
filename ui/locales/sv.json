@@ -47,6 +47,8 @@
         "skipIntroTitle": "Hoppa över klippets intro-animering.",
         "loopLabel": "Loop",
         "loopTitle": "Loopa klippet tills det stoppas manuellt.",
+        "fastLabel": "Snabb övergång",
+        "fastTitle": "Svep övergången förbi istället för att hålla kvar den — för presentationer och bilder.",
         "label": "Spela video",
         "playNowChip": "Hoppa över kön",
         "noClip": "Inget klipp valt"

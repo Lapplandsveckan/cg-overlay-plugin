@@ -8,10 +8,11 @@ import { CG } from '../../../components/CG';
 export const VideoTransitionAnimation: React.FC<{
     state: number;
     direction: string;
-}> = ({ state, direction }) => (
+    fast: boolean;
+}> = ({ state, direction, fast }) => (
     <CG
         state={state}
-        handle={(tl, s, p, st) => handleState(tl, s, p, st, direction)}
+        handle={(tl, s, p, st) => handleState(tl, s, p, st, direction, fast)}
         labels={['start', 'end']}
         styles={getStylesProxy(styles)}
     >
@@ -28,9 +29,16 @@ export const VideoTransitionAnimation: React.FC<{
 const Page = () => {
     const [state, setState] = useState(0);
     const [direction, setDirection] = useState('left');
-    useEffect(() => register(setState, setDirection), []);
+    const [fast, setFast] = useState(false);
+    useEffect(() => register(setState, setDirection, setFast), []);
 
-    return <VideoTransitionAnimation state={state} direction={direction} />;
+    return (
+        <VideoTransitionAnimation
+            state={state}
+            direction={direction}
+            fast={fast}
+        />
+    );
 };
 
 export default Page;
