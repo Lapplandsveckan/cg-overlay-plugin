@@ -26,7 +26,23 @@ import {
 
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import EditIcon from '@mui/icons-material/Edit';
+import {
+    DndContext,
+    PointerSensor,
+    closestCenter,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    SortableContext,
+    arrayMove,
+    rectSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { noTryAsync } from 'no-try';
 import { useSocket, MediaDropZone, UploadButton } from '@web-lib';
 import { useTranslation } from '../i18n';
@@ -243,6 +259,20 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
     const [editing, setEditing] = useState<Slide | null>(null);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [orderedSlides, setOrderedSlides] = useState<Slide[]>(
+        remote?.slides ?? [],
+    );
+    useEffect(() => {
+        if (!remote) return;
+        const sameOrder =
+            remote.slides.length === orderedSlides.length &&
+            remote.slides.every((s, i) => s.id === orderedSlides[i]?.id);
+        if (!sameOrder) setOrderedSlides(remote.slides);
+    }, [remote?.slides]);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    );
     const imageMediaIds = useMemo(
         () =>
             (remote?.slides ?? [])
@@ -308,6 +338,19 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
 
     const handleDeleteSlide = (slideId: string) => {
         persistSlides(remote.slides.filter(s => s.id !== slideId));
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const oldIndex = orderedSlides.findIndex(s => s.id === active.id);
+        const newIndex = orderedSlides.findIndex(s => s.id === over.id);
+        if (oldIndex === -1 || newIndex === -1) return;
+        
+        const next = arrayMove(orderedSlides, oldIndex, newIndex);
+        setOrderedSlides(next);
+        persistSlides(next);
     };
 
     const handleDeletePresentation = async () => {
@@ -398,32 +441,45 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                     </Alert>
                 )}
 
-                {remote.slides.length === 0 ? (
+                {orderedSlides.length === 0 ? (
                     <EmptyState onAdd={() => setAddOpen(true)} />
                 ) : (
-                    <Box
-                        sx={{
-                            display: 'grid',
-                            gridTemplateColumns: {
-                                xs: 'repeat(2, 1fr)',
-                                md: 'repeat(3, 1fr)',
-                                lg: 'repeat(4, 1fr)',
-                            },
-                            gap: 2.5,
-                        }}
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
                     >
-                        {remote.slides.map((slide, idx) => (
-                            <SlideCard
-                                key={slide.id}
-                                slide={slide}
-                                index={idx + 1}
-                                backgroundUrl={backgroundUrl}
-                                imageThumbnails={imageThumbnails}
-                                onEdit={() => setEditing(slide)}
-                                onDelete={() => handleDeleteSlide(slide.id)}
-                            />
-                        ))}
-                    </Box>
+                        <SortableContext
+                            items={orderedSlides.map(s => s.id)}
+                            strategy={rectSortingStrategy}
+                        >
+                            <Box
+                                sx={{
+                                    display: 'grid',
+                                    gridTemplateColumns: {
+                                        xs: 'repeat(2, 1fr)',
+                                        md: 'repeat(3, 1fr)',
+                                        lg: 'repeat(4, 1fr)',
+                                    },
+                                    gap: 2.5,
+                                }}
+                            >
+                                {orderedSlides.map((slide, idx) => (
+                                    <SlideCard
+                                        key={slide.id}
+                                        slide={slide}
+                                        index={idx + 1}
+                                        backgroundUrl={backgroundUrl}
+                                        imageThumbnails={imageThumbnails}
+                                        onEdit={() => setEditing(slide)}
+                                        onDelete={() =>
+                                            handleDeleteSlide(slide.id)
+                                        }
+                                    />
+                                ))}
+                            </Box>
+                        </SortableContext>
+                    </DndContext>
                 )}
             </Stack>
 
@@ -521,8 +577,26 @@ const SlideCard: React.FC<SlideCardProps> = ({
     onDelete,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: slide.id });
+
     return (
-        <Stack spacing={1}>
+        <Stack
+            spacing={1}
+            ref={setNodeRef}
+            style={{
+                transform: CSS.Transform.toString(transform),
+                transition,
+                opacity: isDragging ? 0.4 : 1,
+                zIndex: isDragging ? 1 : 'auto',
+            }}
+        >
             <Box
                 sx={{
                     position: 'relative',
@@ -555,6 +629,26 @@ const SlideCard: React.FC<SlideCardProps> = ({
                         transition: 'opacity 80ms',
                     }}
                 >
+                    <Tooltip title={t('presentationEditor.reorderSlide')}>
+                        <IconButton
+                            {...attributes}
+                            {...listeners}
+                            sx={{
+                                width: 28,
+                                height: 28,
+                                padding: 0,
+                                backgroundColor: 'rgba(0,0,0,0.6)',
+                                color: '#fff',
+                                cursor: 'grab',
+                                '&:active': { cursor: 'grabbing' },
+                                '&:hover': {
+                                    backgroundColor: 'rgba(0,0,0,0.8)',
+                                },
+                            }}
+                        >
+                            <DragIndicatorIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                    </Tooltip>
                     <Tooltip title={t('presentationEditor.editSlide')}>
                         <IconButton
                             onClick={onEdit}

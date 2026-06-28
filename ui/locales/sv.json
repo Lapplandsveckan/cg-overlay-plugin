@@ -124,6 +124,7 @@
         "noSlidesHelper": "Lägg till bibelverser, en textslide eller en bild för att komma igång.",
         "editSlide": "Redigera slide",
         "deleteSlide": "Ta bort slide",
+        "reorderSlide": "Dra för att ändra ordning",
         "addSlidesTitle": "Lägg till slides",
         "bibleVerse": "Bibelvers",
         "textSlide": "Textslide",

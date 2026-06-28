@@ -124,6 +124,7 @@
         "noSlidesHelper": "Add Bible verses, a text slide, or an image to get started.",
         "editSlide": "Edit slide",
         "deleteSlide": "Delete slide",
+        "reorderSlide": "Drag to reorder",
         "addSlidesTitle": "Add slides",
         "bibleVerse": "Bible verse",
         "textSlide": "Text slide",

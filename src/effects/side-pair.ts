@@ -31,7 +31,6 @@ export class SidePair<T extends Effect> {
         return this.fan(label, fn);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     update(o: unknown) {
         return this.fan('update', e => (e as any).update?.(o));
     }

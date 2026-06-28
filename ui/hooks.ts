@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import { useSocket } from '@web-lib';
+import { type useSocket } from '@web-lib';
 
 // Fan-out registry so we only ever hand conn.routes one listener per path+method,
 // regardless of how many React components subscribe. This avoids the cg-manager
