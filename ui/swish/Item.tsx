@@ -25,8 +25,10 @@ export const SwishRundownItem: React.FC<SwishRundownItemProps> = ({
             {entry.data.labels && (
                 <Typography variant="body2">{entry.data.labels}</Typography>
             )}
-            {entry.data.skipFirst && (
-                <Typography variant="body2">{t('swish.skipFirst')}</Typography>
+            {entry.data.highlightIntro && (
+                <Typography variant="body2">
+                    {t('swish.highlightIntro')}
+                </Typography>
             )}
         </Stack>
     );

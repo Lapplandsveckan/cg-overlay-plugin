@@ -14,9 +14,9 @@
         "numberHelper": "The Swish number displayed on screen.",
         "labelsLabel": "Labels",
         "labelsHelper": "Comma-separated labels shown alongside the number.",
-        "skipFirstLabel": "Skip first reveal",
-        "skipFirstHelper": "Skip the intro animation when the overlay appears.",
-        "skipFirst": "Skip first"
+        "highlightIntroLabel": "Highlight on show",
+        "highlightIntroHelper": "Play the full intro reveal animation when the overlay first appears.",
+        "highlightIntro": "Highlight intro"
     },
     "insamling": {
         "heading": "Insamling",

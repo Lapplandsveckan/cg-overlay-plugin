@@ -14,9 +14,9 @@
         "numberHelper": "Swish-numret som visas på skärmen.",
         "labelsLabel": "Etiketter",
         "labelsHelper": "Kommaseparerade etiketter som visas bredvid numret.",
-        "skipFirstLabel": "Hoppa över första visningen",
-        "skipFirstHelper": "Hoppa över intro-animeringen när överlägget visas.",
-        "skipFirst": "Hoppa över första"
+        "highlightIntroLabel": "Markera vid visning",
+        "highlightIntroHelper": "Spela den fullständiga intro-animeringen när överlägget visas.",
+        "highlightIntro": "Markera intro"
     },
     "insamling": {
         "heading": "Insamling",

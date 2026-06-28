@@ -260,12 +260,16 @@ export default class OverlayManager {
         this.videoTransition.activate();
     }
 
-    public toggleSwish(number?: string, labels?: string, skipFirst?: boolean) {
-        if (skipFirst) {
-            // 2-step cycle: show minimized, then dismiss.
-            this.swishState = this.swishState === 1 ? 2 : 1;
-        } else {
+    public toggleSwish(
+        number?: string,
+        labels?: string,
+        highlightIntro?: boolean,
+    ) {
+        if (highlightIntro) {
             this.swishState = (this.swishState + 1) % 3;
+        } else {
+            // default: 2-step cycle, show minimized then dismiss.
+            this.swishState = this.swishState === 1 ? 2 : 1;
         }
 
         labels = labels || '';
