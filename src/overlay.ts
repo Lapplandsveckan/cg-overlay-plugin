@@ -53,6 +53,9 @@ export const getGroup = (channel: number, group: string) =>
 // Time for both LEFT and RIGHT templates to finish loading (CG ADD) before we
 // fire CG PLAY, so the two halves animate in together instead of offset.
 export const LOAD_DELAY = 200;
+// Delay before cutting ATEM to the slides channel on first play, giving
+// CasparCG time to render the new slide before it goes to air.
+export const ATEM_CUT_DELAY = 300;
 
 const delay = (ms: number) =>
     new Promise<void>(resolve => setTimeout(resolve, ms));
@@ -367,14 +370,6 @@ export default class OverlayManager {
 
         this.presentationState = { playing: true, presentationId, slideId };
 
-        if (grabAttention) {
-            if (!wasPlaying) {
-                this.plugin.atem.setVideoProgram();
-            } else {
-                this.plugin.atem.ensureVideoProgram();
-            }
-        }
-
         if (render.kind === 'text') {
             if (this.presentationImageEffect) {
                 this.presentationImageEffect.deactivate();
@@ -412,12 +407,7 @@ export default class OverlayManager {
                         `check CasparCG has scanned the file (scan-timing race?) ` +
                         `or that the mediaId casing is correct`,
                 );
-                // Restore pre-call state: no effects were touched yet, so only
-                // undo the state mutation and the ATEM switch we may have made.
                 this.presentationState = prevState;
-                if (!wasPlaying && grabAttention) {
-                    this.plugin.atem.returnToPreview();
-                }
                 this.broadcastPresentation();
                 return;
             }
@@ -440,6 +430,19 @@ export default class OverlayManager {
             this.presentationImageEffect.activate();
 
             this.presentationKind = 'image';
+        }
+
+        // Delay the ATEM cut so the new slide renders before going to air.
+        if (grabAttention) {
+            setTimeout(() => {
+                if (
+                    this.presentationState.playing &&
+                    this.presentationState.presentationId === presentationId &&
+                    this.presentationState.slideId === slideId
+                ) {
+                    this.plugin.atem.ensureVideoProgram();
+                }
+            }, ATEM_CUT_DELAY);
         }
 
         this.broadcastPresentation();
