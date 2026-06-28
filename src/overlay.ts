@@ -40,6 +40,7 @@ export const CHANNELS = {
 export const MAIN_SIDES = [CHANNELS.LEFT, CHANNELS.RIGHT] as const;
 
 export const GROUPS = {
+    BARS: 'bars',
     OVERLAY: 'overlay',
     VIDEO: 'video',
     PRESENTATION: 'presentation',

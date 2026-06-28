@@ -309,9 +309,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
     public registerEffectGroups() {
         for (const side of MAIN_SIDES) {
-            this.api.getEffectGroup(getGroup(side, GROUPS.VIDEO));
+            this.api.getEffectGroup(getGroup(side, GROUPS.BARS));
             this.api.getEffectGroup(getGroup(side, GROUPS.OVERLAY));
-            this.api.getEffectGroup(getGroup(side, GROUPS.PRESENTATION));
         }
 
         this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.VIDEO)); // video-out
