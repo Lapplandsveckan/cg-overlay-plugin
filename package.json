@@ -54,7 +54,7 @@
   "dependencies": {
     "@babel/preset-react": "^7.23.3",
     "@gsap/react": "^2.1.0",
-    "@lappis/cg-manager": "^0.0.48",
+    "@lappis/cg-manager": "^0.0.49",
     "@mui/icons-material": "^5.15.11",
     "@mui/material": "^5.15.11",
     "atem-connection": "^3.5.0",
