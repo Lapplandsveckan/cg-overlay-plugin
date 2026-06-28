@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useSocket } from '@web-lib';
+
+import { type BroadcastReq, useBroadcast } from '../hooks';
 
 // ---------- Thumbnail helpers ----------
 
@@ -305,17 +307,12 @@ export function usePresentations(): {
 
     useEffect(() => {
         listPresentations(conn).then(setPresentations).catch(console.error);
-
-        const listener = {
-            path: 'plugin/lappis/presentations',
-            method: 'UPDATE',
-            handler: (req: any) => {
-                if (Array.isArray(req.data)) setPresentations(req.data);
-            },
-        };
-        conn.routes.register(listener);
-        return () => conn.routes.unregister(listener);
     }, []);
+
+    const onUpdate = useCallback((req: BroadcastReq) => {
+        if (Array.isArray(req.data)) setPresentations(req.data);
+    }, []);
+    useBroadcast(conn, 'plugin/lappis/presentations', 'UPDATE', onUpdate);
 
     return { presentations, refresh };
 }
@@ -341,20 +338,16 @@ export function usePresentation(
                 console.error(err);
                 setPresentation(null);
             });
-
-        // Refresh on broadcast of any presentation change
-        const listener = {
-            path: 'plugin/lappis/presentations',
-            method: 'UPDATE',
-            handler: () => {
-                getPresentation(conn, id)
-                    .then(setPresentation)
-                    .catch(console.error);
-            },
-        };
-        conn.routes.register(listener);
-        return () => conn.routes.unregister(listener);
     }, [id]);
+
+    // Refresh on broadcast of any presentation change
+    const onUpdate = useCallback(() => {
+        if (id)
+            getPresentation(conn, id)
+                .then(setPresentation)
+                .catch(console.error);
+    }, [conn, id]);
+    useBroadcast(conn, 'plugin/lappis/presentations', 'UPDATE', onUpdate);
 
     return presentation;
 }
@@ -365,31 +358,24 @@ export function usePlaybackState(): PlaybackState | null {
 
     useEffect(() => {
         getPlaybackState(conn).then(setState).catch(console.error);
-
-        const listener = {
-            path: 'plugin/lappis/slides',
-            method: 'UPDATE',
-            handler: (req: any) => setState(req.data ?? null),
-        };
-        conn.routes.register(listener);
-        return () => conn.routes.unregister(listener);
     }, []);
+
+    const onUpdate = useCallback(
+        (req: BroadcastReq) => setState(req.data ?? null),
+        [],
+    );
+    useBroadcast(conn, 'plugin/lappis/slides', 'UPDATE', onUpdate);
 
     return state;
 }
 
 export function useArmEvents(handler: (event: ArmEvent) => void) {
     const conn = useSocket();
-
-    useEffect(() => {
-        const listener = {
-            path: 'plugin/lappis/slides-arm',
-            method: 'UPDATE',
-            handler: (req: any) => {
-                if (req.data && typeof req.data === 'object') handler(req.data);
-            },
-        };
-        conn.routes.register(listener);
-        return () => conn.routes.unregister(listener);
-    }, [handler]);
+    const cb = useCallback(
+        (req: BroadcastReq) => {
+            if (req.data && typeof req.data === 'object') handler(req.data);
+        },
+        [handler],
+    );
+    useBroadcast(conn, 'plugin/lappis/slides-arm', 'UPDATE', cb);
 }
