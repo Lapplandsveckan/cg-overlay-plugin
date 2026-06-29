@@ -84,7 +84,7 @@ function handleMinimize(
 
     const mainTarget = fromBelow ? '90%' : '-100%';
     const numberTarget = fromBelow ? '5%' : '105%';
-    const topTarget = fromBelow ? '10%' : '100%';
+    const topTarget = fromBelow ? '0%' : '100%';
 
     let delay = 0.3;
     if (prevState === 0) {
