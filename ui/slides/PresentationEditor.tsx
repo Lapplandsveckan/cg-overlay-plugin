@@ -73,9 +73,26 @@ import {
 import { BOOKS, TRANSLATIONS } from './bible-api';
 import { pluginHomeUrl } from './urls';
 
+const IMAGE_CODECS = new Set([
+    'mjpeg',
+    'png',
+    'bmp',
+    'gif',
+    'webp',
+    'tiff',
+    'jpeg',
+    'apng',
+]);
+
 function isImageMedia(item: any): boolean {
-    if (!item.mediainfo?.streams) return false;
-    return !item.mediainfo.streams.some((s: any) => s.codec?.type === 'video');
+    const streams = item.mediainfo?.streams;
+    if (!streams) return false;
+    if (streams.some((s: any) => s.codec?.type === 'audio')) return false;
+    const duration = Number(item.mediainfo?.format?.duration) || 0;
+    const hasImageCodec = streams.some((s: any) =>
+        IMAGE_CODECS.has(s.codec?.name),
+    );
+    return hasImageCodec || duration === 0;
 }
 
 interface ImagePickerProps {
