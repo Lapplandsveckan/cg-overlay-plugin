@@ -208,7 +208,9 @@ export default class OverlayManager {
             return Promise.resolve();
         }
 
-        const holdMs = fast ? FAST_TRANSITION_CUT_DELAY : VIDEO_TRANSITION_CUT_DELAY;
+        const holdMs = fast
+            ? FAST_TRANSITION_CUT_DELAY
+            : VIDEO_TRANSITION_CUT_DELAY;
         return new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(() => {
                 this.videoSession.stop = () => null;

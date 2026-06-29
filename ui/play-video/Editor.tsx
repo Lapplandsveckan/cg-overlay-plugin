@@ -5,15 +5,21 @@ import {
     AccordionSummary,
     Box,
     Button,
-    Checkbox,
-    FormControlLabel,
-    FormGroup,
     Stack,
     TextField,
+    ToggleButton,
+    ToggleButtonGroup,
     Typography,
 } from '@mui/material';
 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import FastForwardIcon from '@mui/icons-material/FastForward';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
+import LooksOneIcon from '@mui/icons-material/LooksOne';
+import LoopIcon from '@mui/icons-material/Loop';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import QueueMusicIcon from '@mui/icons-material/QueueMusic';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
 import { useSocket, MediaSelect, RundownEditorActionBar } from '@web-lib';
 import { useTranslation } from '../i18n';
 
@@ -40,6 +46,19 @@ interface VideoPickerProps {
     clearLabel: string;
 }
 
+interface ModeOption {
+    value: string;
+    label: string;
+    icon: React.ReactNode;
+}
+
+interface ModeRowProps {
+    label: string;
+    value: string;
+    onChange: (v: string) => void;
+    options: ModeOption[];
+}
+
 const VideoPicker: React.FC<VideoPickerProps> = ({
     clip,
     onChange,
@@ -61,6 +80,44 @@ const VideoPicker: React.FC<VideoPickerProps> = ({
     </Stack>
 );
 
+const ModeRow: React.FC<ModeRowProps> = ({
+    label,
+    value,
+    onChange,
+    options,
+}) => (
+    <Stack direction="row" alignItems="center" spacing={1.5}>
+        <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ width: 72, flexShrink: 0 }}
+        >
+            {label}
+        </Typography>
+        <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={value}
+            onChange={(_, v) => v !== null && onChange(v)}
+        >
+            {options.map(opt => (
+                <ToggleButton key={opt.value} value={opt.value}>
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                        <Box sx={{ display: 'flex', fontSize: 16 }}>
+                            {opt.icon}
+                        </Box>
+                        <Typography variant="caption">{opt.label}</Typography>
+                    </Stack>
+                </ToggleButton>
+            ))}
+        </ToggleButtonGroup>
+    </Stack>
+);
+
+type IntroMode = 'regular' | 'fast' | 'skip';
+type PlaybackMode = 'once' | 'loop';
+type WhenMode = 'queue' | 'now';
+
 export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
     entry,
     updateEntry,
@@ -74,14 +131,14 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
     const [media, setMedia] = useState<any | null>(null);
     const [title, setTitle] = useState(entry.title);
 
-    const [skipIntro, setSkipIntro] = useState(
-        entry.data?.options?.skipIntro ?? false,
+    const opts = entry.data?.options;
+    const [intro, setIntro] = useState<IntroMode>(
+        opts?.skipIntro ? 'skip' : opts?.fast ? 'fast' : 'regular',
     );
-    const [loop, setLoop] = useState(entry.data?.options?.loop ?? false);
-    const [playNow, setPlayNow] = useState(
-        entry.data?.options?.playNow ?? false,
+    const [playback, setPlayback] = useState<PlaybackMode>(
+        opts?.loop ? 'loop' : 'once',
     );
-    const [fast, setFast] = useState(entry.data?.options?.fast ?? false);
+    const [when, setWhen] = useState<WhenMode>(opts?.playNow ? 'now' : 'queue');
 
     useEffect(() => {
         if (!entry.data?.clip) return;
@@ -100,7 +157,52 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
         };
     }, [entry.data?.clip]);
 
-    const additionalOptionsActive = playNow || skipIntro || loop || fast;
+    const additionalOptionsActive =
+        intro !== 'regular' || playback !== 'once' || when !== 'queue';
+
+    const introOptions: ModeOption[] = [
+        {
+            value: 'regular',
+            label: t('playVideo.introRegular'),
+            icon: <PlayCircleOutlineIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'fast',
+            label: t('playVideo.introFast'),
+            icon: <FastForwardIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'skip',
+            label: t('playVideo.introSkip'),
+            icon: <SkipNextIcon sx={{ fontSize: 16 }} />,
+        },
+    ];
+
+    const playbackOptions: ModeOption[] = [
+        {
+            value: 'once',
+            label: t('playVideo.playbackOnce'),
+            icon: <LooksOneIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'loop',
+            label: t('playVideo.playbackLoop'),
+            icon: <LoopIcon sx={{ fontSize: 16 }} />,
+        },
+    ];
+
+    const whenOptions: ModeOption[] = [
+        {
+            value: 'queue',
+            label: t('playVideo.whenQueue'),
+            icon: <QueueMusicIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'now',
+            label: t('playVideo.whenNow'),
+            icon: <FlashOnIcon sx={{ fontSize: 16 }} />,
+        },
+    ];
 
     return (
         <Stack spacing={2.5}>
@@ -148,56 +250,26 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                     </Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                    <FormGroup row sx={{ gap: 2 }}>
-                        <FormControlLabel
-                            label={t('playVideo.playNowLabel')}
-                            title={t('playVideo.playNowTitle')}
-                            control={
-                                <Checkbox
-                                    size="small"
-                                    checked={playNow}
-                                    onChange={e =>
-                                        setPlayNow(e.target['checked'])
-                                    }
-                                />
-                            }
+                    <Stack spacing={1.5}>
+                        <ModeRow
+                            label={t('playVideo.introLabel')}
+                            value={intro}
+                            onChange={v => setIntro(v as IntroMode)}
+                            options={introOptions}
                         />
-                        <FormControlLabel
-                            label={t('playVideo.skipIntroLabel')}
-                            title={t('playVideo.skipIntroTitle')}
-                            control={
-                                <Checkbox
-                                    size="small"
-                                    checked={skipIntro}
-                                    onChange={e =>
-                                        setSkipIntro(e.target['checked'])
-                                    }
-                                />
-                            }
+                        <ModeRow
+                            label={t('playVideo.playbackLabel')}
+                            value={playback}
+                            onChange={v => setPlayback(v as PlaybackMode)}
+                            options={playbackOptions}
                         />
-                        <FormControlLabel
-                            label={t('playVideo.loopLabel')}
-                            title={t('playVideo.loopTitle')}
-                            control={
-                                <Checkbox
-                                    size="small"
-                                    checked={loop}
-                                    onChange={e => setLoop(e.target['checked'])}
-                                />
-                            }
+                        <ModeRow
+                            label={t('playVideo.whenLabel')}
+                            value={when}
+                            onChange={v => setWhen(v as WhenMode)}
+                            options={whenOptions}
                         />
-                        <FormControlLabel
-                            label={t('playVideo.fastLabel')}
-                            title={t('playVideo.fastTitle')}
-                            control={
-                                <Checkbox
-                                    size="small"
-                                    checked={fast}
-                                    onChange={e => setFast(e.target['checked'])}
-                                />
-                            }
-                        />
-                    </FormGroup>
+                    </Stack>
                 </AccordionDetails>
             </Accordion>
 
@@ -210,10 +282,10 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                         data: {
                             clip: media?.id,
                             options: {
-                                loop,
-                                skipIntro,
-                                playNow,
-                                fast,
+                                skipIntro: intro === 'skip',
+                                fast: intro === 'fast',
+                                loop: playback === 'loop',
+                                playNow: when === 'now',
                             },
                         },
                         ...(instant ? {} : { title }),
