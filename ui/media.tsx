@@ -15,18 +15,12 @@ import FolderIcon from '@mui/icons-material/Folder';
 import { MediaDropZone, useSocket, useRundownLive } from '@web-lib';
 import { useTranslation } from './i18n';
 import { setRundownDragPayload } from './drag';
+import { buildThumbnailUrl } from './thumbnail';
 
 interface MediaItem {
     id: string;
     duration: number;
     thumbnailUrl: string | null;
-}
-
-function buildThumbnailUrl(clip: any): string | null {
-    const background = clip?._attachments?.['thumb.png'];
-    if (!background) return null;
-    const base64 = btoa(String.fromCharCode(...background.data.data));
-    return `data:${background.content_type};base64,${base64}`;
 }
 
 function formatDuration(seconds: number) {

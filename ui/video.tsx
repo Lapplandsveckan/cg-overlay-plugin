@@ -12,6 +12,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import { useSocket } from '@web-lib';
 import { useTranslation } from './i18n';
+import { buildThumbnailUrl } from './thumbnail';
 
 function formatTime(seconds: number) {
     if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -28,14 +29,8 @@ function useThumbnail(clip: any): {
 } {
     return useMemo(() => {
         if (!clip) return { url: null, name: '', duration: 0 };
-        const background = clip._attachments?.['thumb.png'];
-        let url: string | null = null;
-        if (background) {
-            const data = btoa(String.fromCharCode(...background.data.data));
-            url = `data:${background.content_type};base64,${data}`;
-        }
         return {
-            url,
+            url: buildThumbnailUrl(clip),
             name: clip.id as string,
             duration: Number(clip.mediainfo?.format?.duration) || 0,
         };

@@ -3,6 +3,7 @@ import { Box, Chip, Stack, Typography } from '@mui/material';
 
 import { useSocket, MediaCard } from '@web-lib';
 import { useTranslation } from '../i18n';
+import { buildThumbnailUrl } from '../thumbnail';
 
 interface RundownEntry {
     id: string;
@@ -19,16 +20,12 @@ interface PlayVideoRundownItemProps {
 function useMediaCardData(clip: any) {
     return useMemo(() => {
         if (!clip) return null;
-        const background = clip._attachments?.['thumb.png'];
-        let url = 'https://via.placeholder.com/1920x1080';
-        if (background) {
-            const data = btoa(String.fromCharCode(...background.data.data));
-            url = `data:${background.content_type};base64,${data}`;
-        }
         return {
             name: clip.id,
             duration: clip.mediainfo?.format?.duration,
-            backgroundUrl: url,
+            backgroundUrl:
+                buildThumbnailUrl(clip) ??
+                'https://via.placeholder.com/1920x1080',
         };
     }, [clip]);
 }
