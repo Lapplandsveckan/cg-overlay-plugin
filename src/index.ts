@@ -295,8 +295,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         });
 
         registerRundownAction('swish', async rundown => {
-            const { number, labels, highlightIntro } = rundown.data;
-            this.overlay.toggleSwish(number, labels, highlightIntro);
+            const { number, labels, highlightIntro, fromBelow } = rundown.data;
+            this.overlay.toggleSwish(number, labels, highlightIntro, fromBelow);
         });
 
         registerRundownAction('insamling', async rundown => {

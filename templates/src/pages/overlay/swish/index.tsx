@@ -22,12 +22,14 @@ interface SwishAnimationProps {
     number: string;
     state: number;
     labels: string;
+    fromBelow: boolean;
 }
 
 export const SwishAnimation: React.FC<SwishAnimationProps> = ({
     number,
     state,
     labels,
+    fromBelow,
 }) => {
     let Labels = labels.split('\n');
     if (Labels.length !== 2) Labels = ['Swish', 'Swish'];
@@ -35,7 +37,7 @@ export const SwishAnimation: React.FC<SwishAnimationProps> = ({
     return (
         <CG
             state={state}
-            handle={handleState}
+            handle={(tl, s, p, st) => handleState(tl, s, p, st, fromBelow)}
             labels={['start', 'mid', 'end']}
             styles={getStylesProxy(styles)}
         >
@@ -130,9 +132,17 @@ const Page = () => {
     const [state, setState] = useState(0);
     const [number, setNumber] = useState('123 456 78 90');
     const [labels, setLabels] = useState('');
-    useEffect(() => register(setState, setNumber, setLabels), []);
+    const [fromBelow, setFromBelow] = useState(false);
+    useEffect(() => register(setState, setNumber, setLabels, setFromBelow), []);
 
-    return <SwishAnimation number={number} state={state} labels={labels} />;
+    return (
+        <SwishAnimation
+            number={number}
+            state={state}
+            labels={labels}
+            fromBelow={fromBelow}
+        />
+    );
 };
 
 export default Page;

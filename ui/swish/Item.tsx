@@ -30,6 +30,9 @@ export const SwishRundownItem: React.FC<SwishRundownItemProps> = ({
                     {t('swish.highlightIntro')}
                 </Typography>
             )}
+            {entry.data.fromBelow && (
+                <Typography variant="body2">{t('swish.fromBelow')}</Typography>
+            )}
         </Stack>
     );
 };

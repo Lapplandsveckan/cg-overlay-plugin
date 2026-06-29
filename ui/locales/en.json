@@ -23,7 +23,10 @@
         "labelsHelper": "Comma-separated labels shown alongside the number.",
         "highlightIntroLabel": "Highlight on show",
         "highlightIntroHelper": "Play the full intro reveal animation when the overlay first appears.",
-        "highlightIntro": "Highlight intro"
+        "highlightIntro": "Highlight intro",
+        "fromBelowLabel": "Enter from below",
+        "fromBelowHelper": "Slide the minimized bar in from the bottom of the screen instead of the top.",
+        "fromBelow": "From below"
     },
     "insamling": {
         "heading": "Insamling",

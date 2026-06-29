@@ -3,6 +3,7 @@ import { CgCommand, Effect, type EffectGroup } from '@lappis/cg-manager';
 export interface SwishOverlayEffectOptions {
     number: string;
     labels: string;
+    fromBelow?: boolean;
 }
 
 export class SwishOverlayEffect extends Effect {

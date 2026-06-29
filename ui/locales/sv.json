@@ -23,7 +23,10 @@
         "labelsHelper": "Kommaseparerade etiketter som visas bredvid numret.",
         "highlightIntroLabel": "Markera vid visning",
         "highlightIntroHelper": "Spela den fullständiga intro-animeringen när överlägget visas.",
-        "highlightIntro": "Markera intro"
+        "highlightIntro": "Markera intro",
+        "fromBelowLabel": "Ange underifrån",
+        "fromBelowHelper": "Låt den minimerade listen glida in från skärmens nederkant istället för överkant.",
+        "fromBelow": "Underifrån"
     },
     "insamling": {
         "heading": "Insamling",

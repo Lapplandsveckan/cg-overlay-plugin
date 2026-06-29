@@ -302,6 +302,7 @@ export default class OverlayManager {
         number?: string,
         labels?: string,
         highlightIntro?: boolean,
+        fromBelow?: boolean,
     ) {
         if (highlightIntro) {
             this.swishState = (this.swishState + 1) % 3;
@@ -311,9 +312,7 @@ export default class OverlayManager {
         }
 
         labels = labels || '';
-        if (number) {
-            this.swish.update({ number, labels });
-        }
+        this.swish.update({ number: number || '', labels, fromBelow });
 
         switch (this.swishState) {
             case 0:

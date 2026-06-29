@@ -3,10 +3,11 @@ export function handleState(
     state: number,
     prevState: number,
     styles: Record<string, string>,
+    fromBelow = false,
 ) {
-    if (state === 0) handleHide(tl, styles);
+    if (state === 0) handleHide(tl, styles, fromBelow);
     if (state === 1) handleShow(tl, styles);
-    if (state === 2) handleMinimize(tl, styles, prevState);
+    if (state === 2) handleMinimize(tl, styles, prevState, fromBelow);
 }
 
 function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
@@ -69,6 +70,7 @@ function handleMinimize(
     tl: gsap.core.Timeline,
     styles: Record<string, string>,
     prevState: number,
+    fromBelow = false,
 ) {
     // tl.clear();
 
@@ -80,13 +82,17 @@ function handleMinimize(
         'start',
     );
 
+    const mainTarget = fromBelow ? '90%' : '-100%';
+    const numberTarget = fromBelow ? '5%' : '105%';
+    const topTarget = fromBelow ? '10%' : '100%';
+
     let delay = 0.3;
     if (prevState === 0) {
         delay = 0;
         tl.set(
             styles.swish__main,
             {
-                top: '-110%',
+                top: fromBelow ? '110%' : '-110%',
             },
             'start',
         );
@@ -119,7 +125,7 @@ function handleMinimize(
         tl.set(
             styles.swish__top,
             {
-                top: '-120%',
+                top: fromBelow ? '120%' : '-120%',
             },
             'start',
         );
@@ -146,7 +152,7 @@ function handleMinimize(
     tl.to(
         styles.swish__main,
         {
-            top: '-100%',
+            top: mainTarget,
             duration: 1,
             delay,
         },
@@ -156,7 +162,7 @@ function handleMinimize(
     tl.to(
         styles.swish__number,
         {
-            top: '105%',
+            top: numberTarget,
             fontSize: '80px',
 
             duration: 1,
@@ -168,7 +174,7 @@ function handleMinimize(
     tl.to(
         styles.swish__top,
         {
-            top: '100%',
+            top: topTarget,
 
             duration: 1,
             delay,
@@ -177,13 +183,17 @@ function handleMinimize(
     );
 }
 
-function handleHide(tl: gsap.core.Timeline, styles: Record<string, string>) {
+function handleHide(
+    tl: gsap.core.Timeline,
+    styles: Record<string, string>,
+    fromBelow = false,
+) {
     tl.clear();
 
     tl.to(
         styles.swish__main,
         {
-            top: '-110%',
+            top: fromBelow ? '110%' : '-110%',
             duration: 0.3,
         },
         'end',

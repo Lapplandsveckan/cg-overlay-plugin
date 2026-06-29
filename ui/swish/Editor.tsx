@@ -40,6 +40,7 @@ export const SwishEditor: React.FC<SwishEditorProps> = ({
     const [highlightIntro, setHighlightIntro] = useState(
         entry?.data.highlightIntro ?? false,
     );
+    const [fromBelow, setFromBelow] = useState(entry?.data.fromBelow ?? false);
 
     return (
         <Stack spacing={2}>
@@ -85,6 +86,21 @@ export const SwishEditor: React.FC<SwishEditorProps> = ({
                 </FormHelperText>
             </Stack>
 
+            <Stack>
+                <FormControlLabel
+                    label={t('swish.fromBelowLabel')}
+                    control={
+                        <Checkbox
+                            checked={fromBelow}
+                            onChange={e => setFromBelow(e.target['checked'])}
+                        />
+                    }
+                />
+                <FormHelperText sx={{ marginLeft: 4 }}>
+                    {t('swish.fromBelowHelper')}
+                </FormHelperText>
+            </Stack>
+
             <RundownEditorActionBar
                 exists={!creating}
                 onDelete={() => deleteEntry(entry)}
@@ -95,6 +111,7 @@ export const SwishEditor: React.FC<SwishEditorProps> = ({
                             number,
                             labels,
                             highlightIntro,
+                            fromBelow,
                         },
                         title,
                     });
