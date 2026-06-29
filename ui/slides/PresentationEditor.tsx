@@ -287,10 +287,11 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
     );
     useEffect(() => {
         if (!remote) return;
-        const sameOrder =
-            remote.slides.length === orderedSlides.length &&
-            remote.slides.every((s, i) => s.id === orderedSlides[i]?.id);
-        if (!sameOrder) setOrderedSlides(remote.slides);
+        setOrderedSlides(prev =>
+            JSON.stringify(prev) === JSON.stringify(remote.slides)
+                ? prev
+                : remote.slides,
+        );
     }, [remote?.slides]);
 
     const sensors = useSensors(
