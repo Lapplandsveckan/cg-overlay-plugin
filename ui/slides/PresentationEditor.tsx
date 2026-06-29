@@ -66,6 +66,7 @@ import {
     deletePresentation,
     usePresentation,
     useBackgroundImage,
+    useFullImage,
     useImageThumbnails,
     fetchBibleSlides,
 } from './api';
@@ -1113,6 +1114,9 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
     const [reference, setReference] = useState('');
     const [mediaId, setMediaId] = useState('');
     const backgroundUrl = useBackgroundImage();
+    const selectedImageUrl = useFullImage(
+        slide?.type === 'image' ? mediaId : null,
+    );
 
     useEffect(() => {
         if (!slide) return;
@@ -1156,10 +1160,13 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
             <DialogContent>
                 <Stack spacing={2.5} sx={{ marginTop: 1 }}>
                     {slide.type === 'image' ? (
-                        <ImagePicker
-                            selectedId={mediaId}
-                            onSelect={setMediaId}
-                        />
+                        <>
+                            <SlidePreview imageUrl={selectedImageUrl} />
+                            <ImagePicker
+                                selectedId={mediaId}
+                                onSelect={setMediaId}
+                            />
+                        </>
                     ) : (
                         <>
                             <SlidePreview
