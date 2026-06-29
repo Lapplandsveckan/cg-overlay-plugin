@@ -389,7 +389,10 @@ export default class OverlayManager {
             // recreate the effect so CG ADD re-runs — preventing the "blank
             // overlay after a CasparCG reconnect" desync that only a restart
             // previously cleared.
-            if (this.presentationEffect && (!wasPlaying || wasKind !== 'text')) {
+            if (
+                this.presentationEffect &&
+                (!wasPlaying || wasKind !== 'text')
+            ) {
                 this.presentationEffect.dispose();
                 this.presentationEffect = null;
             }
