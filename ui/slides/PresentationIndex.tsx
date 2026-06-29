@@ -4,20 +4,29 @@ import {
     Box,
     Button,
     Chip,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     Stack,
     Tooltip,
     Typography,
 } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DeleteIcon from '@mui/icons-material/Delete';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 
 import { noTryAsync } from 'no-try';
-import { useSocket } from '@web-lib';
+import { useSocket, useContextMenu } from '@web-lib';
 import { useTranslation } from '../i18n';
 
 import SlidePreview from './SlidePreview';
 import {
     type Presentation,
     createPresentation,
+    deletePresentation,
+    duplicatePresentation,
     usePresentations,
     useBackgroundImage,
     useImageThumbnails,
@@ -31,7 +40,7 @@ import ImportPdfDialog from './ImportPdfDialog';
 export const PresentationIndex: React.FC = () => {
     const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
-    const { presentations } = usePresentations();
+    const { presentations, refresh } = usePresentations();
     const backgroundUrl = useBackgroundImage();
     const [creating, setCreating] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
@@ -117,6 +126,8 @@ export const PresentationIndex: React.FC = () => {
                             key={p.id}
                             presentation={p}
                             backgroundUrl={backgroundUrl}
+                            conn={conn}
+                            onRefresh={refresh}
                         />
                     ))}
                 </Box>
@@ -200,89 +211,157 @@ const CreateTile: React.FC<{ onClick: () => void; disabled: boolean }> = ({
 const PresentationTile: React.FC<{
     presentation: Presentation;
     backgroundUrl?: string | null;
-}> = ({ presentation, backgroundUrl }) => {
+    conn: any;
+    onRefresh: () => void;
+}> = ({ presentation, backgroundUrl, conn, onRefresh }) => {
     const { t } = useTranslation('cg-overlay-plugin');
+    const menu = useContextMenu();
+    const [confirmDelete, setConfirmDelete] = useState(false);
+
     const firstSlide = presentation.slides[0];
     const coverMediaIds =
         firstSlide?.type === 'image' ? [firstSlide.mediaId] : [];
     const coverThumbs = useImageThumbnails(coverMediaIds);
+
+    const menuItems = [
+        {
+            label: t('contextMenu.open'),
+            icon: <OpenInNewIcon sx={{ fontSize: 18 }} />,
+            onClick: () =>
+                window.location.assign(slidesEditorUrl(presentation.id)),
+        },
+        {
+            label: t('contextMenu.duplicate'),
+            icon: <ContentCopyIcon sx={{ fontSize: 18 }} />,
+            onClick: () =>
+                duplicatePresentation(conn, presentation.id)
+                    .then(onRefresh)
+                    .catch(console.error),
+        },
+        {
+            label: t('contextMenu.delete'),
+            icon: <DeleteIcon sx={{ fontSize: 18 }} />,
+            danger: true,
+            divider: true,
+            onClick: () => setConfirmDelete(true),
+        },
+    ];
+
     return (
-        <Stack
-            spacing={1}
-            component="a"
-            href={slidesEditorUrl(presentation.id)}
-            sx={{
-                textDecoration: 'none',
-                color: 'inherit',
-                cursor: 'pointer',
-                '&:hover .pres-card-title': { color: '#4a90e2' },
-                '&:hover .pres-thumb': { borderColor: '#4a90e2' },
-            }}
-        >
-            <Box
-                className="pres-thumb"
+        <>
+            <Stack
+                spacing={1}
+                component="a"
+                href={slidesEditorUrl(presentation.id)}
+                onContextMenu={menu.bind(menuItems)}
                 sx={{
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: 1.5,
-                    transition: 'border-color 80ms',
-                    overflow: 'hidden',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    cursor: 'pointer',
+                    '&:hover .pres-card-title': { color: '#4a90e2' },
+                    '&:hover .pres-thumb': { borderColor: '#4a90e2' },
                 }}
             >
-                {firstSlide ? (
-                    firstSlide.type === 'image' ? (
-                        <SlidePreview
-                            imageUrl={coverThumbs[firstSlide.mediaId] ?? null}
-                        />
-                    ) : (
-                        <SlidePreview
-                            text={slideText(firstSlide)}
-                            reference={slideRef(firstSlide)}
-                            backgroundUrl={backgroundUrl}
-                        />
-                    )
-                ) : (
-                    <Box
-                        sx={{
-                            aspectRatio: '16/9',
-                            backgroundColor: '#000',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'rgba(255,255,255,0.35)',
-                            fontSize: 14,
-                            fontStyle: 'italic',
-                        }}
-                    >
-                        {t('presentationIndex.empty')}
-                    </Box>
-                )}
-            </Box>
-            <Stack
-                direction="row"
-                spacing={1}
-                alignItems="center"
-                sx={{ paddingLeft: 0.25 }}
-            >
-                <Typography
-                    className="pres-card-title"
-                    variant="body1"
+                <Box
+                    className="pres-thumb"
                     sx={{
-                        flexGrow: 1,
-                        minWidth: 0,
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: 1.5,
+                        transition: 'border-color 80ms',
                         overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
                     }}
                 >
-                    {presentation.title}
-                </Typography>
-                <Chip
-                    label={`${presentation.slides.length}`}
-                    size="small"
-                    variant="outlined"
-                />
+                    {firstSlide ? (
+                        firstSlide.type === 'image' ? (
+                            <SlidePreview
+                                imageUrl={
+                                    coverThumbs[firstSlide.mediaId] ?? null
+                                }
+                            />
+                        ) : (
+                            <SlidePreview
+                                text={slideText(firstSlide)}
+                                reference={slideRef(firstSlide)}
+                                backgroundUrl={backgroundUrl}
+                            />
+                        )
+                    ) : (
+                        <Box
+                            sx={{
+                                aspectRatio: '16/9',
+                                backgroundColor: '#000',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'rgba(255,255,255,0.35)',
+                                fontSize: 14,
+                                fontStyle: 'italic',
+                            }}
+                        >
+                            {t('presentationIndex.empty')}
+                        </Box>
+                    )}
+                </Box>
+                <Stack
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                    sx={{ paddingLeft: 0.25 }}
+                >
+                    <Typography
+                        className="pres-card-title"
+                        variant="body1"
+                        sx={{
+                            flexGrow: 1,
+                            minWidth: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        {presentation.title}
+                    </Typography>
+                    <Chip
+                        label={`${presentation.slides.length}`}
+                        size="small"
+                        variant="outlined"
+                    />
+                </Stack>
             </Stack>
-        </Stack>
+
+            <Dialog
+                open={confirmDelete}
+                onClose={() => setConfirmDelete(false)}
+            >
+                <DialogTitle>
+                    {t('presentationEditor.deleteConfirmTitle')}
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2">
+                        {t('presentationEditor.deleteConfirmBody', {
+                            title: presentation.title,
+                        })}
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmDelete(false)}>
+                        {t('panel.cancel')}
+                    </Button>
+                    <Button
+                        color="error"
+                        variant="contained"
+                        onClick={() => {
+                            setConfirmDelete(false);
+                            deletePresentation(conn, presentation.id)
+                                .then(onRefresh)
+                                .catch(console.error);
+                        }}
+                    >
+                        {t('presentationEditor.delete')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </>
     );
 };
 

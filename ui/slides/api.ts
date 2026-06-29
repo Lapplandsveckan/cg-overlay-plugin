@@ -227,6 +227,19 @@ export function deletePresentation(conn: any, id: string): Promise<boolean> {
         .then((res: any) => !!res?.data);
 }
 
+export function duplicatePresentation(
+    conn: any,
+    id: string,
+): Promise<Presentation | null> {
+    return getPresentation(conn, id).then(original => {
+        if (!original) return null;
+        return createPresentation(conn, {
+            title: `${original.title} (copy)`,
+            slides: original.slides,
+        });
+    });
+}
+
 // ---------- Playback ----------
 
 export function getPlaybackState(conn: any): Promise<PlaybackState> {

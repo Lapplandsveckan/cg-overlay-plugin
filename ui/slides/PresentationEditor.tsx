@@ -44,7 +44,12 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { noTryAsync } from 'no-try';
-import { useSocket, MediaDropZone, UploadButton } from '@web-lib';
+import {
+    useSocket,
+    MediaDropZone,
+    UploadButton,
+    useContextMenu,
+} from '@web-lib';
 import { useTranslation } from '../i18n';
 import NameDialog from './NameDialog';
 
@@ -577,6 +582,7 @@ const SlideCard: React.FC<SlideCardProps> = ({
     onDelete,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
+    const menu = useContextMenu();
     const {
         attributes,
         listeners,
@@ -586,10 +592,26 @@ const SlideCard: React.FC<SlideCardProps> = ({
         isDragging,
     } = useSortable({ id: slide.id });
 
+    const menuItems = [
+        {
+            label: t('presentationEditor.editSlide'),
+            icon: <EditIcon sx={{ fontSize: 16 }} />,
+            onClick: onEdit,
+        },
+        {
+            label: t('presentationEditor.deleteSlide'),
+            icon: <DeleteIcon sx={{ fontSize: 16 }} />,
+            danger: true,
+            divider: true,
+            onClick: onDelete,
+        },
+    ];
+
     return (
         <Stack
             spacing={1}
             ref={setNodeRef}
+            onContextMenu={menu.bind(menuItems)}
             style={{
                 transform: CSS.Transform.toString(transform),
                 transition,

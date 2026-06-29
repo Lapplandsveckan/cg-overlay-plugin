@@ -200,6 +200,13 @@
         "importCreating": "Creating presentation…",
         "importError": "Failed to import PDF"
     },
+    "contextMenu": {
+        "playNow": "Play now",
+        "stopPlayback": "Stop playback",
+        "open": "Open",
+        "duplicate": "Duplicate",
+        "delete": "Delete"
+    },
     "motion": {
         "backgroundColor": "Background color",
         "noColor": "No color set",
