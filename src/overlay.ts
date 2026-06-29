@@ -59,9 +59,9 @@ export const ATEM_CUT_DELAY = 300;
 // How long to hold the video transition cover before cutting ATEM to the source.
 export const VIDEO_TRANSITION_CUT_DELAY = 3000;
 // Delay for fast-sweep transitions: cut while the screen is covered.
-// The slide-in animation is 350ms, but starts after CG round-trip latency;
-// 500ms gives a comfortable margin while still landing before the exit begins.
-export const FAST_TRANSITION_CUT_DELAY = 500;
+// The slide-in animation is 700ms, but starts after CG round-trip latency;
+// 1000ms gives a comfortable margin while still landing before the exit begins.
+export const FAST_TRANSITION_CUT_DELAY = 1000;
 
 const delay = (ms: number) =>
     new Promise<void>(resolve => setTimeout(resolve, ms));

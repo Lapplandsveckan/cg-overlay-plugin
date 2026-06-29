@@ -81,7 +81,7 @@ function handleHide(
 }
 
 // Fast mode: sweep in from top, then immediately slide off to the side.
-// Total duration ~0.7 s; the ATEM cut fires at ~0.5 s (backend FAST_TRANSITION_CUT_DELAY)
+// Total duration ~1.4 s; the ATEM cut fires at ~1.0 s (backend FAST_TRANSITION_CUT_DELAY)
 // to stay well within the covered window even accounting for CG round-trip latency.
 function handleSweep(
     tl: gsap.core.Timeline,
@@ -95,17 +95,17 @@ function handleSweep(
     tl.set(styles['banner-logo'], { left: '0%' });
 
     // Slide down to cover
-    tl.to(styles.container, { top: '0%', duration: 0.35, ease: 'power1.in' });
+    tl.to(styles.container, { top: '0%', duration: 0.7, ease: 'power1.in' });
 
     // Slide off to the side
     tl.to(styles.container, {
         left: exitX,
-        duration: 0.35,
+        duration: 0.7,
         ease: 'power1.out',
     });
     tl.to(
         styles['banner-logo'],
-        { left: exitX, duration: 0.35, ease: 'power1.out' },
+        { left: exitX, duration: 0.7, ease: 'power1.out' },
         '<',
     );
 }

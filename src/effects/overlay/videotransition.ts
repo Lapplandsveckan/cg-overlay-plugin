@@ -3,7 +3,7 @@ import { CgCommand, Effect, type EffectGroup } from '@lappis/cg-manager';
 // How long the normal transition holds before triggering its slide-off exit.
 const HOLD_DURATION = 3000;
 // How long the fast sweep animation runs before the effect self-resets.
-const SWEEP_DURATION = 800;
+const SWEEP_DURATION = 1500;
 
 export interface VideoTransitionOverlayEffectOptions {
     direction?: 'left' | 'right';
