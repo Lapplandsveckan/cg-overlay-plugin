@@ -34,7 +34,7 @@ export async function createConversionJob(
                     input_format: 'pptx',
                     output_format: 'pdf',
                     /* eslint-enable camelcase */
-                    filename: filename.replace(/\.[^/.]+$/, '') + '.pdf',
+                    filename: `${filename.replace(/\.[^/.]+$/, '')}.pdf`,
                 },
                 'export-file': {
                     operation: 'export/url',
