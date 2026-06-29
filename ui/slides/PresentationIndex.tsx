@@ -109,12 +109,10 @@ export const PresentationIndex: React.FC = () => {
                 <Box
                     sx={{
                         display: 'grid',
-                        gridTemplateColumns: {
-                            xs: 'repeat(2, 1fr)',
-                            md: 'repeat(3, 1fr)',
-                            lg: 'repeat(4, 1fr)',
-                        },
+                        gridTemplateColumns:
+                            'repeat(auto-fill, minmax(200px, 1fr))',
                         gap: 2.5,
+                        minWidth: 0,
                     }}
                 >
                     <CreateTile
