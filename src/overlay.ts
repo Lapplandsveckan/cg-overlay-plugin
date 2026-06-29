@@ -385,6 +385,15 @@ export default class OverlayManager {
                 this.presentationImageEffect = null;
             }
 
+            // If we're not continuing an active text slide, dispose and
+            // recreate the effect so CG ADD re-runs — preventing the "blank
+            // overlay after a CasparCG reconnect" desync that only a restart
+            // previously cleared.
+            if (this.presentationEffect && (!wasPlaying || wasKind !== 'text')) {
+                this.presentationEffect.dispose();
+                this.presentationEffect = null;
+            }
+
             if (!this.presentationEffect) {
                 this.presentationEffect = this.api.createEffect(
                     'overlay-presentation',
@@ -395,16 +404,13 @@ export default class OverlayManager {
                         heading: render.heading,
                     },
                 ) as PresentationOverlayEffect;
+                this.presentationEffect.activate();
             } else {
                 this.presentationEffect.update({
                     text: render.text,
                     reference: render.reference,
                     heading: render.heading,
                 });
-            }
-
-            if (!wasPlaying || wasKind !== 'text') {
-                this.presentationEffect.activate();
             }
 
             this.presentationKind = 'text';
@@ -427,7 +433,8 @@ export default class OverlayManager {
             }
 
             if (wasKind === 'text' && this.presentationEffect) {
-                this.presentationEffect.deactivate();
+                this.presentationEffect.dispose();
+                this.presentationEffect = null;
             }
 
             this.presentationImageEffect = this.api.createEffect(
@@ -469,7 +476,8 @@ export default class OverlayManager {
         this.plugin.atem.returnToPreview();
 
         if (this.presentationEffect) {
-            this.presentationEffect.deactivate();
+            this.presentationEffect.dispose();
+            this.presentationEffect = null;
         }
 
         if (this.presentationImageEffect) {
