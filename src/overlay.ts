@@ -154,6 +154,13 @@ export default class OverlayManager {
             getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY),
             {},
         ) as InsamlingOverlayEffect; // TODO: special group so it is underneeth all overlays
+
+        this.presentationEffect = this.api.createEffect(
+            'overlay-presentation',
+            getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
+            { text: '', reference: '', heading: false },
+        ) as PresentationOverlayEffect;
+        this.presentationKind = null;
     }
 
     public dispose() {
@@ -374,7 +381,6 @@ export default class OverlayManager {
         grabAttention = true,
     ) {
         const prevState = { ...this.presentationState };
-        const wasPlaying = this.presentationState.playing;
         const wasKind = this.presentationKind;
 
         this.presentationState = { playing: true, presentationId, slideId };
@@ -385,36 +391,12 @@ export default class OverlayManager {
                 this.presentationImageEffect = null;
             }
 
-            // If we're not continuing an active text slide, dispose and
-            // recreate the effect so CG ADD re-runs — preventing the "blank
-            // overlay after a CasparCG reconnect" desync that only a restart
-            // previously cleared.
-            if (
-                this.presentationEffect &&
-                (!wasPlaying || wasKind !== 'text')
-            ) {
-                this.presentationEffect.dispose();
-                this.presentationEffect = null;
-            }
-
-            if (!this.presentationEffect) {
-                this.presentationEffect = this.api.createEffect(
-                    'overlay-presentation',
-                    getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
-                    {
-                        text: render.text,
-                        reference: render.reference,
-                        heading: render.heading,
-                    },
-                ) as PresentationOverlayEffect;
-                this.presentationEffect.activate();
-            } else {
-                this.presentationEffect.update({
-                    text: render.text,
-                    reference: render.reference,
-                    heading: render.heading,
-                });
-            }
+            this.presentationEffect.update({
+                text: render.text,
+                reference: render.reference,
+                heading: render.heading,
+            });
+            this.presentationEffect.activate();
 
             this.presentationKind = 'text';
         } else {
@@ -436,8 +418,7 @@ export default class OverlayManager {
             }
 
             if (wasKind === 'text' && this.presentationEffect) {
-                this.presentationEffect.dispose();
-                this.presentationEffect = null;
+                this.presentationEffect.deactivate();
             }
 
             this.presentationImageEffect = this.api.createEffect(
@@ -479,8 +460,7 @@ export default class OverlayManager {
         this.plugin.atem.returnToPreview();
 
         if (this.presentationEffect) {
-            this.presentationEffect.dispose();
-            this.presentationEffect = null;
+            this.presentationEffect.deactivate();
         }
 
         if (this.presentationImageEffect) {
