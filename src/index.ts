@@ -47,6 +47,11 @@ import { config } from './config';
 import { NamnskyltPresetStore } from './namnskylt-presets';
 import { PresentationStore } from './presentations';
 import { buildBackgroundData, readImageData } from './assets';
+import {
+    createConversionJob,
+    getConversionResult,
+    isConversionEnabled,
+} from './cloudconvert';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -536,6 +541,14 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             'GET',
         );
 
+        // Must be registered before presentations/:id GET to avoid the wildcard
+        // capturing 'convert' as an id.
+        this.api.registerRoute(
+            'presentations/convert',
+            async () => ({ enabled: isConversionEnabled() }),
+            'GET',
+        );
+
         this.api.registerRoute(
             'presentations/:id',
             async req => {
@@ -610,6 +623,29 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                 return ok;
             },
             'DELETE',
+        );
+
+        // PPTX conversion via CloudConvert — browser uploads/downloads directly;
+        // backend only performs the key-protected job-create and status steps.
+        this.api.registerRoute(
+            'presentations/convert/create',
+            async req => {
+                const filename =
+                    (req.data as any)?.filename ?? 'presentation.pptx';
+                return createConversionJob(filename);
+            },
+            'ACTION',
+        );
+
+        this.api.registerRoute(
+            'presentations/convert/status',
+            async req => {
+                const jobId = (req.data as any)?.jobId;
+                if (!jobId)
+                    return { status: 'error', message: 'Missing jobId' };
+                return getConversionResult(jobId);
+            },
+            'ACTION',
         );
     }
 }

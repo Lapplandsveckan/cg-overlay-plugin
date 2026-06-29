@@ -25,19 +25,129 @@ import {
     type RenderProgress,
 } from './import';
 
-type DialogPhase = 'idle' | 'rendering' | 'uploading' | 'creating';
+type DialogPhase =
+    | 'idle'
+    | 'converting'
+    | 'rendering'
+    | 'uploading'
+    | 'creating';
 
 interface ImportPdfDialogProps {
     open: boolean;
     conn: any;
+    pptxEnabled: boolean;
     onDone: (p: Presentation) => void;
     onError: (msg: string) => void;
     onClose: () => void;
 }
 
+const PPTX_MIME =
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+function isPptx(file: File): boolean {
+    return file.name.toLowerCase().endsWith('.pptx') || file.type === PPTX_MIME;
+}
+
+interface ConvertProgress {
+    step?: 'upload' | 'convert' | 'export';
+    percent?: number;
+}
+
+/** Convert PPTX → PDF via CloudConvert (backend creates the job; browser uploads/downloads directly). */
+async function convertPptxToPdf(
+    file: File,
+    conn: any,
+    onProgress?: (p: ConvertProgress) => void,
+): Promise<File> {
+    // 1. Backend creates the CloudConvert job and returns a pre-signed upload form.
+    const [createErr, job] = await noTryAsync(() =>
+        conn.rawRequest(
+            '/api/plugin/lappis/presentations/convert/create',
+            'ACTION',
+            {
+                filename: file.name,
+            },
+        ),
+    );
+    if (createErr)
+        throw new Error(
+            `Failed to create conversion job: ${(createErr as Error).message}`,
+        );
+
+    const { jobId, upload } = (job as any)?.data as {
+        jobId: string;
+        upload: { url: string; parameters: Record<string, string> };
+    };
+
+    // 2. Browser uploads PPTX directly to CloudConvert via the pre-signed form.
+    onProgress?.({ step: 'upload' });
+    const form = new FormData();
+    for (const [k, v] of Object.entries(upload.parameters)) form.append(k, v);
+    form.append('file', file); // file field must be last
+
+    const [uploadErr, uploadRes] = await noTryAsync(() =>
+        fetch(upload.url, { method: 'POST', body: form }),
+    );
+    if (uploadErr || !uploadRes!.ok) {
+        throw new Error(
+            `PPTX upload to CloudConvert failed: ${uploadRes?.statusText ?? (uploadErr as Error).message}`,
+        );
+    }
+
+    // 3. Poll job status until finished or error.
+    let downloadUrl: string | undefined;
+    for (let attempts = 0; attempts < 120; attempts++) {
+        await new Promise(r => setTimeout(r, 1500));
+        const [pollErr, result] = await noTryAsync(() =>
+            conn.rawRequest(
+                '/api/plugin/lappis/presentations/convert/status',
+                'ACTION',
+                {
+                    jobId,
+                },
+            ),
+        );
+        if (pollErr)
+            throw new Error(`Polling failed: ${(pollErr as Error).message}`);
+        const {
+            status,
+            downloadUrl: url,
+            message,
+            step,
+            percent,
+        } = (result as any)?.data as {
+            status: string;
+            downloadUrl?: string;
+            message?: string;
+            step?: ConvertProgress['step'];
+            percent?: number;
+        };
+        if (status === 'error') throw new Error(message ?? 'Conversion failed');
+        onProgress?.({ step, percent });
+        if (status === 'finished') {
+            downloadUrl = url;
+            break;
+        }
+    }
+    if (!downloadUrl) throw new Error('Conversion timed out');
+
+    // 4. Browser fetches the resulting PDF directly from CloudConvert.
+    const [fetchErr, res] = await noTryAsync(() => fetch(downloadUrl!));
+    if (fetchErr || !res!.ok) {
+        throw new Error(
+            `PDF download failed: ${res?.statusText ?? (fetchErr as Error).message}`,
+        );
+    }
+    const blob = await res!.blob();
+    return new File([blob], file.name.replace(/\.pptx$/i, '.pdf'), {
+        type: 'application/pdf',
+    });
+}
+
 const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
     open,
     conn,
+    pptxEnabled,
     onDone,
     onError,
     onClose,
@@ -52,6 +162,7 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
     const [title, setTitle] = useState('');
     const [file, setFile] = useState<File | null>(null);
     const [phase, setPhase] = useState<DialogPhase>('idle');
+    const [convertProgress, setConvertProgress] = useState<ConvertProgress>({});
     const [renderProgress, setRenderProgress] = useState<RenderProgress>({
         done: 0,
         total: 0,
@@ -71,6 +182,7 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
         setTitle('');
         setFile(null);
         setPhase('idle');
+        setConvertProgress({});
         setRenderProgress({ done: 0, total: 0 });
         pendingRef.current = null;
         folderRef.current = '';
@@ -115,17 +227,39 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0] ?? null;
         setFile(f);
-        if (f && !title) setTitle(f.name.replace(/\.pdf$/i, ''));
+        if (f && !title) setTitle(f.name.replace(/\.(pdf|pptx)$/i, ''));
     };
 
     const handleImport = async () => {
         if (!file || !title.trim()) return;
 
+        let pdfFile = file;
+
+        if (isPptx(file)) {
+            if (!pptxEnabled) {
+                onError(t('presentationIndex.importPptxDisabled'));
+                return;
+            }
+            setPhase('converting');
+            setConvertProgress({});
+            const [err, converted] = await noTryAsync(() =>
+                convertPptxToPdf(file, conn, p => setConvertProgress(p)),
+            );
+            if (err) {
+                reset();
+                onError(
+                    (err as any)?.message ?? t('presentationIndex.importError'),
+                );
+                return;
+            }
+            pdfFile = converted!;
+        }
+
         setPhase('rendering');
         setRenderProgress({ done: 0, total: 0 });
 
         const [err, blobs] = await noTryAsync(() =>
-            renderPdfToImages(file, p => setRenderProgress(p)),
+            renderPdfToImages(pdfFile, p => setRenderProgress(p)),
         );
         if (err) {
             reset();
@@ -159,6 +293,13 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
     };
 
     const progressLabel = (() => {
+        if (phase === 'converting') {
+            const pct =
+                convertProgress.percent !== undefined
+                    ? ` ${Math.round(convertProgress.percent)}%`
+                    : '';
+            return `${t('presentationIndex.importConverting')}${pct}`;
+        }
         if (phase === 'rendering') {
             return renderProgress.total > 0
                 ? t('presentationIndex.importRendering', {
@@ -179,6 +320,8 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
     })();
 
     const progressValue = (() => {
+        if (phase === 'converting' && convertProgress.percent !== undefined)
+            return convertProgress.percent;
         if (phase === 'rendering' && renderProgress.total > 0)
             return (renderProgress.done / renderProgress.total) * 100;
         if (phase === 'uploading') {
@@ -190,6 +333,13 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
         }
         return undefined;
     })();
+
+    const accept = pptxEnabled
+        ? `application/pdf,.pdf,${PPTX_MIME},.pptx`
+        : 'application/pdf,.pdf';
+    const pickLabel = pptxEnabled
+        ? t('presentationIndex.importPickFile')
+        : t('presentationIndex.importPickFilePdf');
 
     return (
         <Dialog
@@ -206,7 +356,9 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
             }}
         >
             <DialogTitle>
-                {t('presentationIndex.importDialogTitle')}
+                {pptxEnabled
+                    ? t('presentationIndex.importDialogTitle')
+                    : t('presentationIndex.importDialogTitlePdf')}
             </DialogTitle>
             <DialogContent>
                 <Stack spacing={2} sx={{ marginTop: 1 }}>
@@ -220,13 +372,11 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
                             textTransform: 'none',
                         }}
                     >
-                        {file
-                            ? file.name
-                            : t('presentationIndex.importPickFile')}
+                        {file ? file.name : pickLabel}
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept="application/pdf"
+                            accept={accept}
                             hidden
                             onChange={handleFileChange}
                         />
@@ -255,6 +405,16 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
                             >
                                 {progressLabel}
                             </Typography>
+                            {phase === 'converting' && (
+                                <Typography
+                                    variant="caption"
+                                    color="text.disabled"
+                                >
+                                    {t(
+                                        'presentationIndex.importConvertingHint',
+                                    )}
+                                </Typography>
+                            )}
                         </Stack>
                     )}
                 </Stack>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Alert,
     Box,
@@ -45,7 +45,14 @@ export const PresentationIndex: React.FC = () => {
     const [creating, setCreating] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
     const [importOpen, setImportOpen] = useState(false);
+    const [pptxEnabled, setPptxEnabled] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        conn.rawRequest('/api/plugin/lappis/presentations/convert', 'GET', {})
+            .then((r: any) => setPptxEnabled(!!r?.data?.enabled))
+            .catch(() => setPptxEnabled(false));
+    }, [conn]);
 
     const handleCreate = async (title: string) => {
         setCreateOpen(false);
@@ -83,14 +90,24 @@ export const PresentationIndex: React.FC = () => {
                 <Typography variant="h5" fontWeight={600}>
                     {t('presentationIndex.heading')}
                 </Typography>
-                <Tooltip title={t('presentationIndex.importPdfTooltip')}>
+                <Tooltip
+                    title={t(
+                        pptxEnabled
+                            ? 'presentationIndex.importPdfTooltip'
+                            : 'presentationIndex.importPdfOnlyTooltip',
+                    )}
+                >
                     <Button
                         variant="outlined"
                         size="small"
                         startIcon={<UploadFileIcon />}
                         onClick={() => setImportOpen(true)}
                     >
-                        {t('presentationIndex.importPdf')}
+                        {t(
+                            pptxEnabled
+                                ? 'presentationIndex.importPdf'
+                                : 'presentationIndex.importPdfOnly',
+                        )}
                     </Button>
                 </Tooltip>
             </Stack>
@@ -143,6 +160,7 @@ export const PresentationIndex: React.FC = () => {
             <ImportPdfDialog
                 open={importOpen}
                 conn={conn}
+                pptxEnabled={pptxEnabled}
                 onDone={handleImportDone}
                 onError={handleImportError}
                 onClose={() => setImportOpen(false)}
