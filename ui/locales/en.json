@@ -116,6 +116,8 @@
         "newPresentation": "+ New",
         "creating": "Creating…",
         "noPresentations": "No presentations yet.",
+        "search": "Search presentations…",
+        "noResults": "No presentations match your search.",
         "emptySlide": "Empty"
     },
     "slides": {

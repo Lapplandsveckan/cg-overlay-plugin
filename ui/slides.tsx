@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
-import { Box, Button, Stack, Typography } from '@mui/material';
+import React, { useMemo, useState } from 'react';
+import {
+    Box,
+    Button,
+    IconButton,
+    InputAdornment,
+    Stack,
+    TextField,
+    Typography,
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 
 import { noTryAsync } from 'no-try';
 import { useSocket } from '@web-lib';
@@ -134,6 +143,15 @@ const SlidesTab: React.FC = () => {
     const conn = useSocket();
     const { presentations } = usePresentations();
     const [creating, setCreating] = useState(false);
+    const [query, setQuery] = useState('');
+
+    const filtered = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!presentations) return [];
+        return presentations.filter(
+            p => !q || p.title.toLowerCase().includes(q),
+        );
+    }, [presentations, query]);
 
     const handleCreate = async () => {
         setCreating(true);
@@ -167,6 +185,25 @@ const SlidesTab: React.FC = () => {
                     {t('panel.slidesHint')}
                 </Typography>
                 <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
+                    <TextField
+                        size="small"
+                        placeholder={t('panel.search')}
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
+                        sx={{ width: 160 }}
+                        InputProps={{
+                            endAdornment: query ? (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => setQuery('')}
+                                    >
+                                        <CloseIcon sx={{ fontSize: 14 }} />
+                                    </IconButton>
+                                </InputAdornment>
+                            ) : null,
+                        }}
+                    />
                     <Button
                         variant="outlined"
                         size="small"
@@ -199,6 +236,16 @@ const SlidesTab: React.FC = () => {
                             {t('panel.noPresentations')}
                         </Typography>
                     </Stack>
+                ) : filtered.length === 0 ? (
+                    <Stack
+                        alignItems="center"
+                        justifyContent="center"
+                        sx={{ height: '100%', color: 'text.secondary' }}
+                    >
+                        <Typography variant="body2">
+                            {t('panel.noResults')}
+                        </Typography>
+                    </Stack>
                 ) : (
                     <Box
                         sx={{
@@ -208,7 +255,7 @@ const SlidesTab: React.FC = () => {
                             gap: 1.5,
                         }}
                     >
-                        {presentations.map(p => (
+                        {filtered.map(p => (
                             <PresentationCard key={p.id} presentation={p} />
                         ))}
                     </Box>

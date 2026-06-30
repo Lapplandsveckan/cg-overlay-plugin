@@ -116,6 +116,8 @@
         "newPresentation": "+ Ny",
         "creating": "Skapar…",
         "noPresentations": "Inga presentationer ännu.",
+        "search": "Sök presentationer…",
+        "noResults": "Inga presentationer matchar din sökning.",
         "emptySlide": "Tom"
     },
     "slides": {
