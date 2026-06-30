@@ -18,6 +18,7 @@ export class NamnskyltOverlayEffect extends HealthCheckedEffect {
         >
     >;
     private logger: Logger;
+    public onAutoDeactivate?: () => void;
 
     public constructor(
         group: EffectGroup,
@@ -69,10 +70,10 @@ export class NamnskyltOverlayEffect extends HealthCheckedEffect {
             if (!this.active) return;
             this.minimize();
 
-            setTimeout(
-                () => this.deactivate(),
-                this.options.totalDuration - this.options.largeDuration,
-            );
+            setTimeout(() => {
+                this.deactivate();
+                this.onAutoDeactivate?.();
+            }, this.options.totalDuration - this.options.largeDuration);
         }, this.options.largeDuration);
 
         return execChecked(

@@ -515,6 +515,16 @@ export default class OverlayManager {
         this.namnskyltName = name;
         this.broadcastOverlay();
         this.loadThenActivate(pair, () => this.namnskylt === pair);
+
+        const clearOnDone = () => {
+            if (this.namnskylt === pair) {
+                this.namnskylt = null;
+                this.namnskyltName = null;
+                this.broadcastOverlay();
+            }
+        };
+        pair.left.onAutoDeactivate = clearOnDone;
+        pair.right.onAutoDeactivate = clearOnDone;
     }
 
     public hideNamnskylt() {
