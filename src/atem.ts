@@ -77,10 +77,10 @@ export class AtemManager {
             return;
         }
         const { programInput, previewInput } = this.state;
-        if (programInput !== config.atem.videoInput) return;
-
-        this.connection.changePreviewInput(programInput);
-        this.connection.changeProgramInput(previewInput);
+        if (programInput === config.atem.videoInput) {
+            this.connection.changePreviewInput(programInput);
+            this.connection.changeProgramInput(previewInput);
+        }
         this.returnStage();
     }
 
@@ -111,9 +111,16 @@ export class AtemManager {
             const current = this.connection.state.video.auxilliaries[apiBus];
             if (current === stageCasparSource) continue;
             this.savedAuxSources[bus] = current;
-            this.connection.setAuxSource(stageCasparSource, apiBus).catch(err =>
-                reportError(this.plugin, 'atem', `setAuxSource(${bus}) failed`, err),
-            );
+            this.connection
+                .setAuxSource(stageCasparSource, apiBus)
+                .catch(err =>
+                    reportError(
+                        this.plugin,
+                        'atem',
+                        `setAuxSource(${bus}) failed`,
+                        err,
+                    ),
+                );
         }
     }
 
@@ -122,9 +129,16 @@ export class AtemManager {
         for (const bus of config.atem.stageAuxBuses) {
             const saved = this.savedAuxSources[bus];
             if (saved == null) continue;
-            this.connection.setAuxSource(saved, bus - 1).catch(err =>
-                reportError(this.plugin, 'atem', `setAuxSource(${bus}) failed`, err),
-            );
+            this.connection
+                .setAuxSource(saved, bus - 1)
+                .catch(err =>
+                    reportError(
+                        this.plugin,
+                        'atem',
+                        `setAuxSource(${bus}) failed`,
+                        err,
+                    ),
+                );
             delete this.savedAuxSources[bus];
         }
     }
