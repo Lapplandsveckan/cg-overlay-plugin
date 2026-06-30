@@ -230,5 +230,9 @@
         "noColor": "No color set",
         "clear": "Clear",
         "hideColor": "Hide color"
+    },
+    "common": {
+        "live": "Live",
+        "queued": "Queued"
     }
 }

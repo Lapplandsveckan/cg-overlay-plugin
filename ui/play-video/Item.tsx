@@ -4,6 +4,7 @@ import { Box, Chip, Stack, Typography } from '@mui/material';
 import { useSocket, MediaCard } from '@web-lib';
 import { useTranslation } from '../i18n';
 import { buildThumbnailUrl } from '../thumbnail';
+import { LiveChip, useVideoPlayback } from '../overlay-state';
 
 interface RundownEntry {
     id: string;
@@ -36,9 +37,14 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
     const { t } = useTranslation('cg-overlay-plugin');
     const socket = useSocket();
     const [clip, setClip] = useState<any | null>(null);
+    const { currentClip, queued } = useVideoPlayback();
 
     const data = useMediaCardData(clip);
     const playNow = entry.data?.options?.playNow;
+    const clipId: string | undefined = entry.data?.clip;
+
+    const isLive = !!clipId && currentClip === clipId;
+    const isQueued = !isLive && !!clipId && queued.has(clipId);
 
     useEffect(() => {
         if (!entry.data?.clip) return;
@@ -58,6 +64,8 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
                         color="warning"
                     />
                 )}
+                {isLive && <LiveChip variant="live" />}
+                {isQueued && <LiveChip variant="queued" />}
             </Stack>
             {data ? (
                 <MediaCard {...data} columns={1} />

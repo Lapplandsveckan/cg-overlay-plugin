@@ -1,6 +1,7 @@
 import React from 'react';
 import { Stack, Typography } from '@mui/material';
 import { useTranslation } from '../i18n';
+import { LiveChip, useOverlayState } from '../overlay-state';
 
 interface RundownEntry {
     id: string;
@@ -18,10 +19,18 @@ export const SwishRundownItem: React.FC<SwishRundownItemProps> = ({
     entry,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
+    const state = useOverlayState();
+    const isLive =
+        !!state?.swish.on && state.swish.number === (entry.data?.number ?? '');
 
     return (
-        <Stack spacing={2} direction="column">
-            <Typography variant="body1">Swish {entry.data.number}</Typography>
+        <Stack spacing={0.5} direction="column">
+            <Stack direction="row" spacing={1} alignItems="center">
+                <Typography variant="body1">
+                    Swish {entry.data.number}
+                </Typography>
+                {isLive && <LiveChip variant="live" />}
+            </Stack>
             {entry.data.labels && (
                 <Typography variant="body2">{entry.data.labels}</Typography>
             )}

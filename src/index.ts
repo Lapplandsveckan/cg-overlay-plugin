@@ -522,6 +522,12 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
 
         this.api.registerRoute(
+            'overlay-state',
+            async () => this.overlay.getOverlayState(),
+            'GET',
+        );
+
+        this.api.registerRoute(
             'slides',
             async () => this.overlay.getPresentationState(),
             'GET',

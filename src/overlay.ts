@@ -103,11 +103,13 @@ export default class OverlayManager {
 
     private swish: SidePair<SwishOverlayEffect> = null;
     private swishState = -1;
+    private swishNumber = '';
 
     private videoTransition: SidePair<VideoTransitionOverlayEffect> = null;
     private videoTransitionState = 0;
 
     private namnskylt: SidePair<NamnskyltOverlayEffect> = null;
+    private namnskyltName: string | null = null;
 
     private insamling: InsamlingOverlayEffect = null;
     private insamlingState = 0;
@@ -510,6 +512,8 @@ export default class OverlayManager {
             }),
         );
         this.namnskylt = pair;
+        this.namnskyltName = name;
+        this.broadcastOverlay();
         this.loadThenActivate(pair, () => this.namnskylt === pair);
     }
 
@@ -517,6 +521,8 @@ export default class OverlayManager {
         if (!this.namnskylt) return;
         const pair = this.namnskylt;
         this.namnskylt = null;
+        this.namnskyltName = null;
+        this.broadcastOverlay();
         pair.deactivate();
     }
 
@@ -532,6 +538,8 @@ export default class OverlayManager {
                 this.bars.activate();
                 break;
         }
+
+        this.broadcastOverlay();
     }
 
     public toggleVideoTransition(skipIntro = false, fast = false) {
@@ -562,7 +570,8 @@ export default class OverlayManager {
         }
 
         labels = labels || '';
-        this.swish.update({ number: number || '', labels, fromBelow });
+        this.swishNumber = number || '';
+        this.swish.update({ number: this.swishNumber, labels, fromBelow });
 
         switch (this.swishState) {
             case 0:
@@ -577,10 +586,13 @@ export default class OverlayManager {
                 this.swish.deactivate();
                 break;
         }
+
+        this.broadcastOverlay();
     }
 
     public async toggleInsamling(options?: InsamlingOverlayEffectOptions) {
         this.insamlingState = 1 - this.insamlingState;
+        this.broadcastOverlay();
 
         if (options) this.insamling.update(options);
 
@@ -603,6 +615,25 @@ export default class OverlayManager {
 
     private broadcastPresentation() {
         this.api.broadcast('slides', 'UPDATE', this.getPresentationState());
+    }
+
+    public getOverlayState() {
+        return {
+            bars: this.barsState === 1,
+            swish: {
+                on: this.swishState === 0 || this.swishState === 1,
+                number: this.swishNumber,
+            },
+            insamling: this.insamlingState === 1,
+            namnskylt: {
+                on: this.namnskylt !== null,
+                name: this.namnskyltName,
+            },
+        };
+    }
+
+    private broadcastOverlay() {
+        this.api.broadcast('overlay-state', 'UPDATE', this.getOverlayState());
     }
 
     public broadcastArmEvent(presentationId: string, rundownId: string | null) {

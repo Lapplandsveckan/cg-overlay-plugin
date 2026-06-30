@@ -230,5 +230,9 @@
         "noColor": "Ingen färg angiven",
         "clear": "Rensa",
         "hideColor": "Dölj färg"
+    },
+    "common": {
+        "live": "Live",
+        "queued": "I kö"
     }
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Stack, Typography } from '@mui/material';
 import { useTranslation } from '../i18n';
+import { LiveChip, useOverlayState } from '../overlay-state';
 
 interface RundownEntry {
     id: string;
@@ -16,6 +17,7 @@ interface BarsRundownItemProps {
 
 export const BarsRundownItem: React.FC<BarsRundownItemProps> = () => {
     const { t } = useTranslation('cg-overlay-plugin');
+    const state = useOverlayState();
 
     return (
         <Stack direction="row" spacing={1} alignItems="center">
@@ -53,6 +55,7 @@ export const BarsRundownItem: React.FC<BarsRundownItemProps> = () => {
             <Typography variant="body2" color="text.secondary">
                 {t('bars.cinematicBars')}
             </Typography>
+            {state?.bars && <LiveChip variant="live" />}
         </Stack>
     );
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, LinearProgress, Stack, Typography } from '@mui/material';
 import { useTranslation } from '../i18n';
+import { LiveChip, useOverlayState } from '../overlay-state';
 
 interface RundownEntry {
     id: string;
@@ -23,6 +24,7 @@ export const InsamlingRundownItem: React.FC<InsamlingRundownItemProps> = ({
     entry,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
+    const state = useOverlayState();
     const now = Number(entry.data?.now) || 0;
     const goal = Number(entry.data?.goal) || 0;
     const pct = goal > 0 ? Math.min(100, (now / goal) * 100) : 0;
@@ -32,9 +34,14 @@ export const InsamlingRundownItem: React.FC<InsamlingRundownItemProps> = ({
             <Stack
                 direction="row"
                 justifyContent="space-between"
-                alignItems="baseline"
+                alignItems="center"
             >
-                <Typography variant="body1">{t('insamling.label')}</Typography>
+                <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="body1">
+                        {t('insamling.label')}
+                    </Typography>
+                    {state?.insamling && <LiveChip variant="live" />}
+                </Stack>
                 <Typography variant="caption" color="text.secondary">
                     {formatKr(now)} / {formatKr(goal)}
                 </Typography>
