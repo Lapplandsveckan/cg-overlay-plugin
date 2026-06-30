@@ -12,7 +12,7 @@ import { type VideoEffect } from './effects/misc/video';
 import type LappisOverlayPlugin from './index';
 import { type PresentationOverlayEffect } from './effects/overlay/presentation';
 import { SidePair } from './effects/side-pair';
-import { reportError } from './diagnostics';
+import { reportError, reportWarn } from './diagnostics';
 
 // Re-export the canonical slide type from the store; OverlayManager
 // stays narrow and only cares about (presentationId, slideId).
@@ -64,9 +64,28 @@ export const VIDEO_TRANSITION_CUT_DELAY = 3000;
 // The slide-in animation is 700ms, but starts after CG round-trip latency;
 // 1000ms gives a comfortable margin while still landing before the exit begins.
 export const FAST_TRANSITION_CUT_DELAY = 1000;
+// Recycle idle (off-air, not recently used) templates after this duration.
+export const IDLE_RECYCLE_MS = 10 * 60_000;
+
+const IDLE_SWEEP_INTERVAL_MS = 60_000;
+// Max auto-replay attempts per template before giving up and requiring manual
+// retrigger. Prevents a reload loop when a template is persistently broken.
+const MAX_RECOVERY = 2;
 
 const delay = (ms: number) =>
     new Promise<void>(resolve => setTimeout(resolve, ms));
+
+// Tracks a recyclable persistent overlay so the idle sweep and healthcheck
+// recovery can dispose + re-arm it without duplicating per-effect logic.
+interface Recyclable {
+    base: string;
+    rebuild: () => void;
+    isOnAir: () => boolean;
+    replay: () => void;
+    lastUsed: number;
+    attempts: number;
+    recycling: boolean;
+}
 
 export default class OverlayManager {
     private api: PluginAPI;
@@ -101,6 +120,15 @@ export default class OverlayManager {
         presentationId: null,
         slideId: null,
     };
+
+    private lastTextRender: {
+        text: string;
+        reference: string;
+        heading?: boolean;
+    } | null = null;
+
+    private recyclables = new Map<string, Recyclable>();
+    private idleSweepInterval: ReturnType<typeof setInterval> | null = null;
 
     // Build a SidePair targeting LEFT and RIGHT channels with the given group.
     // optsFor receives the channel number so per-side options (e.g. direction)
@@ -139,11 +167,17 @@ export default class OverlayManager {
         }
     }
 
-    public initialize() {
+    // --- Per-effect builders (shared by initialize() and recycle) ---
+
+    private buildBars() {
+        this.bars?.dispose();
         this.bars = this.makeSidePair('overlay-bars', GROUPS.BARS, channel => ({
             healthType: channel === CHANNELS.LEFT ? 'bars-left' : 'bars-right',
         }));
+    }
 
+    private buildSwish() {
+        this.swish?.dispose();
         this.swish = this.makeSidePair(
             'overlay-swish',
             GROUPS.OVERLAY,
@@ -153,7 +187,10 @@ export default class OverlayManager {
                     channel === CHANNELS.LEFT ? 'swish-left' : 'swish-right',
             }),
         );
+    }
 
+    private buildVideoTransition() {
+        this.videoTransition?.dispose();
         this.videoTransition = this.makeSidePair<VideoTransitionOverlayEffect>(
             'overlay-videotransition',
             GROUPS.PRESENTATION,
@@ -165,13 +202,19 @@ export default class OverlayManager {
                         : 'videotransition-right',
             }),
         );
+    }
 
+    private buildInsamling() {
+        this.insamling?.dispose();
         this.insamling = this.api.createEffect(
             'overlay-insamling',
             getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY),
             { healthType: 'insamling' },
         ) as InsamlingOverlayEffect; // TODO: special group so it is underneeth all overlays
+    }
 
+    private buildPresentation() {
+        this.presentationEffect?.dispose();
         this.presentationEffect = this.api.createEffect(
             'overlay-presentation',
             getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
@@ -182,10 +225,179 @@ export default class OverlayManager {
                 healthType: 'presentation',
             },
         ) as PresentationOverlayEffect;
+    }
+
+    private buildRecyclables() {
+        const now = Date.now();
+        this.recyclables = new Map<string, Recyclable>([
+            [
+                'bars',
+                {
+                    base: 'bars',
+                    rebuild: () => this.buildBars(),
+                    isOnAir: () => this.barsState === 1,
+                    replay: () => this.bars.activate(),
+                    lastUsed: now,
+                    attempts: 0,
+                    recycling: false,
+                },
+            ],
+            [
+                'swish',
+                {
+                    base: 'swish',
+                    rebuild: () => this.buildSwish(),
+                    isOnAir: () =>
+                        this.swishState === 0 || this.swishState === 1,
+                    replay: () => {
+                        this.swish.activate();
+                        if (this.swishState === 1)
+                            this.swish.each(e => e.minimize(), 'minimize');
+                    },
+                    lastUsed: now,
+                    attempts: 0,
+                    recycling: false,
+                },
+            ],
+            [
+                'videotransition',
+                {
+                    base: 'videotransition',
+                    rebuild: () => this.buildVideoTransition(),
+                    isOnAir: () => this.videoTransitionState === 1,
+                    replay: () => {
+                        this.videoTransition.update({ fast: false });
+                        this.videoTransition.activate();
+                    },
+                    lastUsed: now,
+                    attempts: 0,
+                    recycling: false,
+                },
+            ],
+            [
+                'insamling',
+                {
+                    base: 'insamling',
+                    rebuild: () => this.buildInsamling(),
+                    isOnAir: () => this.insamlingState === 1,
+                    replay: () => this.insamling.activate(),
+                    lastUsed: now,
+                    attempts: 0,
+                    recycling: false,
+                },
+            ],
+            [
+                'presentation',
+                {
+                    base: 'presentation',
+                    rebuild: () => this.buildPresentation(),
+                    isOnAir: () =>
+                        this.presentationState.playing &&
+                        this.presentationKind === 'text',
+                    replay: () => {
+                        if (this.lastTextRender)
+                            this.presentationEffect.update(this.lastTextRender);
+                        this.presentationEffect.activate();
+                    },
+                    lastUsed: now,
+                    attempts: 0,
+                    recycling: false,
+                },
+            ],
+        ]);
+    }
+
+    private touchRecyclable(base: string) {
+        const r = this.recyclables.get(base);
+        if (r) r.lastUsed = Date.now();
+    }
+
+    private idleSweep() {
+        const now = Date.now();
+        for (const r of this.recyclables.values()) {
+            if (r.recycling || r.isOnAir()) continue;
+            if (now - r.lastUsed > IDLE_RECYCLE_MS) {
+                r.rebuild();
+                r.lastUsed = now;
+                this.logger.info(`Idle-recycled overlay: ${r.base}`);
+            }
+        }
+    }
+
+    private async doRecycle(r: Recyclable, withReplay: boolean) {
+        r.recycling = true;
+        r.rebuild();
+        if (withReplay) {
+            await delay(LOAD_DELAY);
+            if (r.isOnAir()) r.replay();
+        }
+        r.recycling = false;
+    }
+
+    // Called by HealthMonitor when a template fails to play or paint.
+    public handleUnhealthy(type: string) {
+        const base = type.replace(/-(left|right)$/, '');
+        const r = this.recyclables.get(base);
+        if (!r || r.recycling) return;
+
+        const onAir = r.isOnAir();
+        if (onAir) {
+            if (r.attempts >= MAX_RECOVERY) {
+                reportWarn(
+                    this.plugin,
+                    'overlay',
+                    `Gave up auto-replay for "${base}" after ${MAX_RECOVERY} attempts — re-armed fresh, manual retrigger needed`,
+                );
+                r.attempts = 0;
+                this.doRecycle(r, false);
+                return;
+            }
+
+            r.attempts++;
+            this.logger.warn(
+                `Auto-recovering "${base}" (attempt ${r.attempts}/${MAX_RECOVERY})`,
+            );
+        }
+
+        this.doRecycle(r, onAir);
+    }
+
+    // Called by HealthMonitor when both play + painted acks are confirmed.
+    public handleHealthy(type: string) {
+        const base = type.replace(/-(left|right)$/, '');
+        const r = this.recyclables.get(base);
+        if (!r) return;
+        r.attempts = 0;
+        r.lastUsed = Date.now();
+    }
+
+    public initialize() {
+        if (this.idleSweepInterval !== null) {
+            clearInterval(this.idleSweepInterval);
+            this.idleSweepInterval = null;
+        }
+
+        this.buildBars();
+        this.buildSwish();
+        this.buildVideoTransition();
+        this.buildInsamling();
+        this.buildPresentation();
         this.presentationKind = null;
+
+        this.buildRecyclables();
+        this.idleSweepInterval = setInterval(
+            () => this.idleSweep(),
+            IDLE_SWEEP_INTERVAL_MS,
+        );
     }
 
     public dispose() {
+        if (this.idleSweepInterval !== null) {
+            clearInterval(this.idleSweepInterval);
+            this.idleSweepInterval = null;
+        }
+        this.recyclables.clear();
+
         if (this.bars) {
             this.bars.dispose();
             this.bars = null;
@@ -316,6 +528,7 @@ export default class OverlayManager {
                 this.bars.deactivate();
                 break;
             case 1:
+                this.touchRecyclable('bars');
                 this.bars.activate();
                 break;
         }
@@ -330,6 +543,7 @@ export default class OverlayManager {
         this.videoTransitionState = 1;
         if (skipIntro) return;
 
+        this.touchRecyclable('videotransition');
         this.videoTransition.update({ fast });
         this.videoTransition.activate();
     }
@@ -352,9 +566,11 @@ export default class OverlayManager {
 
         switch (this.swishState) {
             case 0:
+                this.touchRecyclable('swish');
                 this.swish.activate();
                 break;
             case 1:
+                this.touchRecyclable('swish');
                 this.swish.each(e => e.minimize(), 'minimize');
                 break;
             case 2:
@@ -375,6 +591,7 @@ export default class OverlayManager {
                 break;
             case 1:
                 await this.startVideoSession(true);
+                this.touchRecyclable('insamling');
                 this.insamling.activate();
                 break;
         }
@@ -414,12 +631,14 @@ export default class OverlayManager {
                 this.presentationImageEffect = null;
             }
 
-            this.presentationEffect.update({
+            this.lastTextRender = {
                 text: render.text,
                 reference: render.reference,
                 heading: render.heading,
-            });
+            };
+            this.presentationEffect.update(this.lastTextRender);
 
+            this.touchRecyclable('presentation');
             this.presentationEffect.activate();
 
             this.presentationKind = 'text';

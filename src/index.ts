@@ -112,6 +112,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
         this.video = new VideoManager(this);
         this.overlay = new OverlayManager(this);
+        this.health.onUnhealthy = type => this.overlay.handleUnhealthy(type);
+        this.health.onHealthy = type => this.overlay.handleHealthy(type);
         this.atem = new AtemManager(this);
         this.namnskyltPresets = new NamnskyltPresetStore(this);
         this.presentations = new PresentationStore(this);

@@ -23,6 +23,11 @@ export class HealthMonitor {
     private pending = new Map<string, Pending>();
     private counter = 0;
 
+    // Called when a watchdog fires (template failed to play or paint).
+    public onUnhealthy?: (type: string) => void;
+    // Called when both play + painted are confirmed successfully.
+    public onHealthy?: (type: string) => void;
+
     constructor(plugin: PluginRef) {
         this.plugin = plugin;
         this.logger = getLogger(plugin, 'healthcheck');
@@ -47,6 +52,7 @@ export class HealthMonitor {
                 'healthcheck',
                 `Overlay "${type}" never received play event (${hcId}) — template may not have loaded`,
             );
+            this.onUnhealthy?.(entry.type);
             // Painted timer will clean up the entry when it fires.
         }, PLAY_DEADLINE_MS);
 
@@ -62,6 +68,7 @@ export class HealthMonitor {
                     'healthcheck',
                     `Overlay "${type}" never painted after play (${hcId}) — browser may be stalled`,
                 );
+                this.onUnhealthy?.(entry.type);
             }
             this.pending.delete(hcId);
         }, PAINTED_DEADLINE_MS);
@@ -90,6 +97,7 @@ export class HealthMonitor {
                 clearTimeout(entry.paintedTimer);
                 entry.paintedTimer = null;
                 this.logger.debug(`Overlay "${entry.type}" painted (${hcId})`);
+                this.onHealthy?.(entry.type);
             }
             // Both phases confirmed — clean up.
             if (entry.playTimer === null) this.pending.delete(hcId);
