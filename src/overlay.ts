@@ -669,6 +669,8 @@ export default class OverlayManager {
         this.api.broadcast('overlay-state', 'UPDATE', this.getOverlayState());
         this.api.invalidateFeedback('lappis-rundown-namnskylt');
         this.api.invalidateFeedback('lappis-swish-state');
+        this.api.invalidateFeedback('lappis-bars-state');
+        this.api.invalidateFeedback('lappis-insamling-state');
     }
 
     public broadcastArmEvent(presentationId: string, rundownId: string | null) {

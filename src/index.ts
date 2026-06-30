@@ -556,6 +556,22 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             evaluate: () => this.overlay.getOverlayState().swish.on,
         });
 
+        this.api.registerFeedback({
+            id: 'lappis-bars-state',
+            name: 'Bars live',
+            type: 'boolean',
+            defaultStyle: { bgcolor: rgb(0, 160, 0) },
+            evaluate: () => this.overlay.getOverlayState().bars,
+        });
+
+        this.api.registerFeedback({
+            id: 'lappis-insamling-state',
+            name: 'Insamling live',
+            type: 'boolean',
+            defaultStyle: { bgcolor: rgb(0, 160, 0) },
+            evaluate: () => this.overlay.getOverlayState().insamling,
+        });
+
         const activeRundownFb = this.api.registerFeedback({
             id: 'lappis-active-rundown',
             name: 'Active rundown',
@@ -577,6 +593,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             namnskyltFb.invalidate();
             activeRundownFb.invalidate();
             this.api.invalidateFeedback('lappis-swish-state');
+            this.api.invalidateFeedback('lappis-bars-state');
+            this.api.invalidateFeedback('lappis-insamling-state');
         }, 2500);
     }
 
