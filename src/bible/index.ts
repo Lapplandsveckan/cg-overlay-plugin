@@ -149,7 +149,7 @@ function smartSplitText(
     const chunkCount = Math.ceil(text.length / maxLength);
     const targetLength = Math.ceil(text.length / chunkCount);
 
-    let sentences: string[] = text.match(/[^.!?]+[.!?]*/g) ?? [text];
+    let sentences: string[] = text.match(/[^.!?]+[.!?]*["”“’'»«]*/g) ?? [text];
     sentences = sentences.map(s => s.trim());
 
     const chunks: string[] = [];
