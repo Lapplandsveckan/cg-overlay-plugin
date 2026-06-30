@@ -376,9 +376,13 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             { stop: () => this.overlay.stopSwish() },
         );
 
-        registerRundownAction('insamling', async rundown => {
-            this.overlay.toggleInsamling(rundown.data);
-        });
+        registerRundownAction(
+            'insamling',
+            async rundown => {
+                this.overlay.toggleInsamling(rundown.data);
+            },
+            { stop: () => this.overlay.stopInsamling() },
+        );
 
         registerRundownAction(
             'slides',

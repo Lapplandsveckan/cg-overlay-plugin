@@ -635,6 +635,13 @@ export default class OverlayManager {
         }
     }
 
+    public stopInsamling() {
+        this.insamlingState = 0;
+        this.broadcastOverlay();
+        this.insamling.deactivate();
+        if (!this.plugin.video.playing) this.stopVideoSession(true);
+    }
+
     public getPresentationState(): PresentationPlaybackState {
         return { ...this.presentationState };
     }

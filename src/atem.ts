@@ -54,7 +54,7 @@ export class AtemManager {
 
                 const apiBus = Number(match[1]);
                 if (!config.atem.stageAuxBuses.includes(apiBus + 1)) continue;
-                
+
                 this.trackAuxSource(apiBus, state.video.auxilliaries[apiBus]);
             }
         });
