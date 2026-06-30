@@ -2,27 +2,42 @@ import { Atem } from 'atem-connection';
 import { config } from './config';
 import { type PluginRef, getLogger, reportError } from './diagnostics';
 
+const AUX_PATH = /^video\.auxilliaries\.(\d+)$/;
+
 export class AtemManager {
     private connection: Atem = null;
     private plugin: PluginRef;
     public connected = false;
-    private savedAuxSources: Record<number, number> = {};
+    // Live cache of the last source seen on each aux bus that wasn't us
+    // pushing caspar — kept up to date from ATEM's own change events so a
+    // restore always uses fresh data, not a one-off snapshot.
+    private lastKnownAuxSources: Record<number, number> = {};
+    private logger: ReturnType<typeof getLogger>;
 
     constructor(plugin: PluginRef) {
         this.plugin = plugin;
+        this.logger = getLogger(plugin, 'atem');
     }
 
     public connect(ip: string) {
-        const logger = getLogger(this.plugin, 'atem');
         this.connection = new Atem();
-        this.connection.on('info', msg => logger.info(String(msg)));
+        this.connection.on('info', msg => this.logger.info(String(msg)));
         this.connection.on('error', err => {
             reportError(this.plugin, 'atem', `ATEM connection error`, err);
         });
 
         this.connection.on('connected', () => {
             this.connected = true;
-            logger.info(`ATEM connected (${ip})`);
+            // The initial state dump doesn't trigger 'stateChanged', so seed
+            // the cache from current state once the connection settles.
+            for (const bus of config.atem.stageAuxBuses) {
+                const apiBus = bus - 1;
+                this.trackAuxSource(
+                    apiBus,
+                    this.connection.state.video.auxilliaries[apiBus],
+                );
+            }
+            this.logger.info(`ATEM connected (${ip})`);
         });
         this.connection.on('disconnected', () => {
             this.connected = false;
@@ -32,14 +47,31 @@ export class AtemManager {
                 `ATEM disconnected — switcher control unavailable`,
             );
         });
+        this.connection.on('stateChanged', (state, paths) => {
+            for (const path of paths) {
+                const match = AUX_PATH.exec(path);
+                if (!match) continue;
+
+                const apiBus = Number(match[1]);
+                if (!config.atem.stageAuxBuses.includes(apiBus + 1)) continue;
+                
+                this.trackAuxSource(apiBus, state.video.auxilliaries[apiBus]);
+            }
+        });
 
         this.connection.connect(ip);
     }
 
     public disconnect() {
         this.connection.disconnect();
+        this.connection.removeAllListeners();
         this.connection = null;
         this.connected = false;
+    }
+
+    private trackAuxSource(apiBus: number, source: number | undefined) {
+        if (source == null || source === config.atem.stageCasparSource) return;
+        this.lastKnownAuxSources[apiBus] = source;
     }
 
     public setVideoProgram() {
@@ -108,9 +140,11 @@ export class AtemManager {
         const { stageCasparSource, stageAuxBuses } = config.atem;
         for (const bus of stageAuxBuses) {
             const apiBus = bus - 1;
-            const current = this.connection.state.video.auxilliaries[apiBus];
-            if (current === stageCasparSource) continue;
-            this.savedAuxSources[bus] = current;
+            if (
+                this.connection.state.video.auxilliaries[apiBus] ===
+                stageCasparSource
+            )
+                continue;
             this.connection
                 .setAuxSource(stageCasparSource, apiBus)
                 .catch(err =>
@@ -127,10 +161,14 @@ export class AtemManager {
     private returnStage() {
         if (!this.stageConfigured) return;
         for (const bus of config.atem.stageAuxBuses) {
-            const saved = this.savedAuxSources[bus];
+            const apiBus = bus - 1;
+            const saved = this.lastKnownAuxSources[apiBus];
             if (saved == null) continue;
+            this.logger.info(
+                `Restoring aux ${bus} to last known source ${saved}`,
+            );
             this.connection
-                .setAuxSource(saved, bus - 1)
+                .setAuxSource(saved, apiBus)
                 .catch(err =>
                     reportError(
                         this.plugin,
@@ -139,7 +177,6 @@ export class AtemManager {
                         err,
                     ),
                 );
-            delete this.savedAuxSources[bus];
         }
     }
 }
