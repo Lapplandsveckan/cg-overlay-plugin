@@ -1,5 +1,6 @@
 import {
     Box,
+    Button,
     Chip,
     IconButton,
     LinearProgress,
@@ -7,12 +8,61 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloseIcon from '@mui/icons-material/Close';
+import FlagIcon from '@mui/icons-material/Flag';
 import React, { useEffect, useMemo, useState } from 'react';
 
+import { useRouter } from 'next/router';
 import { useSocket } from '@web-lib';
 import { useTranslation } from './i18n';
 import { buildThumbnailUrl } from './thumbnail';
+import { useActiveRundown } from './hooks';
+
+function SetCurrentRundownButton() {
+    const { t } = useTranslation('cg-overlay-plugin');
+    const conn = useSocket();
+    const { rundowns, activeId, setActive } = useActiveRundown(conn);
+    const { query } = useRouter();
+    const urlId = typeof query.id === 'string' ? query.id : null;
+
+    // Only render if the URL id matches a known rundown
+    if (!urlId || !rundowns.some(r => r.id === urlId)) return null;
+
+    if (urlId === activeId) {
+        return (
+            <Button
+                size="small"
+                variant="outlined"
+                disabled
+                startIcon={<CheckCircleIcon />}
+                sx={{ borderRadius: 4, fontSize: '0.75rem', py: 0.25, px: 1 }}
+            >
+                {t('video.currentRundown')}
+            </Button>
+        );
+    }
+
+    return (
+        <Button
+            size="small"
+            variant="outlined"
+            color="inherit"
+            startIcon={<FlagIcon />}
+            onClick={() => setActive(urlId)}
+            sx={{
+                borderRadius: 4,
+                fontSize: '0.75rem',
+                py: 0.25,
+                px: 1,
+                opacity: 0.6,
+                '&:hover': { opacity: 1 },
+            }}
+        >
+            {t('video.setCurrentRundown')}
+        </Button>
+    );
+}
 
 function formatTime(seconds: number) {
     if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -258,12 +308,15 @@ const VideoQueue = () => {
         >
             <Stack
                 direction="row"
-                alignItems="baseline"
+                alignItems="center"
                 justifyContent="space-between"
             >
-                <Typography variant="h5" fontWeight={600}>
-                    {t('video.queue')}
-                </Typography>
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <Typography variant="h5" fontWeight={600}>
+                        {t('video.queue')}
+                    </Typography>
+                    <SetCurrentRundownButton />
+                </Stack>
                 {current?.loop ? (
                     <Typography variant="body2" color="text.secondary">
                         {t('video.remainingLooping')}

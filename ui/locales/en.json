@@ -74,7 +74,9 @@
         "remainingLooping": "Looping indefinitely",
         "empty": "Queue is empty.",
         "upNext": "Up next ({{count}})",
-        "timeProgress": "{{elapsed}} / {{duration}} — {{timeLeft}} left"
+        "timeProgress": "{{elapsed}} / {{duration}} — {{timeLeft}} left",
+        "setCurrentRundown": "Set as current",
+        "currentRundown": "Current rundown"
     },
     "panel": {
         "backAll": "← All",

@@ -74,7 +74,9 @@
         "remainingLooping": "Loopar oändligt",
         "empty": "Kön är tom.",
         "upNext": "Härnäst ({{count}})",
-        "timeProgress": "{{elapsed}} / {{duration}} — {{timeLeft}} kvar"
+        "timeProgress": "{{elapsed}} / {{duration}} — {{timeLeft}} kvar",
+        "setCurrentRundown": "Använd som aktiv rundown",
+        "currentRundown": "Aktiv rundown"
     },
     "panel": {
         "backAll": "← Alla",

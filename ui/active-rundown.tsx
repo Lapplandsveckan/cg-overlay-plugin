@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 import {
     FormControl,
     MenuItem,
@@ -8,58 +8,12 @@ import {
 } from '@mui/material';
 import { useSocket } from '@web-lib';
 import { useTranslation } from './i18n';
-import { type BroadcastReq, useBroadcast } from './hooks';
-
-const ROOT = '/api/plugin/lappis';
-
-interface RundownSummary {
-    id: string;
-    name: string;
-}
+import { useActiveRundown } from './hooks';
 
 export default function ActiveRundownSelector() {
     const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
-    const [rundowns, setRundowns] = useState<RundownSummary[]>([]);
-    const [activeId, setActiveId] = useState<string | null>(null);
-
-    useEffect(() => {
-        conn.rawRequest(`${ROOT}/rundowns`, 'GET', {})
-            .then((res: any) => {
-                if (Array.isArray(res?.data)) setRundowns(res.data);
-            })
-            .catch(() => {});
-
-        conn.rawRequest(`${ROOT}/active-rundown`, 'GET', {})
-            .then((res: any) => {
-                setActiveId(
-                    res?.data?.id && typeof res.data.id === 'string'
-                        ? res.data.id
-                        : null,
-                );
-            })
-            .catch(() => {});
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    const onUpdate = useCallback(
-        (req: BroadcastReq) =>
-            setActiveId(
-                req?.data?.id && typeof req.data.id === 'string'
-                    ? req.data.id
-                    : null,
-            ),
-        [],
-    );
-    useBroadcast(conn, 'plugin/lappis/active-rundown', 'UPDATE', onUpdate);
-
-    const handleChange = (id: string) => {
-        const next = id || null;
-        setActiveId(next);
-        conn.rawRequest(`${ROOT}/active-rundown`, 'UPDATE', { id: next }).catch(
-            () => {},
-        );
-    };
+    const { rundowns, activeId, setActive } = useActiveRundown(conn);
 
     return (
         <Stack direction="row" alignItems="center" spacing={1.5}>
@@ -69,7 +23,7 @@ export default function ActiveRundownSelector() {
             <FormControl size="small" sx={{ minWidth: 200 }}>
                 <Select
                     value={activeId ?? ''}
-                    onChange={e => handleChange(e.target.value)}
+                    onChange={e => setActive(e.target.value || null)}
                     displayEmpty
                 >
                     <MenuItem value="">
