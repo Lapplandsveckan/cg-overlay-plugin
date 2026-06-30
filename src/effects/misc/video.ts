@@ -218,6 +218,13 @@ export class VideoEffect extends Effect {
         return result;
     }
 
+    public getRemainingTime(): number {
+        if (!this.playing || this.options.loop || !this.clipDuration) return 0;
+        const elapsed =
+            (Date.now() - this.startedTime - this.pausedDuration) / 1000;
+        return Math.max(0, this.clipDuration - elapsed);
+    }
+
     public getMetadata(): Record<string, unknown> {
         return {
             playing: this.playing,

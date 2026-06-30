@@ -99,6 +99,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         const data = this.video.getInformation();
         this.api.broadcast('videos', 'UPDATE', data);
         this.api.invalidateFeedback('lappis-rundown-video');
+        this.api.invalidateFeedback('lappis-video-queue-state');
     }
 
     protected onEnable() {
@@ -416,6 +417,12 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         };
 
         this.api.registerAction({
+            id: 'lappis-clear-video-queue',
+            name: 'Stop & clear video queue',
+            handler: async () => this.video.stopVideo(true),
+        });
+
+        this.api.registerAction({
             id: 'lappis-rundown-video',
             name: 'Queue video from rundown',
             options: [indexOpt],
@@ -428,6 +435,27 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                 const video = this.api.getFileDatabase().get(item.data.clip);
                 if (!video) return;
                 this.video.queueVideo(video.id, item.data.options);
+            },
+        });
+
+        const fmt = (s: number) => {
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m}:${sec.toString().padStart(2, '0')}`;
+        };
+
+        const videoQueueFb = this.api.registerFeedback({
+            id: 'lappis-video-queue-state',
+            name: 'Video queue time left',
+            description:
+                'Red with total time remaining when a video is playing or queued.',
+            type: 'advanced',
+            evaluate: () => {
+                const { active, remaining } = this.video.getQueueStatus();
+                return {
+                    text: active ? fmt(remaining) : '—',
+                    ...(active ? { bgcolor: rgb(180, 0, 0) } : {}),
+                };
             },
         });
 
@@ -526,6 +554,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         });
 
         this.companionPollInterval = setInterval(() => {
+            videoQueueFb.invalidate();
             videoFb.invalidate();
             namnskyltFb.invalidate();
             activeRundownFb.invalidate();

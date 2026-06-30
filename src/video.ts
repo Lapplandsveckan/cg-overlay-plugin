@@ -8,6 +8,7 @@ interface VideoInfo {
 
     metadata: {
         queueId: string;
+        clipDuration?: number;
         loop?: boolean;
         skipIntro?: boolean;
         fast?: boolean;
@@ -33,41 +34,37 @@ export default class VideoManager {
         if (this.playing) this.playing.effect.cancel();
     }
 
-    public queueVideo(
-        video: string,
-        options?: Omit<VideoInfo['metadata'], 'queueId'>,
-    ) {
-        options = options || {};
-
-        this.queue.push({
-            id: video,
+    private makeVideoInfo(
+        id: string,
+        options: Omit<VideoInfo['metadata'], 'queueId' | 'clipDuration'> = {},
+    ): VideoInfo {
+        const clipDuration = this.plugin['api'].getFileDatabase().get(id)
+            ?.mediainfo?.format?.duration;
+        return {
+            id,
             metadata: {
                 ...options,
                 queueId: Math.random().toString(36).substring(7),
+                clipDuration,
             },
-        });
-        if (this.playing) return this.plugin.sendVideoInformation();
+        };
+    }
 
+    public queueVideo(
+        video: string,
+        options?: Omit<VideoInfo['metadata'], 'queueId' | 'clipDuration'>,
+    ) {
+        this.queue.push(this.makeVideoInfo(video, options));
+        if (this.playing) return this.plugin.sendVideoInformation();
         this.playNext();
     }
 
     public playVideo(
         video: string,
-        options?: Omit<VideoInfo['metadata'], 'queueId'>,
+        options?: Omit<VideoInfo['metadata'], 'queueId' | 'clipDuration'>,
     ) {
-        options = options || {};
-
-        this.queue = [
-            {
-                id: video,
-                metadata: {
-                    ...options,
-                    queueId: Math.random().toString(36).substring(7),
-                },
-            },
-        ];
+        this.queue = [this.makeVideoInfo(video, options)];
         if (this.playing) return this.stopVideo();
-
         this.playNext();
     }
 
@@ -158,6 +155,18 @@ export default class VideoManager {
         }
 
         return data;
+    }
+
+    public getQueueStatus() {
+        const queued = this.queue.reduce(
+            (sum, v) => sum + (v.metadata.clipDuration ?? 0),
+            0,
+        );
+        const current = this.playing?.effect.getRemainingTime() ?? 0;
+        return {
+            active: this.playing !== null || this.queue.length > 0,
+            remaining: queued + current,
+        };
     }
 
     public clearQueue() {
