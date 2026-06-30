@@ -7,7 +7,9 @@ import {
     type BasicLayer,
     type Command,
     BasicChannel,
+    type Logger,
 } from '@lappis/cg-manager';
+import { execChecked } from '../../diagnostics';
 
 type Tuple<T, N extends number> = N extends N
     ? number extends N
@@ -22,15 +24,18 @@ export interface RouteEffectOptions {
     source: BasicChannel | BasicLayer;
     transform?: Tuple<number, 8>;
     disposeOnStop?: boolean;
+    logger?: Logger;
 }
 
 export class RouteEffect extends Effect {
     protected options: RouteEffectOptions;
+    private logger: Logger | null;
 
     public constructor(group: EffectGroup, options: RouteEffectOptions) {
         super(group);
 
         this.options = options;
+        this.logger = options.logger ?? null;
         this.allocateLayers();
 
         if (options.transform)
@@ -47,7 +52,10 @@ export class RouteEffect extends Effect {
         const cmd = PlayCommand.route(this.options.source);
         cmd.allocate(this.layer);
 
-        return this.executor.execute(cmd);
+        const result = this.executor.execute(cmd);
+        if (this.logger)
+            execChecked(this.logger, 'activate route effect', result);
+        return result;
     }
 
     public deactivate() {
@@ -55,6 +63,8 @@ export class RouteEffect extends Effect {
 
         const cmd = new StopCommand(this.layer);
         const result = this.executor.execute(cmd);
+        if (this.logger)
+            execChecked(this.logger, 'deactivate route effect', result);
         if (this.options.disposeOnStop)
             result.then(() => !this.active && this.dispose());
 

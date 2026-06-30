@@ -8,8 +8,10 @@ import {
     Transform,
     LoadBGCommand,
     ResumeCommand,
+    type Logger,
 } from '@lappis/cg-manager';
 import { type MediaDoc } from '@lappis/cg-manager/dist/types/scanner/db';
+import { execChecked } from '../../diagnostics';
 
 type Tuple<T, N extends number> = N extends N
     ? number extends N
@@ -26,15 +28,18 @@ export interface VideoEffectOptions {
     disposeOnStop?: boolean;
     holdLastFrame?: boolean;
     transform?: Tuple<number, 8>;
+    logger?: Logger;
 }
 
 export class VideoEffect extends Effect {
     protected options: VideoEffectOptions;
+    private logger: Logger | null;
 
     public constructor(group: EffectGroup, options: VideoEffectOptions) {
         super(group);
 
         this.options = options;
+        this.logger = options.logger ?? null;
         this.allocateLayers();
 
         if (options.transform)
@@ -61,7 +66,14 @@ export class VideoEffect extends Effect {
         cmd.allocate(this.layer);
 
         if (play) this.handlePlay();
-        return this.executor.execute(cmd);
+        const result = this.executor.execute(cmd);
+        if (this.logger)
+            execChecked(
+                this.logger,
+                `activate video "${this.options.media.id}"`,
+                result,
+            );
+        return result;
     }
 
     protected get layer() {
@@ -79,7 +91,14 @@ export class VideoEffect extends Effect {
         cmd.allocate(this.layer);
 
         this.handlePlay();
-        return this.executor.execute(cmd);
+        const result = this.executor.execute(cmd);
+        if (this.logger)
+            execChecked(
+                this.logger,
+                `play video "${this.options.media.id}"`,
+                result,
+            );
+        return result;
     }
 
     public waitForFinish() {
@@ -139,7 +158,14 @@ export class VideoEffect extends Effect {
         this.pausedTime = Date.now();
 
         const cmd = new PauseCommand(this.layer);
-        return this.executor.execute(cmd);
+        const result = this.executor.execute(cmd);
+        if (this.logger)
+            execChecked(
+                this.logger,
+                `pause video "${this.options.media.id}"`,
+                result,
+            );
+        return result;
     }
 
     public resume() {
@@ -161,7 +187,14 @@ export class VideoEffect extends Effect {
         }
 
         const cmd = new ResumeCommand(this.layer);
-        return this.executor.execute(cmd);
+        const result = this.executor.execute(cmd);
+        if (this.logger)
+            execChecked(
+                this.logger,
+                `resume video "${this.options.media.id}"`,
+                result,
+            );
+        return result;
     }
 
     public deactivate() {
@@ -173,6 +206,12 @@ export class VideoEffect extends Effect {
 
         const cmd: Command = new ClearCommand(this.layer);
         const result = this.executor.execute(cmd);
+        if (this.logger)
+            execChecked(
+                this.logger,
+                `deactivate video "${this.options.media.id}"`,
+                result,
+            );
         if (this.options.disposeOnStop)
             result.then(() => !this.active && this.dispose());
 

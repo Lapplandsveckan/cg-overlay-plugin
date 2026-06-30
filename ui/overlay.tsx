@@ -1,8 +1,199 @@
-import React from 'react';
-import { Box, Stack } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import {
+    Box,
+    Chip,
+    Collapse,
+    IconButton,
+    Stack,
+    Typography,
+} from '@mui/material';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useSocket } from '@web-lib';
+import { useTranslation } from './i18n';
 import VideoQueue from './video';
 import PresentationIndex from './slides/PresentationIndex';
 import PresentationEditor from './slides/PresentationEditor';
+
+interface DiagEvent {
+    level: 'error' | 'warn' | 'health';
+    scope: string;
+    message: string;
+    time: number;
+}
+
+const LEVEL_COLORS: Record<DiagEvent['level'], 'error' | 'warning' | 'info'> = {
+    error: 'error',
+    warn: 'warning',
+    health: 'warning',
+};
+
+function DiagnosticsPanel() {
+    const { t } = useTranslation('cg-overlay-plugin');
+    const conn = useSocket();
+    const [open, setOpen] = useState(false);
+    const [events, setEvents] = useState<DiagEvent[]>([]);
+
+    // Backfill on mount + subscribe to live updates
+    useEffect(() => {
+        if (!conn) return;
+
+        conn.rawRequest('diagnostics', 'GET', null)
+            .then((res: any) => {
+                if (Array.isArray(res?.events))
+                    setEvents(prev => {
+                        // Merge backfill with any live events that arrived
+                        // during the fetch — keep live events not in backfill.
+                        const backfillKeys = new Set(
+                            (res.events as DiagEvent[]).map(
+                                e => `${e.time}:${e.message}`,
+                            ),
+                        );
+                        const liveOnly = prev.filter(
+                            e => !backfillKeys.has(`${e.time}:${e.message}`),
+                        );
+                        const merged = [...res.events, ...liveOnly].sort(
+                            (a: DiagEvent, b: DiagEvent) => a.time - b.time,
+                        );
+                        return merged.length > 50
+                            ? merged.slice(merged.length - 50)
+                            : merged;
+                    });
+            })
+            .catch(() => {});
+
+        const handler = (event: DiagEvent) => {
+            setEvents(prev => {
+                const next = [...prev, event];
+                return next.length > 50 ? next.slice(next.length - 50) : next;
+            });
+        };
+
+        conn.routes.register('diagnostics', handler);
+        return () => conn.routes.unregister('diagnostics', handler);
+    }, [conn]);
+
+    const errorCount = events.filter(e => e.level === 'error').length;
+    const healthCount = events.filter(e => e.level === 'health').length;
+
+    return (
+        <Box sx={{ mt: 3 }}>
+            <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                sx={{ cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => setOpen(o => !o)}
+            >
+                <Typography
+                    variant="subtitle2"
+                    sx={{ color: 'text.secondary' }}
+                >
+                    {t('diagnostics.heading')}
+                </Typography>
+                {errorCount > 0 && (
+                    <Chip
+                        label={t('diagnostics.errorCount', {
+                            count: errorCount,
+                        })}
+                        color="error"
+                        size="small"
+                    />
+                )}
+                {healthCount > 0 && (
+                    <Chip
+                        label={t('diagnostics.healthCount', {
+                            count: healthCount,
+                        })}
+                        color="warning"
+                        size="small"
+                    />
+                )}
+                <IconButton size="small" sx={{ ml: 'auto' }}>
+                    {open ? (
+                        <ExpandLessIcon sx={{ fontSize: 18 }} />
+                    ) : (
+                        <ExpandMoreIcon sx={{ fontSize: 18 }} />
+                    )}
+                </IconButton>
+            </Stack>
+
+            <Collapse in={open}>
+                <Box
+                    sx={{
+                        mt: 1,
+                        maxHeight: 280,
+                        overflowY: 'auto',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                    }}
+                >
+                    {events.length === 0 ? (
+                        <Typography
+                            variant="body2"
+                            sx={{ p: 2, color: 'text.secondary' }}
+                        >
+                            {t('diagnostics.empty')}
+                        </Typography>
+                    ) : (
+                        [...events].reverse().map((ev, i) => (
+                            <Stack
+                                key={`${ev.time}-${ev.scope}-${i}`}
+                                direction="row"
+                                spacing={1}
+                                alignItems="baseline"
+                                sx={{
+                                    px: 1.5,
+                                    py: 0.75,
+                                    borderBottom: '1px solid',
+                                    borderColor: 'divider',
+                                    '&:last-child': { borderBottom: 0 },
+                                }}
+                            >
+                                <Chip
+                                    label={ev.scope}
+                                    size="small"
+                                    color={LEVEL_COLORS[ev.level]}
+                                    variant="outlined"
+                                    sx={{
+                                        fontSize: 10,
+                                        height: 18,
+                                        flexShrink: 0,
+                                    }}
+                                />
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        flexGrow: 1,
+                                        wordBreak: 'break-word',
+                                        color:
+                                            ev.level === 'error'
+                                                ? 'error.main'
+                                                : ev.level === 'health'
+                                                  ? 'warning.main'
+                                                  : 'text.primary',
+                                    }}
+                                >
+                                    {ev.message}
+                                </Typography>
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: 'text.disabled',
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    {new Date(ev.time).toLocaleTimeString()}
+                                </Typography>
+                            </Stack>
+                        ))
+                    )}
+                </Box>
+            </Collapse>
+        </Box>
+    );
+}
 
 const OverlayTest = ({ path }) => {
     if (path?.[0] === 'slides' && path[1]) {
@@ -31,6 +222,7 @@ const OverlayTest = ({ path }) => {
                     <VideoQueue />
                 </Box>
             </Stack>
+            <DiagnosticsPanel />
         </Box>
     );
 };

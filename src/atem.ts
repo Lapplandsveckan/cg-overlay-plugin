@@ -1,17 +1,36 @@
 import { Atem } from 'atem-connection';
 import { config } from './config';
+import { type PluginRef, getLogger, reportError } from './diagnostics';
 
 export class AtemManager {
     private connection: Atem = null;
+    private plugin: PluginRef;
     public connected = false;
 
-    public connect(ip: string) {
-        this.connection = new Atem();
-        this.connection.on('info', console.log);
-        this.connection.on('error', console.error);
+    constructor(plugin: PluginRef) {
+        this.plugin = plugin;
+    }
 
-        this.connection.on('connected', () => (this.connected = true));
-        this.connection.on('disconnected', () => (this.connected = false));
+    public connect(ip: string) {
+        const logger = getLogger(this.plugin, 'atem');
+        this.connection = new Atem();
+        this.connection.on('info', msg => logger.info(String(msg)));
+        this.connection.on('error', err => {
+            reportError(this.plugin, 'atem', `ATEM connection error`, err);
+        });
+
+        this.connection.on('connected', () => {
+            this.connected = true;
+            logger.info(`ATEM connected (${ip})`);
+        });
+        this.connection.on('disconnected', () => {
+            this.connected = false;
+            reportError(
+                this.plugin,
+                'atem',
+                `ATEM disconnected — switcher control unavailable`,
+            );
+        });
 
         this.connection.connect(ip);
     }
@@ -23,9 +42,22 @@ export class AtemManager {
     }
 
     public setVideoProgram() {
-        if (!this.connected) return console.error('ATEM not connected');
-        if (config.atem.videoInput < 0)
-            return console.error('No video input selected');
+        if (!this.connected) {
+            reportError(
+                this.plugin,
+                'atem',
+                'setVideoProgram called but ATEM is not connected',
+            );
+            return;
+        }
+        if (config.atem.videoInput < 0) {
+            reportError(
+                this.plugin,
+                'atem',
+                'setVideoProgram called but no video input is configured',
+            );
+            return;
+        }
 
         const { programInput } = this.state;
 
@@ -34,7 +66,14 @@ export class AtemManager {
     }
 
     public returnToPreview() {
-        if (!this.connected) return console.error('ATEM not connected');
+        if (!this.connected) {
+            reportError(
+                this.plugin,
+                'atem',
+                'returnToPreview called but ATEM is not connected',
+            );
+            return;
+        }
         const { programInput, previewInput } = this.state;
         if (programInput !== config.atem.videoInput) return;
 

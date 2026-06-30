@@ -1,20 +1,25 @@
-import { type Effect, type Logger } from '@lappis/cg-manager';
+import { type Effect } from '@lappis/cg-manager';
+import { type PluginRef, reportError } from '../diagnostics';
 
 export class SidePair<T extends Effect> {
     readonly left: T;
     readonly right: T;
-    private logger: Logger;
+    private plugin: PluginRef;
 
-    constructor(left: T, right: T, logger: Logger) {
+    constructor(left: T, right: T, plugin: PluginRef) {
         this.left = left;
         this.right = right;
-        this.logger = logger;
+        this.plugin = plugin;
     }
 
     private fan(label: string, fn: (e: T) => unknown) {
         return Promise.all([fn(this.left), fn(this.right)]).catch(err => {
-            this.logger.error(`Failed to ${label} effect`);
-            this.logger.error(err);
+            reportError(
+                this.plugin,
+                'side-pair',
+                `Failed to ${label} effect`,
+                err,
+            );
         });
     }
 

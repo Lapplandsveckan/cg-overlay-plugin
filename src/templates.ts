@@ -22,11 +22,40 @@ function getMime(extname: string): string {
     }
 }
 
+type AckPhase = 'play' | 'painted';
+type OnAck = (hcId: string, phase: AckPhase) => void;
+
 export class Templates {
     private server: any;
 
-    constructor(onListen: () => void) {
+    constructor(onListen: () => void, onAck?: OnAck) {
         const server = (this.server = http.createServer((req, res) => {
+            // Healthcheck ack back-channel — posted from each overlay template
+            // after receiving its play event and after the first paint frame.
+            if (req.method === 'POST' && req.url === '/_cg/ack') {
+                let body = '';
+                req.on('data', chunk => (body += chunk));
+                req.on('end', () => {
+                    try {
+                        const { hcId, phase } = JSON.parse(body) as {
+                            hcId?: string;
+                            phase?: string;
+                        };
+                        if (
+                            typeof hcId === 'string' &&
+                            (phase === 'play' || phase === 'painted')
+                        ) {
+                            onAck?.(hcId, phase);
+                        }
+                    } catch {
+                        // Malformed ack — ignore silently.
+                    }
+                    res.writeHead(204);
+                    res.end();
+                });
+                return;
+            }
+
             let url = req.url;
             if (path.extname(url) === '') url += '/'; // Append trailing slash if missing
             if (url.endsWith('/')) url += 'index.html';

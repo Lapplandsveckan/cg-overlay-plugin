@@ -52,6 +52,8 @@ import {
     getConversionResult,
     isConversionEnabled,
 } from './cloudconvert';
+import { getEvents, reportWarn } from './diagnostics';
+import { HealthMonitor } from './healthcheck';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -60,11 +62,18 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public atem: AtemManager;
     public namnskyltPresets: NamnskyltPresetStore;
     public presentations: PresentationStore;
+    public health: HealthMonitor;
 
     private reconnectHandler: () => void;
 
     public getLogger() {
         return this.logger;
+    }
+
+    // Narrow broadcast wrapper so diagnostics.ts / effects can surface errors
+    // to the UI without importing the full PluginAPI type.
+    public broadcast(target: string, method: string, data: unknown) {
+        this.api.broadcast(target, method as any, data);
     }
 
     public getOverlayManager() {
@@ -89,16 +98,21 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     protected onEnable() {
+        this.health = new HealthMonitor(this);
+
         // Only send CG ADD commands once both the local template HTTP server is
         // up AND CasparCG is connected. awaitConnection() resolves immediately
         // if already connected, so this is a no-op on reconnect paths.
-        this.templates = new Templates(async () => {
-            await this.api.awaitConnection();
-            if (this.overlay) this.overlay.initialize();
-        });
+        this.templates = new Templates(
+            async () => {
+                await this.api.awaitConnection();
+                if (this.overlay) this.overlay.initialize();
+            },
+            (hcId, phase) => this.health?.ack(hcId, phase),
+        );
         this.video = new VideoManager(this);
         this.overlay = new OverlayManager(this);
-        this.atem = new AtemManager();
+        this.atem = new AtemManager(this);
         this.namnskyltPresets = new NamnskyltPresetStore(this);
         this.presentations = new PresentationStore(this);
 
@@ -150,6 +164,9 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             this.reconnectHandler = null;
         }
 
+        this.health?.dispose();
+        this.health = null;
+
         this.overlay.dispose();
         this.overlay = null;
 
@@ -166,6 +183,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                     group,
                     options as BarsOverlayEffectOptions,
                     this.templates.getFilePath('overlay/bars'),
+                    this.getLogger().scope('effect:bars'),
+                    this.health,
                 ),
         );
 
@@ -176,6 +195,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                     group,
                     options as SwishOverlayEffectOptions,
                     this.templates.getFilePath('overlay/swish'),
+                    this.getLogger().scope('effect:swish'),
+                    this.health,
                 ),
         );
 
@@ -186,6 +207,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                     group,
                     options as NamnskyltOverlayEffectOptions,
                     this.templates.getFilePath('overlay/namnskylt'),
+                    this.getLogger().scope('effect:namnskylt'),
+                    this.health,
                 ),
         );
 
@@ -196,6 +219,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                     group,
                     options as VideoTransitionOverlayEffectOptions,
                     this.templates.getFilePath('overlay/videotransition'),
+                    this.getLogger().scope('effect:videotransition'),
+                    this.health,
                 ),
         );
 
@@ -206,6 +231,8 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                     group,
                     options as InsamlingOverlayEffectOptions,
                     this.templates.getFilePath('overlay/insamling'),
+                    this.getLogger().scope('effect:insamling'),
+                    this.health,
                 ),
         );
 
@@ -216,19 +243,27 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                     group,
                     options as PresentationOverlayEffectOptions,
                     this.templates.getFilePath('overlay/presentation'),
+                    this.getLogger().scope('effect:presentation'),
+                    this.health,
                 ),
         );
 
         this.api.registerEffect(
             'lappis-video',
             (group, options) =>
-                new VideoEffect(group, options as VideoEffectOptions),
+                new VideoEffect(group, {
+                    ...(options as VideoEffectOptions),
+                    logger: this.getLogger().scope('effect:video'),
+                }),
         );
 
         this.api.registerEffect(
             'lappis-route',
             (group, options) =>
-                new RouteEffect(group, options as RouteEffectOptions),
+                new RouteEffect(group, {
+                    ...(options as RouteEffectOptions),
+                    logger: this.getLogger().scope('effect:route'),
+                }),
         );
     }
 
@@ -254,7 +289,14 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             'play-video',
             async rundown => {
                 const video = this.api.getFileDatabase().get(rundown.data.clip);
-                if (!video) return null; // throw new WebError('Clip not found', 404);
+                if (!video) {
+                    reportWarn(
+                        this,
+                        'route',
+                        `play-video: clip "${rundown.data.clip}" not found`,
+                    );
+                    return null;
+                }
 
                 if (rundown.data.options?.playNow)
                     this.video.playVideo(video.id, rundown.data.options);
@@ -283,7 +325,14 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             'namnskylt',
             async rundown => {
                 const name = rundown.data.name;
-                if (!name) return null; // throw new WebError('No name provided', 400);
+                if (!name) {
+                    reportWarn(
+                        this,
+                        'route',
+                        'namnskylt rundown action: no name provided',
+                    );
+                    return null;
+                }
 
                 this.overlay.showNamnskylt(name);
             },
@@ -348,10 +397,27 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             'assets/media',
             async req => {
                 const mediaId = (req.data as any)?.mediaId;
-                if (!mediaId) return null;
+                if (!mediaId) {
+                    reportWarn(
+                        this,
+                        'route',
+                        'assets/media: request missing mediaId',
+                    );
+                    return null;
+                }
                 const doc = this.api.getFileDatabase().get(mediaId);
-                if (!doc?.mediaPath) return null;
-                return readImageData(doc.mediaPath);
+                if (!doc?.mediaPath) {
+                    reportWarn(
+                        this,
+                        'route',
+                        `assets/media: no mediaPath for "${mediaId}"`,
+                    );
+                    return null;
+                }
+                return readImageData(
+                    doc.mediaPath,
+                    this.getLogger().scope('assets'),
+                );
             },
             'ACTION',
         );
@@ -377,7 +443,14 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.api.registerRoute(
             'insamling',
             async req => {
-                if (!req.data || typeof req.data !== 'object') return null; // throw new WebError('Invalid request', 400);
+                if (!req.data || typeof req.data !== 'object') {
+                    reportWarn(
+                        this,
+                        'route',
+                        'insamling: invalid or missing request data',
+                    );
+                    return null;
+                }
 
                 const { now, goal } = req.data as any;
                 this.overlay.toggleInsamling({ now, goal });
@@ -415,7 +488,14 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             async req => {
                 const { clip, options } = req.data as any;
                 const video = this.api.getFileDatabase().get(clip);
-                if (!video) return null;
+                if (!video) {
+                    reportWarn(
+                        this,
+                        'route',
+                        `video/play: clip "${clip}" not found`,
+                    );
+                    return null;
+                }
                 this.video.playVideo(video.id, options);
             },
             'ACTION',
@@ -450,9 +530,15 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             async req => {
                 const lookup = req.data as VerseLookup;
                 const [err, result] = noTry(() => getVerseSlides(lookup));
-                return err
-                    ? { error: (err as any)?.message ?? 'Bible lookup failed' }
-                    : result;
+                if (err) {
+                    this.logger.warn(
+                        `Bible lookup failed: ${(err as any)?.message ?? err}`,
+                    );
+                    return {
+                        error: (err as any)?.message ?? 'Bible lookup failed',
+                    };
+                }
+                return result;
             },
             'ACTION',
         );
@@ -460,7 +546,14 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.api.registerRoute(
             'slides',
             async req => {
-                if (!req.data || typeof req.data !== 'object') return null;
+                if (!req.data || typeof req.data !== 'object') {
+                    reportWarn(
+                        this,
+                        'route',
+                        'slides action: missing or invalid request data',
+                    );
+                    return null;
+                }
 
                 const data = req.data as {
                     action: string;
@@ -529,6 +622,14 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                 return this.overlay.getPresentationState();
             },
             'ACTION',
+        );
+
+        // Diagnostics — returns the in-memory ring buffer of recent errors/warnings
+        // for UI backfill when a fresh client connects.
+        this.api.registerRoute(
+            'diagnostics',
+            async () => ({ events: getEvents() }),
+            'GET',
         );
 
         // Presentations CRUD

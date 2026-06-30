@@ -1,6 +1,7 @@
 import { noTry, noTryAsync } from 'no-try';
 import { type VideoEffect } from './effects/misc/video';
 import type LappisOverlayPlugin from './index';
+import { VideoSessionStoppedError } from './overlay';
 
 interface VideoInfo {
     id: string;
@@ -107,9 +108,12 @@ export default class VideoManager {
                 ),
         );
         if (error) {
-            this.plugin
-                .getLogger()
-                .error(`Failed to start video session: ${error}`);
+            // VideoSessionStoppedError is a normal stop — not a real failure.
+            if (!(error instanceof VideoSessionStoppedError)) {
+                this.plugin
+                    .getLogger()
+                    .error(`Failed to start video session: ${error}`);
+            }
             return;
         }
 

@@ -1,27 +1,31 @@
-import { CgCommand, Effect, type EffectGroup } from '@lappis/cg-manager';
+import { CgCommand, type EffectGroup, type Logger } from '@lappis/cg-manager';
+import { execChecked } from '../../diagnostics';
+import { HealthCheckedEffect } from '../health-checked-effect';
+import type { HealthMonitor } from '../../healthcheck';
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface BarsOverlayEffectOptions {}
+export interface BarsOverlayEffectOptions {
+    healthType?: string;
+}
 
-export class BarsOverlayEffect extends Effect {
-    private options: BarsOverlayEffectOptions;
+export class BarsOverlayEffect extends HealthCheckedEffect {
+    private logger: Logger;
 
     public constructor(
         group: EffectGroup,
         options: BarsOverlayEffectOptions,
         template: string,
+        logger: Logger,
+        health: HealthMonitor,
     ) {
-        super(group);
+        super(group, health, options.healthType ?? 'bars');
 
-        this.options = options;
+        this.logger = logger;
         this.allocateLayers(1);
         this.executor.executeAllocations();
 
-        const cmd = CgCommand.add(template, false);
+        const cmd = CgCommand.add(template, false, {});
         cmd.allocate(this.layer);
-
-        this.executor.execute(cmd);
-        // .catch(err => Logger.error(`Failed to add videotransition effect: ${JSON.stringify(err)}`));
+        execChecked(this.logger, 'add bars effect', this.executor.execute(cmd));
     }
 
     public get layer() {
@@ -31,13 +35,30 @@ export class BarsOverlayEffect extends Effect {
     public activate() {
         if (!super.activate()) return;
 
-        return this.executor.execute(CgCommand.play().allocate(this.layer));
+        this.armHealth();
+        execChecked(
+            this.logger,
+            'update bars hcId',
+            this.executor.execute(
+                CgCommand.update({ hcId: this.hcId }).allocate(this.layer),
+            ),
+        );
+
+        return execChecked(
+            this.logger,
+            'play bars effect',
+            this.executor.execute(CgCommand.play().allocate(this.layer)),
+        );
     }
 
     public deactivate() {
         if (!super.deactivate()) return;
-
-        return this.executor.execute(CgCommand.stop().allocate(this.layer));
+        this.disarmHealth();
+        return execChecked(
+            this.logger,
+            'stop bars effect',
+            this.executor.execute(CgCommand.stop().allocate(this.layer)),
+        );
     }
 
     public getMetadata(): Record<string, unknown> {

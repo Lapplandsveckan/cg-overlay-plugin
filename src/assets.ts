@@ -1,6 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import { noTryAsync } from 'no-try';
+import type { Logger } from '@lappis/cg-manager';
 
 // SVG viewBox mirrors the 16:9 aspect ratio.
 // Bubble position mirrors BubbleWatermark.module.css:
@@ -41,9 +42,16 @@ const MIME_MAP: Record<string, string> = {
 
 export async function readImageData(
     filePath: string,
+    logger?: Logger,
 ): Promise<{ data: string; mimeType: string } | null> {
     const [err, buf] = await noTryAsync(() => fs.promises.readFile(filePath));
-    if (err || !buf) return null;
+    if (err || !buf) {
+        if (err)
+            logger?.error(
+                `Failed to read image file "${filePath}": ${(err as any).message}`,
+            );
+        return null;
+    }
     const mimeType =
         MIME_MAP[path.extname(filePath).toLowerCase()] ??
         'application/octet-stream';

@@ -217,6 +217,14 @@
         "duplicate": "Duplicera",
         "delete": "Ta bort"
     },
+    "diagnostics": {
+        "heading": "Hälsa & diagnostik",
+        "empty": "Inga fel eller varningar.",
+        "errorCount_one": "{{count}} fel",
+        "errorCount_other": "{{count}} fel",
+        "healthCount_one": "{{count}} hälsovarning",
+        "healthCount_other": "{{count}} hälsovarningar"
+    },
     "motion": {
         "backgroundColor": "Bakgrundsfärg",
         "noColor": "Ingen färg angiven",

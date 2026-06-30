@@ -33,7 +33,15 @@ export class NamnskyltPresetStore {
                     );
             return;
         }
-        const [, parsed] = noTry(() => JSON.parse(raw!));
+        const [parseErr, parsed] = noTry(() => JSON.parse(raw!));
+        if (parseErr) {
+            this.plugin
+                .getLogger()
+                .warn(
+                    `Failed to parse namnskylt presets JSON: ${(parseErr as any).message}`,
+                );
+            return;
+        }
         if (parsed) this.presets = sanitize(parsed);
     }
 

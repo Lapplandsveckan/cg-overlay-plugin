@@ -217,6 +217,14 @@
         "duplicate": "Duplicate",
         "delete": "Delete"
     },
+    "diagnostics": {
+        "heading": "Health & Diagnostics",
+        "empty": "No errors or warnings.",
+        "errorCount_one": "{{count}} error",
+        "errorCount_other": "{{count}} errors",
+        "healthCount_one": "{{count}} health warning",
+        "healthCount_other": "{{count}} health warnings"
+    },
     "motion": {
         "backgroundColor": "Background color",
         "noColor": "No color set",

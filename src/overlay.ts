@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { type Effect, type Logger, type PluginAPI } from '@lappis/cg-manager';
 import { type BarsOverlayEffect } from './effects/overlay/bars';
 import { type SwishOverlayEffect } from './effects/overlay/swish';
@@ -11,6 +12,7 @@ import { type VideoEffect } from './effects/misc/video';
 import type LappisOverlayPlugin from './index';
 import { type PresentationOverlayEffect } from './effects/overlay/presentation';
 import { SidePair } from './effects/side-pair';
+import { reportError } from './diagnostics';
 
 // Re-export the canonical slide type from the store; OverlayManager
 // stays narrow and only cares about (presentationId, slideId).
@@ -119,46 +121,66 @@ export default class OverlayManager {
                 getGroup(CHANNELS.RIGHT, group),
                 optsFor(CHANNELS.RIGHT),
             ) as T,
-            this.logger,
+            this.plugin,
         );
     }
 
     // Wait for both LEFT and RIGHT templates to finish loading (CG ADD) before
-    // playing. Disposes the pair if it is superseded during the wait window.
+    // playing. Disposes the pair if superseded.
     private async loadThenActivate(
         pair: SidePair<Effect>,
         isCurrent: () => boolean,
     ) {
         await delay(LOAD_DELAY);
-        if (isCurrent()) pair.activate();
-        else pair.dispose();
+        if (isCurrent()) {
+            pair.activate();
+        } else {
+            pair.dispose();
+        }
     }
 
     public initialize() {
-        this.bars = this.makeSidePair('overlay-bars', GROUPS.BARS, () => ({}));
-
-        this.swish = this.makeSidePair('overlay-swish', GROUPS.OVERLAY, () => ({
-            number: '123 607 27 97',
+        this.bars = this.makeSidePair('overlay-bars', GROUPS.BARS, channel => ({
+            healthType: channel === CHANNELS.LEFT ? 'bars-left' : 'bars-right',
         }));
+
+        this.swish = this.makeSidePair(
+            'overlay-swish',
+            GROUPS.OVERLAY,
+            channel => ({
+                number: '123 607 27 97',
+                healthType:
+                    channel === CHANNELS.LEFT ? 'swish-left' : 'swish-right',
+            }),
+        );
 
         this.videoTransition = this.makeSidePair<VideoTransitionOverlayEffect>(
             'overlay-videotransition',
             GROUPS.PRESENTATION,
             channel => ({
                 direction: channel === CHANNELS.LEFT ? 'left' : 'right',
+                healthType:
+                    channel === CHANNELS.LEFT
+                        ? 'videotransition-left'
+                        : 'videotransition-right',
             }),
         );
 
         this.insamling = this.api.createEffect(
             'overlay-insamling',
             getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY),
-            {},
+            { healthType: 'insamling' },
         ) as InsamlingOverlayEffect; // TODO: special group so it is underneeth all overlays
 
         this.presentationEffect = this.api.createEffect(
             'overlay-presentation',
             getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
-            { text: '', reference: '', heading: false },
+            {
+                text: '',
+                reference: '',
+                heading: false,
+                healthType: 'presentation',
+            },
         ) as PresentationOverlayEffect;
         this.presentationKind = null;
     }
@@ -228,7 +250,9 @@ export default class OverlayManager {
 
             this.videoSession.stop = () => {
                 clearTimeout(timeout);
-                reject(new Error('Video session stopped'));
+                // Use a sentinel so video.ts can distinguish a normal stop
+                // from a real failure.
+                reject(new VideoSessionStoppedError());
             };
         });
     }
@@ -256,7 +280,6 @@ export default class OverlayManager {
                 media,
                 holdLastFrame: true,
                 disposeOnStop: true,
-
                 loop,
             },
         ) as VideoEffect;
@@ -266,7 +289,13 @@ export default class OverlayManager {
         const pair = this.makeSidePair<NamnskyltOverlayEffect>(
             'overlay-namnskylt',
             GROUPS.OVERLAY,
-            () => ({ name }),
+            channel => ({
+                name,
+                healthType:
+                    channel === CHANNELS.LEFT
+                        ? 'namnskylt-left'
+                        : 'namnskylt-right',
+            }),
         );
         this.namnskylt = pair;
         this.loadThenActivate(pair, () => this.namnskylt === pair);
@@ -341,18 +370,12 @@ export default class OverlayManager {
 
         switch (this.insamlingState) {
             case 0:
-                this.insamling.deactivate()?.catch(err => {
-                    this.logger.error('Failed to deactivate insamling effect');
-                    this.logger.error(err);
-                });
+                this.insamling.deactivate();
                 if (!this.plugin.video.playing) this.stopVideoSession(true);
                 break;
             case 1:
                 await this.startVideoSession(true);
-                this.insamling.activate()?.catch(err => {
-                    this.logger.error('Failed to activate insamling effect');
-                    this.logger.error(err);
-                });
+                this.insamling.activate();
                 break;
         }
     }
@@ -396,13 +419,16 @@ export default class OverlayManager {
                 reference: render.reference,
                 heading: render.heading,
             });
+
             this.presentationEffect.activate();
 
             this.presentationKind = 'text';
         } else {
             const media = this.api.getFileDatabase().get(render.mediaId);
             if (!media) {
-                this.logger.error(
+                reportError(
+                    this.plugin,
+                    'overlay',
                     `Image slide media not found: "${render.mediaId}" — ` +
                         `check CasparCG has scanned the file (scan-timing race?) ` +
                         `or that the mediaId casing is correct`,
@@ -469,5 +495,14 @@ export default class OverlayManager {
         }
 
         this.broadcastPresentation();
+    }
+}
+
+// Sentinel error used by stopVideoSession so video.ts can distinguish a
+// normal session stop from an actual failure without mislogging it.
+export class VideoSessionStoppedError extends Error {
+    constructor() {
+        super('Video session stopped');
+        this.name = 'VideoSessionStoppedError';
     }
 }
