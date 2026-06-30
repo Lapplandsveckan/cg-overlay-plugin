@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { type useSocket } from '@web-lib';
 
+import { type BroadcastReq, broadcastHub } from './broadcast-hub';
+
 const ROOT = '/api/plugin/lappis';
 
 export interface RundownSummary {
@@ -9,16 +11,7 @@ export interface RundownSummary {
     name: string;
 }
 
-// Fan-out registry so we only ever hand conn.routes one listener per path+method,
-// regardless of how many React components subscribe. This avoids the cg-manager
-// client registry overwriting earlier registrations when multiple components
-// register on the same path.
-export type BroadcastReq = { data?: any };
-type BroadcastEntry = {
-    listener: object;
-    subs: Set<(req: BroadcastReq) => void>;
-};
-const broadcastSubs = new Map<string, BroadcastEntry>();
+export type { BroadcastReq };
 
 export function useBroadcast(
     conn: ReturnType<typeof useSocket>,
@@ -26,30 +19,11 @@ export function useBroadcast(
     method: string,
     handler: (req: BroadcastReq) => void,
 ) {
-    useEffect(() => {
-        const key = `${path}|${method}`;
-        let entry = broadcastSubs.get(key);
-        if (!entry) {
-            const subs = new Set<(req: BroadcastReq) => void>();
-            const listener = {
-                path,
-                method,
-                handler: (req: BroadcastReq) => subs.forEach(fn => fn(req)),
-            };
-            entry = { listener, subs };
-            broadcastSubs.set(key, entry);
-            conn.routes.register(listener);
-        }
-        entry.subs.add(handler);
-        return () => {
-            entry!.subs.delete(handler);
-            if (entry!.subs.size === 0) {
-                conn.routes.unregister(entry!.listener);
-                broadcastSubs.delete(key);
-            }
-        };
+    useEffect(
+        () => broadcastHub.subscribe(conn, path, method, handler),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [handler]); // path/method/conn are stable across renders
+        [conn, handler], // path/method are stable across renders
+    );
 }
 
 export function useActiveRundown(conn: ReturnType<typeof useSocket>) {
@@ -57,6 +31,7 @@ export function useActiveRundown(conn: ReturnType<typeof useSocket>) {
     const [activeId, setActiveId] = useState<string | null>(null);
 
     useEffect(() => {
+        if (!conn) return;
         conn.rawRequest(`${ROOT}/rundowns`, 'GET', {})
             .then((res: any) => {
                 if (Array.isArray(res?.data)) setRundowns(res.data);
@@ -72,8 +47,7 @@ export function useActiveRundown(conn: ReturnType<typeof useSocket>) {
                 );
             })
             .catch(() => {});
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [conn]);
 
     const onUpdate = useCallback(
         (req: BroadcastReq) =>

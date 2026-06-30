@@ -18,12 +18,12 @@ export function useOverlayState(): OverlayState | null {
     const [state, setState] = useState<OverlayState | null>(null);
 
     useEffect(() => {
+        if (!conn) return;
         conn.rawRequest(`${ROOT}/overlay-state`, 'GET', {})
             // Only apply the GET result if no broadcast has arrived yet.
             .then((res: any) => setState(prev => prev ?? res?.data ?? null))
             .catch(console.error);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [conn]);
 
     const onUpdate = useCallback(
         (req: BroadcastReq) => setState(req.data ?? null),
@@ -56,6 +56,7 @@ export function useVideoPlayback(): VideoPlayback {
     });
 
     useEffect(() => {
+        if (!conn) return;
         conn.rawRequest(`${ROOT}/videos`, 'GET', {})
             // Only apply the GET result if no broadcast has arrived yet.
             .then((res: any) =>
@@ -66,8 +67,7 @@ export function useVideoPlayback(): VideoPlayback {
                 ),
             )
             .catch(console.error);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [conn]);
 
     const onUpdate = useCallback(
         (req: BroadcastReq) => setPlayback(parseVideoData(req.data)),
