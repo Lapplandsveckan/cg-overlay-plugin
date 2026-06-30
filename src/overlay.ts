@@ -66,6 +66,9 @@ export const VIDEO_TRANSITION_CUT_DELAY = 3000;
 export const FAST_TRANSITION_CUT_DELAY = 1000;
 // Recycle idle (off-air, not recently used) templates after this duration.
 export const IDLE_RECYCLE_MS = 10 * 60_000;
+// Overlap window before clearing the previous image slide: new effect activates
+// first (on a higher layer), then the old one is cleared after this delay.
+const SLIDE_SWAP_DEACTIVATE_DELAY = 80;
 
 const IDLE_SWEEP_INTERVAL_MS = 60_000;
 // Max auto-replay attempts per template before giving up and requiring manual
@@ -700,14 +703,13 @@ export default class OverlayManager {
                 return;
             }
 
-            if (this.presentationImageEffect) {
-                this.presentationImageEffect.deactivate();
-                this.presentationImageEffect = null;
-            }
-
             if (wasKind === 'text' && this.presentationEffect) {
                 this.presentationEffect.deactivate();
             }
+
+            // Capture the outgoing image effect before reassigning so we can
+            // clear it after the new one is visible (prevents flicker).
+            const prevImage = this.presentationImageEffect;
 
             this.presentationImageEffect = this.api.createEffect(
                 'lappis-video',
@@ -715,7 +717,17 @@ export default class OverlayManager {
                 { media, disposeOnStop: true, holdLastFrame: true },
             ) as VideoEffect;
 
+            // New effect allocates a higher layer in the group, so it renders
+            // on top of the still-visible previous image — activate first.
             this.presentationImageEffect.activate();
+
+            // Clear the old image after a brief overlap so there's no empty frame.
+            if (prevImage) {
+                setTimeout(
+                    () => prevImage.deactivate(),
+                    SLIDE_SWAP_DEACTIVATE_DELAY,
+                );
+            }
 
             this.presentationKind = 'image';
         }
