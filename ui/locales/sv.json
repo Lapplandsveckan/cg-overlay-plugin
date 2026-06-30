@@ -234,5 +234,9 @@
     "common": {
         "live": "Live",
         "queued": "I kö"
+    },
+    "activeRundown": {
+        "label": "Companion rundown",
+        "none": "Ingen (första rundown:en)"
     }
 }

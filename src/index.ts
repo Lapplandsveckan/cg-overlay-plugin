@@ -54,6 +54,7 @@ import {
 } from './cloudconvert';
 import { getEvents, reportWarn } from './diagnostics';
 import { HealthMonitor } from './healthcheck';
+import { ActiveRundownStore } from './active-rundown';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -62,9 +63,11 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public atem: AtemManager;
     public namnskyltPresets: NamnskyltPresetStore;
     public presentations: PresentationStore;
+    public activeRundown: ActiveRundownStore;
     public health: HealthMonitor;
 
     private reconnectHandler: () => void;
+    private companionPollInterval: ReturnType<typeof setInterval> | null = null;
 
     public getLogger() {
         return this.logger;
@@ -95,6 +98,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public sendVideoInformation() {
         const data = this.video.getInformation();
         this.api.broadcast('videos', 'UPDATE', data);
+        this.api.invalidateFeedback('lappis-rundown-video');
     }
 
     protected onEnable() {
@@ -117,6 +121,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.atem = new AtemManager(this);
         this.namnskyltPresets = new NamnskyltPresetStore(this);
         this.presentations = new PresentationStore(this);
+        this.activeRundown = new ActiveRundownStore(this);
 
         if (config.atem.ip) {
             this.atem.connect(config.atem.ip);
@@ -149,6 +154,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
 
         this.registerRundownActions();
+        this.registerCompanion();
 
         this.reconnectHandler = () => {
             this.logger.info(
@@ -164,6 +170,11 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         if (this.reconnectHandler) {
             this.api.offReconnect(this.reconnectHandler);
             this.reconnectHandler = null;
+        }
+
+        if (this.companionPollInterval !== null) {
+            clearInterval(this.companionPollInterval);
+            this.companionPollInterval = null;
         }
 
         this.health?.dispose();
@@ -381,6 +392,147 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
     }
 
+    private rundownItemAt(type: string, index1: number): RundownItem | null {
+        const id = this.activeRundown.get();
+        // Only fall back to the first rundown when no selection has been made.
+        // A stale id (rundown deleted) returns null rather than silently firing
+        // against the wrong rundown.
+        const rd = id ? this.api.getRundown(id) : this.api.getRundowns()[0];
+        if (!rd) return null;
+        const items = rd.items.filter(i => i.type === type);
+        return items[index1 - 1] ?? null;
+    }
+
+    private registerCompanion() {
+        const rgb = (r: number, g: number, b: number) =>
+            (r << 16) | (g << 8) | b;
+
+        const indexOpt = {
+            type: 'number' as const,
+            id: 'index',
+            label: 'Index (1 = first)',
+            default: 1,
+            min: 1,
+        };
+
+        this.api.registerAction({
+            id: 'lappis-rundown-video',
+            name: 'Queue video from rundown',
+            options: [indexOpt],
+            handler: async opts => {
+                const item = this.rundownItemAt(
+                    'play-video',
+                    opts.index as number,
+                );
+                if (!item) return;
+                const video = this.api.getFileDatabase().get(item.data.clip);
+                if (!video) return;
+                this.video.queueVideo(video.id, item.data.options);
+            },
+        });
+
+        const videoFb = this.api.registerFeedback({
+            id: 'lappis-rundown-video',
+            name: 'Video from rundown',
+            type: 'advanced',
+            options: [indexOpt],
+            evaluate: opts => {
+                const item = this.rundownItemAt(
+                    'play-video',
+                    opts.index as number,
+                );
+                const doc =
+                    item && this.api.getFileDatabase().get(item.data.clip);
+                const png64 = (doc as any)?._attachments?.[
+                    'thumb.png'
+                ]?.data?.toString('base64');
+                const info = this.video.getInformation();
+                const isPlaying =
+                    item && (info.current?.data as any)?.id === item.data.clip;
+                const isQueued =
+                    !isPlaying &&
+                    item &&
+                    info.queue.some(
+                        q => (q.data as any)?.id === item.data.clip,
+                    );
+                return {
+                    text: item?.title ?? '—',
+                    ...(png64 ? { png64 } : {}),
+                    ...(isPlaying
+                        ? { bgcolor: rgb(180, 0, 0) }
+                        : isQueued
+                          ? { bgcolor: rgb(160, 130, 0) }
+                          : {}),
+                };
+            },
+        });
+
+        this.api.registerAction({
+            id: 'lappis-rundown-namnskylt',
+            name: 'Show namnskylt from rundown',
+            options: [indexOpt],
+            handler: async opts => {
+                const item = this.rundownItemAt(
+                    'namnskylt',
+                    opts.index as number,
+                );
+                if (!item?.data?.name) return;
+                this.overlay.showNamnskylt(item.data.name);
+            },
+        });
+
+        const namnskyltFb = this.api.registerFeedback({
+            id: 'lappis-rundown-namnskylt',
+            name: 'Namnskylt from rundown',
+            type: 'advanced',
+            options: [indexOpt],
+            evaluate: opts => {
+                const item = this.rundownItemAt(
+                    'namnskylt',
+                    opts.index as number,
+                );
+                const overlayState = this.overlay.getOverlayState();
+                const isLive =
+                    overlayState.namnskylt.on &&
+                    overlayState.namnskylt.name === item?.data?.name;
+                return {
+                    text: item?.title ?? '—',
+                    ...(isLive ? { bgcolor: rgb(0, 160, 0) } : {}),
+                };
+            },
+        });
+
+        this.api.registerFeedback({
+            id: 'lappis-swish-state',
+            name: 'Swish live',
+            type: 'boolean',
+            defaultStyle: { bgcolor: rgb(0, 160, 0) },
+            evaluate: () => this.overlay.getOverlayState().swish.on,
+        });
+
+        const activeRundownFb = this.api.registerFeedback({
+            id: 'lappis-active-rundown',
+            name: 'Active rundown',
+            description:
+                'Shows the name of the rundown currently selected as the Companion source.',
+            type: 'advanced',
+            evaluate: () => {
+                const id = this.activeRundown.get();
+                const rd = id
+                    ? this.api.getRundown(id)
+                    : this.api.getRundowns()[0];
+                return { text: rd?.name ?? '—' };
+            },
+        });
+
+        this.companionPollInterval = setInterval(() => {
+            videoFb.invalidate();
+            namnskyltFb.invalidate();
+            activeRundownFb.invalidate();
+            this.api.invalidateFeedback('lappis-swish-state');
+        }, 2500);
+    }
+
     public registerEffectGroups() {
         for (const side of MAIN_SIDES) {
             this.api.getEffectGroup(getGroup(side, GROUPS.BARS));
@@ -517,6 +669,36 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             async req => {
                 await this.namnskyltPresets.ready;
                 return this.namnskyltPresets.replace(req.data);
+            },
+            'UPDATE',
+        );
+
+        this.api.registerRoute(
+            'rundowns',
+            async () =>
+                this.api.getRundowns().map(r => ({ id: r.id, name: r.name })),
+            'GET',
+        );
+
+        this.api.registerRoute(
+            'active-rundown',
+            async () => {
+                await this.activeRundown.ready;
+                return { id: this.activeRundown.get() };
+            },
+            'GET',
+        );
+
+        this.api.registerRoute(
+            'active-rundown',
+            async req => {
+                const id = (req.data as any)?.id ?? null;
+                await this.activeRundown.set(id);
+                this.api.broadcast('active-rundown', 'UPDATE', { id });
+                this.api.invalidateFeedback('lappis-rundown-video');
+                this.api.invalidateFeedback('lappis-rundown-namnskylt');
+                this.api.invalidateFeedback('lappis-active-rundown');
+                return { id };
             },
             'UPDATE',
         );

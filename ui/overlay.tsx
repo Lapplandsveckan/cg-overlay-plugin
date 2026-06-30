@@ -14,6 +14,7 @@ import { useTranslation } from './i18n';
 import VideoQueue from './video';
 import PresentationIndex from './slides/PresentationIndex';
 import PresentationEditor from './slides/PresentationEditor';
+import ActiveRundownSelector from './active-rundown';
 
 interface DiagEvent {
     level: 'error' | 'warn' | 'health';
@@ -204,6 +205,9 @@ const OverlayTest = ({ path }) => {
         <Box
             sx={{ maxWidth: 1600, margin: '0 auto', padding: { xs: 2, md: 3 } }}
         >
+            <Box sx={{ mb: 2 }}>
+                <ActiveRundownSelector />
+            </Box>
             <Stack
                 direction={{ xs: 'column', md: 'row' }}
                 spacing={3}

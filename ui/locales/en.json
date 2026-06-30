@@ -234,5 +234,9 @@
     "common": {
         "live": "Live",
         "queued": "Queued"
+    },
+    "activeRundown": {
+        "label": "Companion rundown",
+        "none": "None (first rundown)"
     }
 }
