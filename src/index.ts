@@ -674,6 +674,16 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
 
         this.api.registerRoute(
+            'namnskylt-presets/play',
+            async req => {
+                const name = (req.data as any)?.name;
+                if (!name) return null;
+                this.overlay.showNamnskylt(name);
+            },
+            'ACTION',
+        );
+
+        this.api.registerRoute(
             'rundowns',
             async () =>
                 this.api.getRundowns().map(r => ({ id: r.id, name: r.name })),
