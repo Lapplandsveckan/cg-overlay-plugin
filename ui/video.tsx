@@ -13,18 +13,26 @@ import CloseIcon from '@mui/icons-material/Close';
 import FlagIcon from '@mui/icons-material/Flag';
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { useRouter } from 'next/router';
 import { useSocket } from '@web-lib';
 import { useTranslation } from './i18n';
 import { buildThumbnailUrl } from './thumbnail';
 import { useActiveRundown } from './hooks';
 
+function useRundownIdFromUrl(): string | null {
+    return useMemo(() => {
+        if (typeof window === 'undefined') return null;
+        const { search, pathname } = window.location;
+        const fromQuery = new URLSearchParams(search).get('id');
+        if (fromQuery) return fromQuery;
+        return pathname.split('/').filter(Boolean).pop() || null;
+    }, []);
+}
+
 function SetCurrentRundownButton() {
     const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
     const { rundowns, activeId, setActive } = useActiveRundown(conn);
-    const { query } = useRouter();
-    const urlId = typeof query.id === 'string' ? query.id : null;
+    const urlId = useRundownIdFromUrl();
 
     // Only render if the URL id matches a known rundown
     if (!urlId || !rundowns.some(r => r.id === urlId)) return null;
@@ -232,7 +240,13 @@ interface VideoResponse {
     queue: VideoItemData[];
 }
 
-const VideoQueue = () => {
+interface VideoQueueProps {
+    showSetCurrentRundown?: boolean;
+}
+
+const VideoQueue: React.FC<VideoQueueProps> = ({
+    showSetCurrentRundown = true,
+}) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
     const [queue, setQueue] = useState<any[]>([]);
@@ -315,7 +329,7 @@ const VideoQueue = () => {
                     <Typography variant="h5" fontWeight={600}>
                         {t('video.queue')}
                     </Typography>
-                    <SetCurrentRundownButton />
+                    {showSetCurrentRundown && <SetCurrentRundownButton />}
                 </Stack>
                 {current?.loop ? (
                     <Typography variant="body2" color="text.secondary">

@@ -223,7 +223,7 @@ const OverlayTest = ({ path }) => {
                         width: { xs: '100%', md: 'auto' },
                     }}
                 >
-                    <VideoQueue />
+                    <VideoQueue showSetCurrentRundown={false} />
                 </Box>
             </Stack>
             <DiagnosticsPanel />
