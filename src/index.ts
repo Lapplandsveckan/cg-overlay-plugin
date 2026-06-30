@@ -353,9 +353,13 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             { stop: () => this.overlay.hideNamnskylt() },
         );
 
-        registerRundownAction('bars', async () => {
-            this.overlay.toggleBars();
-        });
+        registerRundownAction(
+            'bars',
+            async () => {
+                this.overlay.toggleBars();
+            },
+            { stop: () => this.overlay.stopBars() },
+        );
 
         registerRundownAction(
             'swish',
@@ -617,7 +621,12 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.api.registerRoute(
             'bars',
-            async () => {
+            async req => {
+                if (
+                    typeof req.data === 'object' &&
+                    req.data?.['action'] === 'stop'
+                )
+                    return this.overlay.stopBars();
                 this.overlay.toggleBars();
             },
             'ACTION',

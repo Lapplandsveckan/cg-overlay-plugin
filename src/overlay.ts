@@ -555,6 +555,12 @@ export default class OverlayManager {
         this.broadcastOverlay();
     }
 
+    public stopBars() {
+        this.barsState = 0;
+        this.bars.deactivate();
+        this.broadcastOverlay();
+    }
+
     public toggleVideoTransition(skipIntro = false, fast = false) {
         if (this.videoTransitionState === 1) {
             this.videoTransitionState = 0;
