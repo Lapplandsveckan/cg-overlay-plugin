@@ -7,6 +7,7 @@ import {
     DialogContent,
     DialogTitle,
     IconButton,
+    InputAdornment,
     Stack,
     TextField,
     Tooltip,
@@ -123,6 +124,7 @@ const NamnskyltarTab: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [draftName, setDraftName] = useState('');
+    const [query, setQuery] = useState('');
 
     useEffect(() => {
         conn.rawRequest('/api/plugin/lappis/namnskylt-presets', 'GET', {})
@@ -133,10 +135,12 @@ const NamnskyltarTab: React.FC = () => {
             .finally(() => setLoaded(true));
     }, []);
 
-    const sorted = useMemo(
-        () => [...presets].sort((a, b) => a.localeCompare(b)),
-        [presets],
-    );
+    const filtered = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        return [...presets]
+            .filter(name => !q || name.toLowerCase().includes(q))
+            .sort((a, b) => a.localeCompare(b));
+    }, [presets, query]);
 
     const handleAdd = async () => {
         const name = draftName.trim();
@@ -188,18 +192,39 @@ const NamnskyltarTab: React.FC = () => {
                 direction="row"
                 alignItems="center"
                 justifyContent="space-between"
+                gap={1}
             >
                 <Typography
                     variant="body2"
                     color="text.secondary"
-                    sx={{ minWidth: 0 }}
+                    sx={{ minWidth: 0, flexShrink: 1 }}
                     noWrap
                 >
                     {t('panel.namnskyltarHint')}
                 </Typography>
+                <TextField
+                    size="small"
+                    placeholder={t('panel.searchNamnskyltar')}
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    sx={{ width: 200, flexShrink: 0 }}
+                    InputProps={{
+                        endAdornment: query ? (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    size="small"
+                                    onClick={() => setQuery('')}
+                                >
+                                    <CloseIcon sx={{ fontSize: 14 }} />
+                                </IconButton>
+                            </InputAdornment>
+                        ) : null,
+                    }}
+                />
                 <Button
                     variant="outlined"
                     size="small"
+                    sx={{ flexShrink: 0 }}
                     onClick={() => setDialogOpen(true)}
                 >
                     {t('panel.addPreset')}
@@ -207,14 +232,18 @@ const NamnskyltarTab: React.FC = () => {
             </Stack>
 
             <Box sx={{ flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>
-                {!loaded ? null : sorted.length === 0 ? (
+                {!loaded ? null : filtered.length === 0 ? (
                     <Stack
                         alignItems="center"
                         justifyContent="center"
                         sx={{ height: '100%', color: 'text.secondary' }}
                     >
                         <Typography variant="body2">
-                            {t('panel.noPresets')}
+                            {t(
+                                query.trim()
+                                    ? 'panel.noNamnskyltarResults'
+                                    : 'panel.noPresets',
+                            )}
                         </Typography>
                     </Stack>
                 ) : (
@@ -226,7 +255,7 @@ const NamnskyltarTab: React.FC = () => {
                             gap: 1,
                         }}
                     >
-                        {sorted.map(name => (
+                        {filtered.map(name => (
                             <NamnskyltCard
                                 key={name}
                                 name={name}

@@ -84,6 +84,8 @@
         "dropToUpload": "Drop video to upload",
         "addPreset": "Add preset",
         "noPresets": "No presets yet.",
+        "searchNamnskyltar": "Search name tags…",
+        "noNamnskyltarResults": "No name tags match your search.",
         "addPresetTitle": "Add namnskylt preset",
         "nameLabel": "Name",
         "cancel": "Cancel",

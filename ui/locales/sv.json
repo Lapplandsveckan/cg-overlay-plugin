@@ -84,6 +84,8 @@
         "dropToUpload": "Släpp video för uppladdning",
         "addPreset": "Lägg till förinställning",
         "noPresets": "Inga förinställningar ännu.",
+        "searchNamnskyltar": "Sök namnskyltar…",
+        "noNamnskyltarResults": "Inga namnskyltar matchar din sökning.",
         "addPresetTitle": "Lägg till namnskylt-förinställning",
         "nameLabel": "Namn",
         "cancel": "Avbryt",
