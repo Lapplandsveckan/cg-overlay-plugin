@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Alert,
     Box,
@@ -8,10 +8,14 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    IconButton,
+    InputAdornment,
     Stack,
+    TextField,
     Tooltip,
     Typography,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -47,6 +51,15 @@ export const PresentationIndex: React.FC = () => {
     const [importOpen, setImportOpen] = useState(false);
     const [pptxEnabled, setPptxEnabled] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [query, setQuery] = useState('');
+
+    const filtered = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!presentations) return [];
+        return presentations.filter(
+            p => !q || p.title.toLowerCase().includes(q),
+        );
+    }, [presentations, query]);
 
     useEffect(() => {
         conn.rawRequest('/api/plugin/lappis/presentations/convert', 'GET', {})
@@ -90,26 +103,47 @@ export const PresentationIndex: React.FC = () => {
                 <Typography variant="h5" fontWeight={600}>
                     {t('presentationIndex.heading')}
                 </Typography>
-                <Tooltip
-                    title={t(
-                        pptxEnabled
-                            ? 'presentationIndex.importPdfTooltip'
-                            : 'presentationIndex.importPdfOnlyTooltip',
-                    )}
-                >
-                    <Button
-                        variant="outlined"
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                    <TextField
                         size="small"
-                        startIcon={<UploadFileIcon />}
-                        onClick={() => setImportOpen(true)}
-                    >
-                        {t(
+                        placeholder={t('presentationIndex.search')}
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
+                        sx={{ width: 200 }}
+                        InputProps={{
+                            endAdornment: query ? (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => setQuery('')}
+                                    >
+                                        <CloseIcon sx={{ fontSize: 14 }} />
+                                    </IconButton>
+                                </InputAdornment>
+                            ) : null,
+                        }}
+                    />
+                    <Tooltip
+                        title={t(
                             pptxEnabled
-                                ? 'presentationIndex.importPdf'
-                                : 'presentationIndex.importPdfOnly',
+                                ? 'presentationIndex.importPdfTooltip'
+                                : 'presentationIndex.importPdfOnlyTooltip',
                         )}
-                    </Button>
-                </Tooltip>
+                    >
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<UploadFileIcon />}
+                            onClick={() => setImportOpen(true)}
+                        >
+                            {t(
+                                pptxEnabled
+                                    ? 'presentationIndex.importPdf'
+                                    : 'presentationIndex.importPdfOnly',
+                            )}
+                        </Button>
+                    </Tooltip>
+                </Stack>
             </Stack>
 
             {error && (
@@ -136,7 +170,7 @@ export const PresentationIndex: React.FC = () => {
                         onClick={() => setCreateOpen(true)}
                         disabled={creating}
                     />
-                    {presentations.map(p => (
+                    {filtered.map(p => (
                         <PresentationTile
                             key={p.id}
                             presentation={p}
@@ -147,6 +181,13 @@ export const PresentationIndex: React.FC = () => {
                     ))}
                 </Box>
             )}
+            {presentations !== null &&
+                query.trim() !== '' &&
+                filtered.length === 0 && (
+                    <Typography variant="body2" color="text.secondary">
+                        {t('presentationIndex.noResults')}
+                    </Typography>
+                )}
 
             <NameDialog
                 open={createOpen}

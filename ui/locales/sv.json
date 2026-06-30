@@ -194,6 +194,8 @@
     "presentationIndex": {
         "heading": "Presentationer",
         "loading": "Läser in…",
+        "search": "Sök presentationer…",
+        "noResults": "Inga presentationer matchar din sökning.",
         "newPresentationDialogTitle": "Ny presentation",
         "create": "Skapa",
         "newPresentation": "Ny presentation",

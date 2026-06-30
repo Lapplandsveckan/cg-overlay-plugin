@@ -194,6 +194,8 @@
     "presentationIndex": {
         "heading": "Presentations",
         "loading": "Loading…",
+        "search": "Search presentations…",
+        "noResults": "No presentations match your search.",
         "newPresentationDialogTitle": "New presentation",
         "create": "Create",
         "newPresentation": "New presentation",
