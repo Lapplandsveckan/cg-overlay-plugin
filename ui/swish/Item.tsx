@@ -20,8 +20,10 @@ export const SwishRundownItem: React.FC<SwishRundownItemProps> = ({
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const state = useOverlayState();
-    const isLive =
-        !!state?.swish.on && state.swish.number === (entry.data?.number ?? '');
+
+    const rowNum = (entry.data?.number ?? '').trim();
+    const liveNum = (state?.swish.number ?? '').trim();
+    const isLive = !!state?.swish.on && (rowNum === '' || rowNum === liveNum);
 
     return (
         <Stack spacing={0.5} direction="column">

@@ -603,6 +603,13 @@ export default class OverlayManager {
         this.broadcastOverlay();
     }
 
+    public stopSwish() {
+        this.swishState = 2;
+        this.swishNumber = '';
+        this.swish.deactivate();
+        this.broadcastOverlay();
+    }
+
     public async toggleInsamling(options?: InsamlingOverlayEffectOptions) {
         this.insamlingState = 1 - this.insamlingState;
         this.broadcastOverlay();
