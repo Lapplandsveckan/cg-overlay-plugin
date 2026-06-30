@@ -6,6 +6,13 @@
         "titleHelper": "Visas i rundown:en.",
         "cinematicBars": "Kinematografiska bars"
     },
+    "caption": {
+        "heading": "Textning",
+        "description": "Växla CaptionKits live-textning/översättning i lower-third-överlägget i utdatan.",
+        "titleLabel": "Titel",
+        "titleHelper": "Visas i rundown:en.",
+        "lowerThird": "Textning lower-third"
+    },
     "namnskylt": {
         "heading": "Namnskylt",
         "nameLabel": "Namn",
@@ -235,6 +242,17 @@
         "errorCount_other": "{{count}} fel",
         "healthCount_one": "{{count}} hälsovarning",
         "healthCount_other": "{{count}} hälsovarningar"
+    },
+    "captionkit": {
+        "heading": "CaptionKit-inställningar",
+        "apiKey": "API-nyckel",
+        "slug": "Slug",
+        "language": "Språk",
+        "fontSize": "Textstorlek",
+        "lines": "Rader",
+        "backgroundColor": "Bakgrundsfärg",
+        "backgroundColorHelper": "CSS-färg, t.ex. rgba(0,0,0,0) för helt transparent.",
+        "save": "Spara"
     },
     "motion": {
         "backgroundColor": "Bakgrundsfärg",

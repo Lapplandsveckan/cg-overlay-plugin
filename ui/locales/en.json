@@ -6,6 +6,13 @@
         "titleHelper": "Shown in the rundown.",
         "cinematicBars": "Cinematic bars"
     },
+    "caption": {
+        "heading": "Caption",
+        "description": "Toggle the CaptionKit live caption/translation lower-third on the output.",
+        "titleLabel": "Title",
+        "titleHelper": "Shown in the rundown.",
+        "lowerThird": "Caption lower-third"
+    },
     "namnskylt": {
         "heading": "Namnskylt",
         "nameLabel": "Name",
@@ -235,6 +242,17 @@
         "errorCount_other": "{{count}} errors",
         "healthCount_one": "{{count}} health warning",
         "healthCount_other": "{{count}} health warnings"
+    },
+    "captionkit": {
+        "heading": "CaptionKit settings",
+        "apiKey": "API key",
+        "slug": "Slug",
+        "language": "Language",
+        "fontSize": "Font size",
+        "lines": "Lines",
+        "backgroundColor": "Background color",
+        "backgroundColorHelper": "CSS color, e.g. rgba(0,0,0,0) for fully transparent.",
+        "save": "Save"
     },
     "motion": {
         "backgroundColor": "Background color",

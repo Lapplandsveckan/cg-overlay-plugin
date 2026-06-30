@@ -80,6 +80,10 @@ export default class VideoManager {
 
             this.playing = null;
             this.plugin.sendVideoInformation();
+            // Resume transcription/visibility, then clear so it starts fresh
+            // rather than showing whatever was last on screen before the video.
+            await this.plugin.captionkit.resume();
+            await this.plugin.captionkit.clear();
             return;
         }
 
@@ -94,6 +98,7 @@ export default class VideoManager {
         }
 
         this.playing = { video, effect };
+        this.plugin.captionkit.pause();
 
         const [error] = await noTryAsync(() =>
             this.plugin
@@ -111,6 +116,7 @@ export default class VideoManager {
                     .getLogger()
                     .error(`Failed to start video session: ${error}`);
             }
+            this.plugin.captionkit.resume();
             return;
         }
 
