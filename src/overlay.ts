@@ -3,7 +3,6 @@ import { type Effect, type Logger, type PluginAPI } from '@lappis/cg-manager';
 import { type BarsOverlayEffect } from './effects/overlay/bars';
 import { type SwishOverlayEffect } from './effects/overlay/swish';
 import { type NamnskyltOverlayEffect } from './effects/overlay/namnskylt';
-import { type CaptionOverlayEffect } from './effects/overlay/caption';
 import { type VideoTransitionOverlayEffect } from './effects/overlay/videotransition';
 import {
     type InsamlingOverlayEffect,
@@ -115,10 +114,6 @@ export default class OverlayManager {
     private namnskylt: SidePair<NamnskyltOverlayEffect> = null;
     private namnskyltName: string | null = null;
 
-    private caption: SidePair<CaptionOverlayEffect> = null;
-    private captionState = 0;
-    private captionPushedUp = false;
-
     private insamling: InsamlingOverlayEffect = null;
     private insamlingState = 0;
 
@@ -199,27 +194,6 @@ export default class OverlayManager {
         );
     }
 
-    private buildCaption() {
-        this.caption?.dispose();
-        this.caption = this.makeSidePair<CaptionOverlayEffect>(
-            'overlay-caption',
-            GROUPS.OVERLAY,
-            () => ({}),
-        );
-    }
-
-    // Rebuild the caption pair after its settings (API key/slug/etc.) change,
-    // re-activating it if it was on-air so the new display URL takes effect.
-    public rebuildCaption() {
-        const wasOnAir = this.captionState === 1;
-        this.buildCaption();
-        if (wasOnAir && this.caption) {
-            this.touchRecyclable('caption');
-            this.caption.activate();
-            if (this.captionPushedUp) this.setCaptionOffset(true);
-        }
-    }
-
     private buildVideoTransition() {
         this.videoTransition?.dispose();
         this.videoTransition = this.makeSidePair<VideoTransitionOverlayEffect>(
@@ -284,21 +258,6 @@ export default class OverlayManager {
                         this.swish.activate();
                         if (this.swishState === 1)
                             this.swish.each(e => e.minimize(), 'minimize');
-                    },
-                    lastUsed: now,
-                    attempts: 0,
-                    recycling: false,
-                },
-            ],
-            [
-                'caption',
-                {
-                    base: 'caption',
-                    rebuild: () => this.buildCaption(),
-                    isOnAir: () => this.captionState === 1,
-                    replay: () => {
-                        this.caption.activate();
-                        if (this.captionPushedUp) this.setCaptionOffset(true);
                     },
                     lastUsed: now,
                     attempts: 0,
@@ -425,7 +384,6 @@ export default class OverlayManager {
 
         this.buildBars();
         this.buildSwish();
-        this.buildCaption();
         this.buildVideoTransition();
         this.buildInsamling();
         this.buildPresentation();
@@ -453,11 +411,6 @@ export default class OverlayManager {
         if (this.swish) {
             this.swish.dispose();
             this.swish = null;
-        }
-
-        if (this.caption) {
-            this.caption.dispose();
-            this.caption = null;
         }
 
         if (this.videoTransition) {
@@ -563,7 +516,6 @@ export default class OverlayManager {
         );
         this.namnskylt = pair;
         this.namnskyltName = name;
-        this.setCaptionOffset(true);
         this.broadcastOverlay();
         this.loadThenActivate(pair, () => this.namnskylt === pair);
 
@@ -571,7 +523,6 @@ export default class OverlayManager {
             if (this.namnskylt === pair) {
                 this.namnskylt = null;
                 this.namnskyltName = null;
-                this.setCaptionOffset(false);
                 this.broadcastOverlay();
             }
         };
@@ -584,7 +535,6 @@ export default class OverlayManager {
         const pair = this.namnskylt;
         this.namnskylt = null;
         this.namnskyltName = null;
-        this.setCaptionOffset(false);
         this.broadcastOverlay();
         pair.deactivate();
     }
@@ -609,35 +559,6 @@ export default class OverlayManager {
         this.barsState = 0;
         this.bars.deactivate();
         this.broadcastOverlay();
-    }
-
-    public toggleCaption() {
-        this.captionState = 1 - this.captionState;
-
-        switch (this.captionState) {
-            case 0:
-                this.caption.deactivate();
-                break;
-            case 1:
-                this.touchRecyclable('caption');
-                this.caption.activate();
-                break;
-        }
-
-        this.broadcastOverlay();
-    }
-
-    public stopCaption() {
-        this.captionState = 0;
-        this.caption.deactivate();
-        this.broadcastOverlay();
-    }
-
-    // Pushes the caption lower-third up (or back down) via a mixer transform,
-    // e.g. while a namnskylt is on-air so the two don't overlap.
-    public setCaptionOffset(up: boolean) {
-        this.captionPushedUp = up;
-        if (this.captionState === 1) this.caption.each(e => e.setOffset(up));
     }
 
     public toggleVideoTransition(skipIntro = false, fast = false) {
@@ -732,7 +653,6 @@ export default class OverlayManager {
     public getOverlayState() {
         return {
             bars: this.barsState === 1,
-            caption: this.captionState === 1,
             swish: {
                 on: this.swishState === 0 || this.swishState === 1,
                 number: this.swishNumber,

@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
     Box,
-    Button,
     Chip,
     Collapse,
     IconButton,
     Stack,
-    TextField,
     Typography,
 } from '@mui/material';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -198,143 +196,6 @@ function DiagnosticsPanel() {
     );
 }
 
-const ROOT = '/api/plugin/lappis';
-
-interface CaptionKitSettings {
-    apiKey: string;
-    slug: string;
-    language: string;
-    fontSize: number;
-    lines: number;
-    backgroundColor: string;
-}
-
-const CAPTIONKIT_DEFAULTS: CaptionKitSettings = {
-    apiKey: '',
-    slug: '',
-    language: 'sv',
-    fontSize: 12,
-    lines: 2,
-    backgroundColor: 'rgba(0,0,0,0)',
-};
-
-function CaptionKitPanel() {
-    const { t } = useTranslation('cg-overlay-plugin');
-    const conn = useSocket();
-    const [open, setOpen] = useState(false);
-    const [settings, setSettings] =
-        useState<CaptionKitSettings>(CAPTIONKIT_DEFAULTS);
-    const [saving, setSaving] = useState(false);
-
-    useEffect(() => {
-        if (!conn) return;
-        conn.rawRequest(`${ROOT}/captionkit/settings`, 'GET', null)
-            .then((res: any) => {
-                if (res?.data) setSettings(prev => ({ ...prev, ...res.data }));
-            })
-            .catch(() => {});
-    }, [conn]);
-
-    const update = (patch: Partial<CaptionKitSettings>) =>
-        setSettings(prev => ({ ...prev, ...patch }));
-
-    const save = () => {
-        if (!conn) return;
-        setSaving(true);
-        conn.rawRequest(`${ROOT}/captionkit/settings`, 'UPDATE', settings)
-            .catch(() => {})
-            .finally(() => setSaving(false));
-    };
-
-    return (
-        <Box sx={{ mt: 3 }}>
-            <Stack
-                direction="row"
-                alignItems="center"
-                spacing={1}
-                sx={{ cursor: 'pointer', userSelect: 'none' }}
-                onClick={() => setOpen(o => !o)}
-            >
-                <Typography
-                    variant="subtitle2"
-                    sx={{ color: 'text.secondary' }}
-                >
-                    {t('captionkit.heading')}
-                </Typography>
-                <IconButton size="small" sx={{ ml: 'auto' }}>
-                    {open ? (
-                        <ExpandLessIcon sx={{ fontSize: 18 }} />
-                    ) : (
-                        <ExpandMoreIcon sx={{ fontSize: 18 }} />
-                    )}
-                </IconButton>
-            </Stack>
-
-            <Collapse in={open}>
-                <Stack spacing={2} sx={{ mt: 1.5, maxWidth: 420 }}>
-                    <TextField
-                        label={t('captionkit.apiKey')}
-                        type="password"
-                        value={settings.apiKey}
-                        onChange={e => update({ apiKey: e.target.value })}
-                        size="small"
-                    />
-                    <TextField
-                        label={t('captionkit.slug')}
-                        value={settings.slug}
-                        onChange={e => update({ slug: e.target.value })}
-                        size="small"
-                    />
-                    <TextField
-                        label={t('captionkit.language')}
-                        value={settings.language}
-                        onChange={e => update({ language: e.target.value })}
-                        size="small"
-                    />
-                    <Stack direction="row" spacing={2}>
-                        <TextField
-                            label={t('captionkit.fontSize')}
-                            type="number"
-                            value={settings.fontSize}
-                            onChange={e =>
-                                update({ fontSize: Number(e.target.value) })
-                            }
-                            size="small"
-                        />
-                        <TextField
-                            label={t('captionkit.lines')}
-                            type="number"
-                            value={settings.lines}
-                            onChange={e =>
-                                update({ lines: Number(e.target.value) })
-                            }
-                            size="small"
-                        />
-                    </Stack>
-                    <TextField
-                        label={t('captionkit.backgroundColor')}
-                        value={settings.backgroundColor}
-                        onChange={e =>
-                            update({ backgroundColor: e.target.value })
-                        }
-                        size="small"
-                        helperText={t('captionkit.backgroundColorHelper')}
-                    />
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        disabled={saving}
-                        onClick={save}
-                        sx={{ alignSelf: 'flex-start' }}
-                    >
-                        {t('captionkit.save')}
-                    </Button>
-                </Stack>
-            </Collapse>
-        </Box>
-    );
-}
-
 const OverlayTest = ({ path }) => {
     if (path?.[0] === 'slides' && path[1]) {
         return <PresentationEditor id={path[1]} />;
@@ -365,7 +226,6 @@ const OverlayTest = ({ path }) => {
                     <VideoQueue showSetCurrentRundown={false} />
                 </Box>
             </Stack>
-            <CaptionKitPanel />
             <DiagnosticsPanel />
         </Box>
     );

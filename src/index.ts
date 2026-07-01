@@ -55,8 +55,6 @@ import {
 import { getEvents, reportWarn } from './diagnostics';
 import { HealthMonitor } from './healthcheck';
 import { ActiveRundownStore } from './active-rundown';
-import { CaptionOverlayEffect } from './effects/overlay/caption';
-import { CaptionKitStore } from './captionkit';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -66,7 +64,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public namnskyltPresets: NamnskyltPresetStore;
     public presentations: PresentationStore;
     public activeRundown: ActiveRundownStore;
-    public captionkit: CaptionKitStore;
     public health: HealthMonitor;
 
     private reconnectHandler: () => void;
@@ -126,7 +123,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.namnskyltPresets = new NamnskyltPresetStore(this);
         this.presentations = new PresentationStore(this);
         this.activeRundown = new ActiveRundownStore(this);
-        this.captionkit = new CaptionKitStore(this);
 
         if (config.atem.ip) {
             this.atem.connect(config.atem.ip);
@@ -227,16 +223,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                     this.templates.getFilePath('overlay/namnskylt'),
                     this.getLogger().scope('effect:namnskylt'),
                     this.health,
-                ),
-        );
-
-        this.api.registerEffect(
-            'overlay-caption',
-            group =>
-                new CaptionOverlayEffect(
-                    group,
-                    this.captionkit.getDisplayUrl(),
-                    this.getLogger().scope('effect:caption'),
                 ),
         );
 
@@ -373,14 +359,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                 this.overlay.toggleBars();
             },
             { stop: () => this.overlay.stopBars() },
-        );
-
-        registerRundownAction(
-            'caption',
-            async () => {
-                this.overlay.toggleCaption();
-            },
-            { stop: () => this.overlay.stopCaption() },
         );
 
         registerRundownAction(
@@ -754,35 +732,6 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                 return this.namnskyltPresets.get();
             },
             'GET',
-        );
-
-        this.api.registerRoute(
-            'captionkit/settings',
-            async () => {
-                await this.captionkit.ready;
-                return this.captionkit.get();
-            },
-            'GET',
-        );
-        this.api.registerRoute(
-            'captionkit/settings',
-            async req => {
-                const patch =
-                    req.data && typeof req.data === 'object'
-                        ? (req.data as any)
-                        : {};
-                await this.captionkit.ready;
-                const settings = await this.captionkit.set(patch);
-                this.overlay.rebuildCaption();
-                this.api.broadcast('captionkit-settings', 'UPDATE', settings);
-                return settings;
-            },
-            'UPDATE',
-        );
-        this.api.registerRoute(
-            'captionkit/clear',
-            async () => this.captionkit.clear(),
-            'ACTION',
         );
 
         this.api.registerRoute(

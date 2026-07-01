@@ -31,6 +31,13 @@ class BroadcastHub {
 
         const key = `${path}|${method}`;
         let entry = this.entries.get(key);
+        // Self-heal if `conn` changed identity (e.g. a reconnect) since the
+        // entry was created — re-register on the live connection instead of
+        // leaving a stranded listener on the dead one.
+        if (entry && entry.conn !== conn) {
+            entry.conn.routes.unregister(entry.listener);
+            entry = undefined;
+        }
         if (!entry) {
             const subs = new Set<Handler>();
             const listener = {
@@ -41,21 +48,6 @@ class BroadcastHub {
             entry = { conn, listener, subs };
             this.entries.set(key, entry);
             conn.routes.register(listener);
-        } else if (entry.conn !== conn) {
-            // `conn` changed identity (e.g. a reconnect). Re-register on the
-            // live connection by mutating the existing entry in place, so
-            // other subscribers' cleanup closures (which hold a reference to
-            // this same entry object) see the new conn/listener rather than
-            // unregistering a stale one or deleting a freshly-created entry.
-            entry.conn.routes.unregister(entry.listener);
-            entry.conn = conn;
-            entry.listener = {
-                path,
-                method,
-                handler: (req: BroadcastReq) =>
-                    entry!.subs.forEach(fn => fn(req)),
-            };
-            conn.routes.register(entry.listener);
         }
         entry.subs.add(handler);
 

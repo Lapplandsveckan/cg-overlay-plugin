@@ -8,7 +8,6 @@ const ROOT = '/api/plugin/lappis';
 
 export interface OverlayState {
     bars: boolean;
-    caption: boolean;
     swish: { on: boolean; number: string };
     insamling: boolean;
     namnskylt: { on: boolean; name: string | null };
