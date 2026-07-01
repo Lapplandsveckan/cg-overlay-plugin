@@ -32,6 +32,15 @@ export function register(
     let lastStreamKey: string | null = null;
     let config: CaptionConfig = {};
 
+    const reconnect = () => {
+        disconnect();
+        disconnect = connectCaptionStream(
+            config as CaptionStreamConfig,
+            config.lines,
+            setLines,
+        );
+    };
+
     const update = (params: CaptionConfig) => {
         config = { ...config, ...params };
 
@@ -47,12 +56,7 @@ export function register(
         if (key === lastStreamKey) return;
         lastStreamKey = key;
 
-        disconnect();
-        disconnect = connectCaptionStream(
-            config as CaptionStreamConfig,
-            config.lines,
-            setLines,
-        );
+        reconnect();
     };
     onCGEvent('update', update);
 
@@ -60,12 +64,22 @@ export function register(
     onCGEvent('stop', states[0]);
     onCGEvent('play', states[1]);
 
+    // Reused as the "clear" signal: drop whatever backlog piled up (e.g.
+    // while a video played) and reconnect with a fresh cursor so stale
+    // entries can't get re-emitted by the stream's own prune timer.
+    const clear = () => {
+        setLines([]);
+        reconnect();
+    };
+    onCGEvent('next', clear);
+
     readyCG();
 
     return () => {
         offCGEvent('update', update);
         offCGEvent('stop', states[0]);
         offCGEvent('play', states[1]);
+        offCGEvent('next', clear);
         disconnect();
     };
 }

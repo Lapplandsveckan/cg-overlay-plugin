@@ -209,8 +209,9 @@ export default class OverlayManager {
         this.caption.each(e => e.setNamnskyltState(this.namnskyltState));
     }
 
-    // Rebuild the caption pair after its settings (API key/slug/etc.) change,
-    // re-activating it if it was on-air so the new display URL takes effect.
+    // Rebuild the caption pair after its settings (channel/language/etc.)
+    // change, re-activating it if it was on-air so the new display URL takes
+    // effect.
     public rebuildCaption() {
         const wasOnAir = this.captionState === 1;
         this.buildCaption();
@@ -638,6 +639,29 @@ export default class OverlayManager {
         this.captionState = 0;
         this.caption.deactivate();
         this.broadcastOverlay();
+    }
+
+    public clearCaption() {
+        this.caption?.each(e => e.clear());
+    }
+
+    // Hide captions on-air without touching captionState/UI, e.g. while a
+    // video plays. No-op if captions aren't enabled.
+    public suspendCaption() {
+        if (this.captionState !== 1) return;
+        this.caption?.deactivate();
+    }
+
+    // Re-show captions after suspendCaption(), but only if they were left
+    // enabled. Clears first so playback starts fresh instead of flashing
+    // whatever backlog piled up while hidden.
+    public resumeCaption() {
+        if (this.captionState !== 1 || !this.caption) return;
+
+        this.touchRecyclable('caption');
+        this.caption.each(e => e.setNamnskyltState(this.namnskyltState));
+        this.clearCaption();
+        this.caption.activate();
     }
 
     // Mirrors the namnskylt's own state (0 hidden / 1 full / 2 minimized) onto

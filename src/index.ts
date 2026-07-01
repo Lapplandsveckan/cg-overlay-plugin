@@ -782,7 +782,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
         this.api.registerRoute(
             'captionkit/clear',
-            async () => this.captionkit.clear(),
+            async () => this.overlay.clearCaption(),
             'ACTION',
         );
 

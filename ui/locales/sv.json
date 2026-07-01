@@ -247,8 +247,6 @@
     },
     "captionkit": {
         "heading": "CaptionKit-inställningar",
-        "apiKey": "API-nyckel",
-        "slug": "Slug",
         "channel": "Realtidskanal-UUID",
         "channelHelper": "Från webbläsarens devtools-nätverksflik på den publika undertext-länken (api.captionkit.com/v2/realtime?channel=<uuid>:...).",
         "language": "Språk",

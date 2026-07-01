@@ -201,8 +201,6 @@ function DiagnosticsPanel() {
 const ROOT = '/api/plugin/lappis';
 
 interface CaptionKitSettings {
-    apiKey: string;
-    slug: string;
     channel: string;
     language: string;
     fontSize: number;
@@ -210,8 +208,6 @@ interface CaptionKitSettings {
 }
 
 const CAPTIONKIT_DEFAULTS: CaptionKitSettings = {
-    apiKey: '',
-    slug: '',
     channel: '',
     language: 'sv',
     fontSize: 12,
@@ -272,19 +268,6 @@ function CaptionKitPanel() {
 
             <Collapse in={open}>
                 <Stack spacing={2} sx={{ mt: 1.5, maxWidth: 420 }}>
-                    <TextField
-                        label={t('captionkit.apiKey')}
-                        type="password"
-                        value={settings.apiKey}
-                        onChange={e => update({ apiKey: e.target.value })}
-                        size="small"
-                    />
-                    <TextField
-                        label={t('captionkit.slug')}
-                        value={settings.slug}
-                        onChange={e => update({ slug: e.target.value })}
-                        size="small"
-                    />
                     <TextField
                         label={t('captionkit.channel')}
                         value={settings.channel}

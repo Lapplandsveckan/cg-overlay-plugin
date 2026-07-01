@@ -74,6 +74,18 @@ export class CaptionOverlayEffect extends Effect {
         );
     }
 
+    // Drops whatever text/backlog the template is showing and reconnects its
+    // realtime stream with a fresh cursor. Not gated on `active` — the
+    // template's stream runs regardless of play/stop, so this is used both
+    // while shown and while deactivated (e.g. before resuming after a video).
+    public clear() {
+        return execChecked(
+            this.logger,
+            'clear caption effect',
+            this.executor.execute(CgCommand.next().allocate(this.layer)),
+        );
+    }
+
     public setNamnskyltState(state: number) {
         this.namnskyltState = state;
         if (!this.active) return;

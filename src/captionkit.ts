@@ -10,18 +10,14 @@ const STORE_PATH = path.join(
     'captionkit.json',
 );
 
-// Note the different TLDs — this isn't a typo. The documented control API
-// lives on .io; the undocumented realtime caption feed (found via browser
-// devtools on the public caption link) lives on .com.
-const SIGNAL_URL = 'https://api.captionkit.io/v2/signal';
+// The undocumented realtime caption feed, found via browser devtools on the
+// public caption link.
 const REALTIME_URL = 'https://api.captionkit.com/v2/realtime';
 
 export interface CaptionKitSettings {
-    apiKey: string;
-    slug: string;
     // The account's realtime-channel UUID, found via the browser devtools
     // network tab while viewing the public caption link. Entered manually for
-    // now — there's no documented API to resolve it from `slug`.
+    // now — there's no documented API to resolve it otherwise.
     channel: string;
     language: string;
     fontSize: number;
@@ -29,8 +25,6 @@ export interface CaptionKitSettings {
 }
 
 const DEFAULTS: CaptionKitSettings = {
-    apiKey: '',
-    slug: '',
     channel: '',
     language: 'sv',
     fontSize: 12,
@@ -44,13 +38,6 @@ export interface CaptionStreamConfig {
     lines: number;
     realtimeBase: string;
 }
-
-type Signal =
-    | 'captions:stream:start'
-    | 'captions:stream:stop'
-    | 'captions:stream:clear'
-    | 'captions:visibility:hide'
-    | 'captions:visibility:show';
 
 export class CaptionKitStore {
     private plugin: LappisOverlayPlugin;
@@ -97,10 +84,6 @@ export class CaptionKitStore {
         return this.get();
     }
 
-    public isEnabled(): boolean {
-        return !!this.settings.apiKey && !!this.settings.slug;
-    }
-
     // Config pushed to the local caption template so it can open its own
     // EventSource to CaptionKit's realtime feed and render the text itself.
     public getStreamConfig(): CaptionStreamConfig {
@@ -112,43 +95,5 @@ export class CaptionKitStore {
             lines,
             realtimeBase: REALTIME_URL,
         };
-    }
-
-    private async sendSignal(event: Signal) {
-        if (!this.isEnabled()) return;
-
-        const url = `${SIGNAL_URL}?key=${encodeURIComponent(this.settings.apiKey)}&event=${event}`;
-        const [err, res] = await noTryAsync(() => fetch(url));
-        if (err) {
-            this.plugin
-                .getLogger()
-                .warn(`Failed to send captionkit signal "${event}": ${err}`);
-        } else if (!res!.ok) {
-            this.plugin
-                .getLogger()
-                .warn(
-                    `captionkit signal "${event}" returned ${res!.status} ${res!.statusText}`,
-                );
-        }
-    }
-
-    public clear() {
-        return this.sendSignal('captions:stream:clear');
-    }
-
-    // Stop transcribing and hide the lower-third, e.g. while a video plays.
-    public pause() {
-        return Promise.all([
-            this.sendSignal('captions:stream:stop'),
-            this.sendSignal('captions:visibility:hide'),
-        ]);
-    }
-
-    // Resume transcribing and show the lower-third again.
-    public resume() {
-        return Promise.all([
-            this.sendSignal('captions:stream:start'),
-            this.sendSignal('captions:visibility:show'),
-        ]);
     }
 }

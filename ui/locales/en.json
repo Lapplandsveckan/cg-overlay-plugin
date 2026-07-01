@@ -247,8 +247,6 @@
     },
     "captionkit": {
         "heading": "CaptionKit settings",
-        "apiKey": "API key",
-        "slug": "Slug",
         "channel": "Realtime channel UUID",
         "channelHelper": "From the browser devtools network tab on the public caption link (api.captionkit.com/v2/realtime?channel=<uuid>:...).",
         "language": "Language",
