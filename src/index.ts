@@ -56,7 +56,7 @@ import { getEvents, reportWarn } from './diagnostics';
 import { HealthMonitor } from './healthcheck';
 import { ActiveRundownStore } from './active-rundown';
 import { CaptionOverlayEffect } from './effects/overlay/caption';
-import { CaptionKitStore } from './captionkit';
+import { CaptionKitStore, type CaptionStreamConfig } from './captionkit';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -232,10 +232,11 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.api.registerEffect(
             'overlay-caption',
-            group =>
+            (group, options) =>
                 new CaptionOverlayEffect(
                     group,
-                    this.captionkit.getDisplayUrl(),
+                    this.templates.getFilePath('overlay/caption'),
+                    options as CaptionStreamConfig,
                     this.getLogger().scope('effect:caption'),
                 ),
         );

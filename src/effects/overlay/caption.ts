@@ -6,17 +6,17 @@ import {
     type Logger,
 } from '@lappis/cg-manager';
 import { execChecked } from '../../diagnostics';
+import { type CaptionStreamConfig } from '../../captionkit';
 
 // Normalized y-translate applied when a namnskylt is on-air, so the two
 // lower-thirds don't overlap.
 const PUSH_UP_OFFSET = 0.08;
 const OFFSET_TWEEN = { type: 'ease-in-out' as const, duration: 250 };
 
-// CaptionKit's lower-third is an external page (captionkit.io) loaded directly
-// by CasparCG's HTML producer, so unlike the other overlay effects it does not
-// extend HealthCheckedEffect — that page can't post back to our /_cg/ack
-// healthcheck endpoint, and arming health for it would just trip false
-// recoveries.
+// The caption template opens its own EventSource to CaptionKit's realtime
+// feed client-side, so unlike the other overlay effects this one does not
+// extend HealthCheckedEffect — that stream is external and out of our
+// control, and arming health for it would just trip false recoveries.
 export class CaptionOverlayEffect extends Effect {
     private logger: Logger;
     private pushedUp = false;
@@ -24,14 +24,19 @@ export class CaptionOverlayEffect extends Effect {
     // to the same state doesn't fire a redundant mixer command.
     private lastAppliedY = 0;
 
-    public constructor(group: EffectGroup, template: string, logger: Logger) {
+    public constructor(
+        group: EffectGroup,
+        template: string,
+        options: CaptionStreamConfig,
+        logger: Logger,
+    ) {
         super(group);
 
         this.logger = logger;
         this.allocateLayers(1);
         this.executor.executeAllocations();
 
-        const cmd = CgCommand.add(template, false, {});
+        const cmd = CgCommand.add(template, false, options);
         cmd.allocate(this.layer);
         execChecked(
             this.logger,

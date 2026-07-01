@@ -10,25 +10,40 @@ const STORE_PATH = path.join(
     'captionkit.json',
 );
 
+// Note the different TLDs — this isn't a typo. The documented control API
+// lives on .io; the undocumented realtime caption feed (found via browser
+// devtools on the public caption link) lives on .com.
 const SIGNAL_URL = 'https://api.captionkit.io/v2/signal';
+const REALTIME_URL = 'https://api.captionkit.com/v2/realtime';
 
 export interface CaptionKitSettings {
     apiKey: string;
     slug: string;
+    // The account's realtime-channel UUID, found via the browser devtools
+    // network tab while viewing the public caption link. Entered manually for
+    // now — there's no documented API to resolve it from `slug`.
+    channel: string;
     language: string;
     fontSize: number;
     lines: number;
-    backgroundColor: string;
 }
 
 const DEFAULTS: CaptionKitSettings = {
     apiKey: '',
     slug: '',
+    channel: '',
     language: 'sv',
     fontSize: 12,
     lines: 2,
-    backgroundColor: 'rgba(0,0,0,0)',
 };
+
+export interface CaptionStreamConfig {
+    channel: string;
+    language: string;
+    fontSize: number;
+    lines: number;
+    realtimeBase: string;
+}
 
 type Signal =
     | 'captions:stream:start'
@@ -86,18 +101,17 @@ export class CaptionKitStore {
         return !!this.settings.apiKey && !!this.settings.slug;
     }
 
-    public getDisplayUrl(): string {
-        // Unconfigured — load a blank page rather than a broken captionkit URL.
-        if (!this.isEnabled()) return 'about:blank';
-
-        const { slug, language, fontSize, lines, backgroundColor } =
-            this.settings;
-        const params = new URLSearchParams({
-            fontSize: String(fontSize),
-            lines: String(lines),
-            backgroundColor,
-        });
-        return `https://captionkit.io/s/${encodeURIComponent(slug)}/l/${encodeURIComponent(language)}?${params}`;
+    // Config pushed to the local caption template so it can open its own
+    // EventSource to CaptionKit's realtime feed and render the text itself.
+    public getStreamConfig(): CaptionStreamConfig {
+        const { channel, language, fontSize, lines } = this.settings;
+        return {
+            channel,
+            language,
+            fontSize,
+            lines,
+            realtimeBase: REALTIME_URL,
+        };
     }
 
     private async sendSignal(event: Signal) {

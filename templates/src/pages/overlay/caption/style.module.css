@@ -1,0 +1,22 @@
+.caption__main {
+    position: absolute;
+    left: 50%;
+    bottom: 4vh;
+    transform: translateX(-50%);
+
+    max-width: 90vw;
+
+    color: white;
+    text-shadow:
+        0 1px 4px rgba(0, 0, 0, 0.8),
+        0 0 12px rgba(0, 0, 0, 0.6);
+
+    font-size: var(--caption-font-size);
+    font-weight: 700;
+
+    text-align: center;
+    line-height: 1.3;
+    white-space: pre-line;
+
+    opacity: 0;
+}

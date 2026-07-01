@@ -249,11 +249,11 @@
         "heading": "CaptionKit-inställningar",
         "apiKey": "API-nyckel",
         "slug": "Slug",
+        "channel": "Realtidskanal-UUID",
+        "channelHelper": "Från webbläsarens devtools-nätverksflik på den publika undertext-länken (api.captionkit.com/v2/realtime?channel=<uuid>:...).",
         "language": "Språk",
         "fontSize": "Textstorlek",
         "lines": "Rader",
-        "backgroundColor": "Bakgrundsfärg",
-        "backgroundColorHelper": "CSS-färg, t.ex. rgba(0,0,0,0) för helt transparent.",
         "save": "Spara"
     },
     "motion": {

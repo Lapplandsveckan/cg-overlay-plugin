@@ -204,7 +204,7 @@ export default class OverlayManager {
         this.caption = this.makeSidePair<CaptionOverlayEffect>(
             'overlay-caption',
             GROUPS.OVERLAY,
-            () => ({}),
+            () => this.plugin.captionkit.getStreamConfig(),
         );
     }
 

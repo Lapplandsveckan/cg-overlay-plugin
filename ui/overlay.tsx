@@ -203,19 +203,19 @@ const ROOT = '/api/plugin/lappis';
 interface CaptionKitSettings {
     apiKey: string;
     slug: string;
+    channel: string;
     language: string;
     fontSize: number;
     lines: number;
-    backgroundColor: string;
 }
 
 const CAPTIONKIT_DEFAULTS: CaptionKitSettings = {
     apiKey: '',
     slug: '',
+    channel: '',
     language: 'sv',
     fontSize: 12,
     lines: 2,
-    backgroundColor: 'rgba(0,0,0,0)',
 };
 
 function CaptionKitPanel() {
@@ -286,6 +286,13 @@ function CaptionKitPanel() {
                         size="small"
                     />
                     <TextField
+                        label={t('captionkit.channel')}
+                        value={settings.channel}
+                        onChange={e => update({ channel: e.target.value })}
+                        size="small"
+                        helperText={t('captionkit.channelHelper')}
+                    />
+                    <TextField
                         label={t('captionkit.language')}
                         value={settings.language}
                         onChange={e => update({ language: e.target.value })}
@@ -311,15 +318,6 @@ function CaptionKitPanel() {
                             size="small"
                         />
                     </Stack>
-                    <TextField
-                        label={t('captionkit.backgroundColor')}
-                        value={settings.backgroundColor}
-                        onChange={e =>
-                            update({ backgroundColor: e.target.value })
-                        }
-                        size="small"
-                        helperText={t('captionkit.backgroundColorHelper')}
-                    />
                     <Button
                         variant="outlined"
                         size="small"
