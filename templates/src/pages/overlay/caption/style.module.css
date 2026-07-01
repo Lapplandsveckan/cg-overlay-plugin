@@ -1,8 +1,15 @@
-.caption__main {
+.caption {
     position: absolute;
-    left: 50%;
-    bottom: 4vh;
-    transform: translateX(-50%);
+    inset: 0;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.caption__main {
+    margin-bottom: 4vh;
 
     max-width: 90vw;
 
@@ -19,4 +26,10 @@
     white-space: pre-line;
 
     opacity: 0;
+}
+
+.caption__spacer {
+    flex: none;
+    width: 100%;
+    height: 0;
 }

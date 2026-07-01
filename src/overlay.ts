@@ -117,7 +117,7 @@ export default class OverlayManager {
 
     private caption: SidePair<CaptionOverlayEffect> = null;
     private captionState = 0;
-    private captionPushedUp = false;
+    private namnskyltState = 0;
 
     private insamling: InsamlingOverlayEffect = null;
     private insamlingState = 0;
@@ -206,6 +206,7 @@ export default class OverlayManager {
             GROUPS.OVERLAY,
             () => this.plugin.captionkit.getStreamConfig(),
         );
+        this.caption.each(e => e.setNamnskyltState(this.namnskyltState));
     }
 
     // Rebuild the caption pair after its settings (API key/slug/etc.) change,
@@ -216,7 +217,6 @@ export default class OverlayManager {
         if (wasOnAir && this.caption) {
             this.touchRecyclable('caption');
             this.caption.activate();
-            if (this.captionPushedUp) this.setCaptionOffset(true);
         }
     }
 
@@ -296,10 +296,7 @@ export default class OverlayManager {
                     base: 'caption',
                     rebuild: () => this.buildCaption(),
                     isOnAir: () => this.captionState === 1,
-                    replay: () => {
-                        this.caption.activate();
-                        if (this.captionPushedUp) this.setCaptionOffset(true);
-                    },
+                    replay: () => this.caption.activate(),
                     lastUsed: now,
                     attempts: 0,
                     recycling: false,
@@ -563,15 +560,20 @@ export default class OverlayManager {
         );
         this.namnskylt = pair;
         this.namnskyltName = name;
-        this.setCaptionOffset(true);
         this.broadcastOverlay();
         this.loadThenActivate(pair, () => this.namnskylt === pair);
+
+        // Only the left side needs to report state — both sides transition
+        // in lockstep, and guarding against a superseded pair keeps a
+        // rapid re-trigger from clobbering the caption with a stale state.
+        pair.left.onState = s => {
+            if (this.namnskylt === pair) this.setCaptionNamnskyltState(s);
+        };
 
         const clearOnDone = () => {
             if (this.namnskylt === pair) {
                 this.namnskylt = null;
                 this.namnskyltName = null;
-                this.setCaptionOffset(false);
                 this.broadcastOverlay();
             }
         };
@@ -584,7 +586,6 @@ export default class OverlayManager {
         const pair = this.namnskylt;
         this.namnskylt = null;
         this.namnskyltName = null;
-        this.setCaptionOffset(false);
         this.broadcastOverlay();
         pair.deactivate();
     }
@@ -620,6 +621,12 @@ export default class OverlayManager {
                 break;
             case 1:
                 this.touchRecyclable('caption');
+                // Seed the effect's internal state so activate() sends the
+                // current namnskylt state along with CG PLAY, in case a
+                // namnskylt went up while captions were off.
+                this.caption.each(e =>
+                    e.setNamnskyltState(this.namnskyltState),
+                );
                 this.caption.activate();
                 break;
         }
@@ -633,11 +640,14 @@ export default class OverlayManager {
         this.broadcastOverlay();
     }
 
-    // Pushes the caption lower-third up (or back down) via a mixer transform,
-    // e.g. while a namnskylt is on-air so the two don't overlap.
-    public setCaptionOffset(up: boolean) {
-        this.captionPushedUp = up;
-        if (this.captionState === 1) this.caption.each(e => e.setOffset(up));
+    // Mirrors the namnskylt's own state (0 hidden / 1 full / 2 minimized) onto
+    // the caption, which pushes its text up in lockstep so the two lower-thirds
+    // don't overlap.
+    public setCaptionNamnskyltState(state: number) {
+        this.namnskyltState = state;
+        if (this.captionState === 1) {
+            this.caption.each(e => e.setNamnskyltState(state));
+        }
     }
 
     public toggleVideoTransition(skipIntro = false, fast = false) {

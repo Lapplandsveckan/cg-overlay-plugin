@@ -19,6 +19,10 @@ export class NamnskyltOverlayEffect extends HealthCheckedEffect {
     >;
     private logger: Logger;
     public onAutoDeactivate?: () => void;
+    // Fired on every state transition (0 hidden / 1 full / 2 minimized) so
+    // consumers (e.g. the caption effect) can follow this effect's own
+    // internal timer-driven life-cycle.
+    public onState?: (state: number) => void;
 
     public constructor(
         group: EffectGroup,
@@ -76,19 +80,23 @@ export class NamnskyltOverlayEffect extends HealthCheckedEffect {
             }, this.options.totalDuration - this.options.largeDuration);
         }, this.options.largeDuration);
 
-        return execChecked(
+        const result = execChecked(
             this.logger,
             'play namnskylt effect',
             this.executor.execute(CgCommand.play().allocate(this.layer)),
         );
+        this.onState?.(1);
+        return result;
     }
 
     private minimize() {
-        return execChecked(
+        const result = execChecked(
             this.logger,
             'minimize namnskylt effect',
             this.executor.execute(CgCommand.next().allocate(this.layer)),
         );
+        this.onState?.(2);
+        return result;
     }
 
     public deactivate() {
@@ -100,11 +108,13 @@ export class NamnskyltOverlayEffect extends HealthCheckedEffect {
             this.dispose();
         }, 1000);
 
-        return execChecked(
+        const result = execChecked(
             this.logger,
             'stop namnskylt effect',
             this.executor.execute(CgCommand.stop().allocate(this.layer)),
         );
+        this.onState?.(0);
+        return result;
     }
 
     public getMetadata(): Record<string, unknown> {

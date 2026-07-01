@@ -1,17 +1,11 @@
 import {
     CgCommand,
     Effect,
-    MixerCommand,
     type EffectGroup,
     type Logger,
 } from '@lappis/cg-manager';
 import { execChecked } from '../../diagnostics';
 import { type CaptionStreamConfig } from '../../captionkit';
-
-// Normalized y-translate applied when a namnskylt is on-air, so the two
-// lower-thirds don't overlap.
-const PUSH_UP_OFFSET = 0.08;
-const OFFSET_TWEEN = { type: 'ease-in-out' as const, duration: 250 };
 
 // The caption template opens its own EventSource to CaptionKit's realtime
 // feed client-side, so unlike the other overlay effects this one does not
@@ -19,10 +13,10 @@ const OFFSET_TWEEN = { type: 'ease-in-out' as const, duration: 250 };
 // control, and arming health for it would just trip false recoveries.
 export class CaptionOverlayEffect extends Effect {
     private logger: Logger;
-    private pushedUp = false;
-    // Tracks the last y-offset actually sent, so re-activating or re-toggling
-    // to the same state doesn't fire a redundant mixer command.
-    private lastAppliedY = 0;
+    // Mirrors the namnskylt's own state (0 hidden / 1 full / 2 minimized) so
+    // the caption template can push its text up in lockstep, instead of the
+    // one-shot mixer nudge this used to apply.
+    private namnskyltState = 0;
 
     public constructor(
         group: EffectGroup,
@@ -36,7 +30,10 @@ export class CaptionOverlayEffect extends Effect {
         this.allocateLayers(1);
         this.executor.executeAllocations();
 
-        const cmd = CgCommand.add(template, false, options);
+        const cmd = CgCommand.add(template, false, {
+            ...options,
+            namnskyltState: this.namnskyltState,
+        });
         cmd.allocate(this.layer);
         execChecked(
             this.logger,
@@ -52,7 +49,15 @@ export class CaptionOverlayEffect extends Effect {
     public activate() {
         if (!super.activate()) return;
 
-        this.applyOffset();
+        execChecked(
+            this.logger,
+            'update caption namnskylt state',
+            this.executor.execute(
+                CgCommand.update({
+                    namnskyltState: this.namnskyltState,
+                }).allocate(this.layer),
+            ),
+        );
         return execChecked(
             this.logger,
             'play caption effect',
@@ -69,25 +74,17 @@ export class CaptionOverlayEffect extends Effect {
         );
     }
 
-    public setOffset(up: boolean) {
-        this.pushedUp = up;
-        this.applyOffset();
-    }
-
-    private applyOffset() {
-        const y = this.pushedUp ? -PUSH_UP_OFFSET : 0;
-        if (y === this.lastAppliedY) return;
-        this.lastAppliedY = y;
+    public setNamnskyltState(state: number) {
+        this.namnskyltState = state;
+        if (!this.active) return;
 
         execChecked(
             this.logger,
-            'apply caption offset',
+            'update caption namnskylt state',
             this.executor.execute(
-                MixerCommand.create()
-                    /* eslint-disable camelcase */
-                    .fill({ x: 0, y, x_scale: 1, y_scale: 1 }, OFFSET_TWEEN)
-                    /* eslint-enable camelcase */
-                    .allocate(this.layer),
+                CgCommand.update({ namnskyltState: state }).allocate(
+                    this.layer,
+                ),
             ),
         );
     }

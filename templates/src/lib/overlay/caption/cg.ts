@@ -5,9 +5,10 @@ import { connectCaptionStream, type CaptionStreamConfig } from './stream';
 // 0: hidden
 // 1: shown
 
-export interface CaptionConfig extends CaptionStreamConfig {
-    fontSize: number;
-    lines: number;
+export interface CaptionConfig extends Partial<CaptionStreamConfig> {
+    fontSize?: number;
+    lines?: number;
+    namnskyltState?: number;
 }
 
 export interface CaptionStyle {
@@ -15,21 +16,43 @@ export interface CaptionStyle {
     lines: number;
 }
 
+// Fields that require reopening the CaptionKit stream when they change.
+// namnskyltState/fontSize updates arrive as partial payloads and must not
+// tear down an already-connected stream.
+const streamKey = (c: CaptionConfig) =>
+    JSON.stringify([c.channel, c.language, c.realtimeBase, c.lines]);
+
 export function register(
     setState: (state: number) => void,
     setLines: (lines: string[]) => void,
     setStyle: (style: CaptionStyle) => void,
+    setNamnskyltState: (state: number) => void,
 ) {
     let disconnect: () => void = () => {};
+    let lastStreamKey: string | null = null;
+    let config: CaptionConfig = {};
 
     const update = (params: CaptionConfig) => {
+        config = { ...config, ...params };
+
+        // Fall back in case a partial update (e.g. namnskyltState-only)
+        // somehow arrives before the initial CG-ADD config.
         setStyle({
-            fontSize: params.fontSize,
-            lines: params.lines,
+            fontSize: config.fontSize ?? 12,
+            lines: config.lines ?? 2,
         });
+        setNamnskyltState(config.namnskyltState ?? 0);
+
+        const key = streamKey(config);
+        if (key === lastStreamKey) return;
+        lastStreamKey = key;
 
         disconnect();
-        disconnect = connectCaptionStream(params, params.lines, setLines);
+        disconnect = connectCaptionStream(
+            config as CaptionStreamConfig,
+            config.lines,
+            setLines,
+        );
     };
     onCGEvent('update', update);
 
