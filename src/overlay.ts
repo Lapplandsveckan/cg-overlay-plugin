@@ -487,6 +487,12 @@ export default class OverlayManager {
         return this.videoSession;
     }
 
+    private cutVideoToProgram() {
+        this.plugin.atem.setVideoProgram();
+        if (this.plugin.settings.get().projectorsToProgram)
+            this.plugin.atem.setProjectorsProgram();
+    }
+
     public startVideoSession(atem = false, skipIntro = false, fast = false) {
         if (this.videoSession) return Promise.resolve();
 
@@ -495,7 +501,7 @@ export default class OverlayManager {
             this.toggleVideoTransition(skipIntro, fast);
 
         if (skipIntro) {
-            if (atem) this.plugin.atem.setVideoProgram();
+            if (atem) this.cutVideoToProgram();
             return Promise.resolve();
         }
 
@@ -507,7 +513,7 @@ export default class OverlayManager {
                 this.videoSession.stop = () => null;
                 resolve();
 
-                if (atem) this.plugin.atem.setVideoProgram();
+                if (atem) this.cutVideoToProgram();
             }, holdMs);
 
             this.videoSession.stop = () => {

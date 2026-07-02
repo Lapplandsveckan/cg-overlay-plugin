@@ -57,6 +57,7 @@ import { HealthMonitor } from './healthcheck';
 import { ActiveRundownStore } from './active-rundown';
 import { CaptionOverlayEffect } from './effects/overlay/caption';
 import { CaptionKitStore, type CaptionStreamConfig } from './captionkit';
+import { SettingsStore } from './settings';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
@@ -67,6 +68,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public presentations: PresentationStore;
     public activeRundown: ActiveRundownStore;
     public captionkit: CaptionKitStore;
+    public settings: SettingsStore;
     public health: HealthMonitor;
 
     private reconnectHandler: () => void;
@@ -127,6 +129,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.presentations = new PresentationStore(this);
         this.activeRundown = new ActiveRundownStore(this);
         this.captionkit = new CaptionKitStore(this);
+        this.settings = new SettingsStore(this);
 
         if (config.atem.ip) {
             this.atem.connect(config.atem.ip);
@@ -601,6 +604,26 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             evaluate: () => this.overlay.getOverlayState().insamling,
         });
 
+        const projectorsFb = this.api.registerFeedback({
+            id: 'lappis-projectors-program',
+            name: 'Projectors -> program enabled',
+            type: 'boolean',
+            defaultStyle: { bgcolor: rgb(0, 160, 0) },
+            evaluate: () => this.settings.get().projectorsToProgram,
+        });
+
+        this.api.registerAction({
+            id: 'lappis-projectors-program',
+            name: 'Toggle projectors -> program on video',
+            handler: async () => {
+                await this.settings.ready;
+                const next = !this.settings.get().projectorsToProgram;
+                await this.settings.set({ projectorsToProgram: next });
+                this.api.broadcast('settings', 'UPDATE', this.settings.get());
+                projectorsFb.invalidate();
+            },
+        });
+
         const activeRundownFb = this.api.registerFeedback({
             id: 'lappis-active-rundown',
             name: 'Active rundown',
@@ -621,6 +644,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             videoFb.invalidate();
             namnskyltFb.invalidate();
             activeRundownFb.invalidate();
+            projectorsFb.invalidate();
             this.api.invalidateFeedback('lappis-swish-state');
             this.api.invalidateFeedback('lappis-bars-state');
             this.api.invalidateFeedback('lappis-insamling-state');
@@ -790,6 +814,30 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             'captionkit/clear',
             async () => this.overlay.clearCaption(),
             'ACTION',
+        );
+
+        this.api.registerRoute(
+            'settings',
+            async () => {
+                await this.settings.ready;
+                return this.settings.get();
+            },
+            'GET',
+        );
+        this.api.registerRoute(
+            'settings',
+            async req => {
+                const patch =
+                    req.data && typeof req.data === 'object'
+                        ? (req.data as any)
+                        : {};
+                await this.settings.ready;
+                const settings = await this.settings.set(patch);
+                this.api.broadcast('settings', 'UPDATE', settings);
+                this.api.invalidateFeedback('lappis-projectors-program');
+                return settings;
+            },
+            'UPDATE',
         );
 
         this.api.registerRoute(

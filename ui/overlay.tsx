@@ -4,8 +4,10 @@ import {
     Button,
     Chip,
     Collapse,
+    FormControlLabel,
     IconButton,
     Stack,
+    Switch,
     TextField,
     Typography,
 } from '@mui/material';
@@ -316,6 +318,96 @@ function CaptionKitPanel() {
     );
 }
 
+interface PluginSettings {
+    projectorsToProgram: boolean;
+}
+
+const SETTINGS_DEFAULTS: PluginSettings = {
+    projectorsToProgram: false,
+};
+
+function SettingsPanel() {
+    const { t } = useTranslation('cg-overlay-plugin');
+    const conn = useSocket();
+    const [open, setOpen] = useState(false);
+    const [settings, setSettings] = useState<PluginSettings>(SETTINGS_DEFAULTS);
+
+    useEffect(() => {
+        if (!conn) return;
+        conn.rawRequest(`${ROOT}/settings`, 'GET', null)
+            .then((res: any) => {
+                if (res?.data) setSettings(prev => ({ ...prev, ...res.data }));
+            })
+            .catch(() => {});
+
+        const handler = (next: PluginSettings) =>
+            setSettings(prev => ({ ...prev, ...next }));
+        conn.routes.register('settings', handler);
+        return () => conn.routes.unregister('settings', handler);
+    }, [conn]);
+
+    const update = (patch: Partial<PluginSettings>) => {
+        setSettings(prev => ({ ...prev, ...patch }));
+        if (!conn) return;
+        conn.rawRequest(`${ROOT}/settings`, 'UPDATE', patch).catch(() => {});
+    };
+
+    return (
+        <Box sx={{ mt: 3 }}>
+            <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                sx={{ cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => setOpen(o => !o)}
+            >
+                <Typography
+                    variant="subtitle2"
+                    sx={{ color: 'text.secondary' }}
+                >
+                    {t('settings.heading')}
+                </Typography>
+                <IconButton size="small" sx={{ ml: 'auto' }}>
+                    {open ? (
+                        <ExpandLessIcon sx={{ fontSize: 18 }} />
+                    ) : (
+                        <ExpandMoreIcon sx={{ fontSize: 18 }} />
+                    )}
+                </IconButton>
+            </Stack>
+
+            <Collapse in={open}>
+                <Stack spacing={1} sx={{ mt: 1.5, maxWidth: 420 }}>
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={settings.projectorsToProgram}
+                                onChange={e =>
+                                    update({
+                                        projectorsToProgram: e.target.checked,
+                                    })
+                                }
+                                size="small"
+                            />
+                        }
+                        label={
+                            <Typography variant="body2">
+                                {t('settings.projectorsToProgram')}
+                            </Typography>
+                        }
+                    />
+                    <Typography
+                        variant="caption"
+                        sx={{ color: 'text.secondary' }}
+                    >
+                        {t('settings.projectorsToProgramHelper')}
+                    </Typography>
+                </Stack>
+            </Collapse>
+        </Box>
+    );
+}
+
 const OverlayTest = ({ path }) => {
     if (path?.[0] === 'slides' && path[1]) {
         return <PresentationEditor id={path[1]} />;
@@ -347,6 +439,7 @@ const OverlayTest = ({ path }) => {
                 </Box>
             </Stack>
             <CaptionKitPanel />
+            <SettingsPanel />
             <DiagnosticsPanel />
         </Box>
     );

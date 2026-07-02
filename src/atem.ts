@@ -5,6 +5,9 @@ import { AtemStateStore } from './atem-state';
 
 const AUX_PATH = /^video\.auxilliaries\.(\d+)$/;
 
+// ME program sources follow the ATEM convention: ME1 = 10010, ME2 = 10020, ...
+const meProgramSource = (me: number) => 10000 + me * 10;
+
 export class AtemManager {
     private connection: Atem = null;
     private plugin: PluginRef;
@@ -207,6 +210,25 @@ export class AtemManager {
             this.connection.changeProgramInput(previewInput);
         }
         this.returnStage();
+    }
+
+    // Routes the projector aux outputs to their respective ME program buses.
+    // Unlike the stage auxes, projectors are never restored on stop.
+    public setProjectorsProgram() {
+        if (!this.connected || config.atem.projectorAuxes.length === 0) return;
+        for (const { aux, me } of config.atem.projectorAuxes) {
+            const apiBus = aux - 1;
+            this.connection
+                .setAuxSource(meProgramSource(me), apiBus)
+                .catch(err =>
+                    reportError(
+                        this.plugin,
+                        'atem',
+                        `setAuxSource(projector ${aux}) failed`,
+                        err,
+                    ),
+                );
+        }
     }
 
     public ensureVideoProgram() {

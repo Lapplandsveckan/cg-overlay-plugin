@@ -254,6 +254,11 @@
         "lines": "Rader",
         "save": "Spara"
     },
+    "settings": {
+        "heading": "Inställningar",
+        "projectorsToProgram": "Växla projektorer till program vid video",
+        "projectorsToProgramHelper": "När en video spelas, skicka projektorutgångarna till respektive ME-program."
+    },
     "motion": {
         "backgroundColor": "Bakgrundsfärg",
         "noColor": "Ingen färg angiven",

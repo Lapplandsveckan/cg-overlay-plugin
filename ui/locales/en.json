@@ -254,6 +254,11 @@
         "lines": "Lines",
         "save": "Save"
     },
+    "settings": {
+        "heading": "Settings",
+        "projectorsToProgram": "Switch projectors to program on video",
+        "projectorsToProgramHelper": "When a video plays, route the projector outputs to their ME program."
+    },
     "motion": {
         "backgroundColor": "Background color",
         "noColor": "No color set",
