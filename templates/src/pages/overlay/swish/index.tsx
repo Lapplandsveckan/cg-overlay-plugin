@@ -25,14 +25,23 @@ interface SwishAnimationProps {
     fromBelow: boolean;
 }
 
+const resolveLabels = (
+    labels: string,
+): { labels: string[]; hasLabels: boolean } => {
+    const parts = labels.split('\n');
+    if (parts.length === 2) return { labels: parts, hasLabels: true };
+    if (parts.length === 1 && parts[0].trim() !== '')
+        return { labels: [parts[0], parts[0]], hasLabels: true };
+    return { labels: ['Swish', 'Swish'], hasLabels: false };
+};
+
 export const SwishAnimation: React.FC<SwishAnimationProps> = ({
     number,
     state,
     labels,
     fromBelow,
 }) => {
-    let Labels = labels.split('\n');
-    if (Labels.length !== 2) Labels = ['Swish', 'Swish'];
+    const { labels: Labels, hasLabels } = resolveLabels(labels);
 
     return (
         <CG
@@ -92,10 +101,7 @@ export const SwishAnimation: React.FC<SwishAnimationProps> = ({
                     <div
                         className={styles.swish__side}
                         style={{
-                            visibility:
-                                labels.split('\n').length === 2
-                                    ? 'visible'
-                                    : 'hidden',
+                            visibility: hasLabels ? 'visible' : 'hidden',
                             transform: 'translateX(-80%)',
                         }}
                     >
@@ -109,10 +115,7 @@ export const SwishAnimation: React.FC<SwishAnimationProps> = ({
                     <div
                         className={styles.swish__side}
                         style={{
-                            visibility:
-                                labels.split('\n').length === 2
-                                    ? 'visible'
-                                    : 'hidden',
+                            visibility: hasLabels ? 'visible' : 'hidden',
                             transform: 'translateX(75%)',
                         }}
                     >
