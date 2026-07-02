@@ -1,6 +1,7 @@
 import { Atem } from 'atem-connection';
 import { config } from './config';
 import { type PluginRef, getLogger, reportError } from './diagnostics';
+import { AtemStateStore } from './atem-state';
 
 const AUX_PATH = /^video\.auxilliaries\.(\d+)$/;
 
@@ -9,14 +10,24 @@ export class AtemManager {
     private plugin: PluginRef;
     public connected = false;
     // Live cache of the last source seen on each aux bus that wasn't us
-    // pushing caspar — kept up to date from ATEM's own change events so a
-    // restore always uses fresh data, not a one-off snapshot.
+    // pushing caspar — kept up to date from ATEM's own change events (and
+    // seeded from disk) so a restore always uses fresh data, not a one-off
+    // snapshot.
     private lastKnownAuxSources: Record<number, number> = {};
+    private store: AtemStateStore;
     private logger: ReturnType<typeof getLogger>;
 
     constructor(plugin: PluginRef) {
         this.plugin = plugin;
         this.logger = getLogger(plugin, 'atem');
+        this.store = new AtemStateStore(plugin);
+        this.store.ready.then(() => {
+            const saved = this.store.get();
+            for (const [apiBus, source] of Object.entries(saved.aux)) {
+                if (!(Number(apiBus) in this.lastKnownAuxSources))
+                    this.lastKnownAuxSources[Number(apiBus)] = source;
+            }
+        });
     }
 
     public connect(ip: string) {
@@ -38,6 +49,7 @@ export class AtemManager {
                 );
             }
             this.logger.info(`ATEM connected (${ip})`);
+            this.recover();
         });
         this.connection.on('disconnected', () => {
             this.connected = false;
@@ -72,6 +84,87 @@ export class AtemManager {
     private trackAuxSource(apiBus: number, source: number | undefined) {
         if (source == null || source === config.atem.stageCasparSource) return;
         this.lastKnownAuxSources[apiBus] = source;
+        this.store.setAux(apiBus, source);
+    }
+
+    // Detect a switcher left stuck on the Caspar sources (e.g. after a crash
+    // that skipped a graceful disable) and restore whatever is still stuck,
+    // using the on-disk / in-memory last-known-good values.
+    private async recover() {
+        await this.store.ready;
+        if (!this.stageConfigured) return;
+        for (const bus of config.atem.stageAuxBuses) {
+            const apiBus = bus - 1;
+            if (
+                this.connection.state.video.auxilliaries[apiBus] !==
+                config.atem.stageCasparSource
+            )
+                continue;
+            const saved = this.lastKnownAuxSources[apiBus];
+            if (saved == null) {
+                reportError(
+                    this.plugin,
+                    'atem',
+                    `Aux ${bus} is stuck on caspar but no last-known-good source is available to restore`,
+                );
+                continue;
+            }
+            this.logger.info(
+                `Recovering aux ${bus}, stuck on caspar — restoring ${saved}`,
+            );
+            this.connection
+                .setAuxSource(saved, apiBus)
+                .catch(err =>
+                    reportError(
+                        this.plugin,
+                        'atem',
+                        `setAuxSource(${bus}) failed`,
+                        err,
+                    ),
+                );
+        }
+    }
+
+    // Best-effort graceful reset for plugin disable — restores only the
+    // channels currently sitting on caspar's values, never touching a channel
+    // an operator has since moved manually. Returns once all commands have
+    // been sent (not necessarily acknowledged by the switcher).
+    public async resetToNormal(): Promise<void> {
+        if (!this.connected) return;
+
+        const pending: Promise<unknown>[] = [];
+        const { programInput, previewInput } = this.state;
+        if (programInput === config.atem.videoInput) {
+            pending.push(this.connection.changePreviewInput(programInput));
+            pending.push(this.connection.changeProgramInput(previewInput));
+        }
+
+        if (this.stageConfigured) {
+            for (const bus of config.atem.stageAuxBuses) {
+                const apiBus = bus - 1;
+                if (
+                    this.connection.state.video.auxilliaries[apiBus] !==
+                    config.atem.stageCasparSource
+                )
+                    continue;
+                const saved = this.lastKnownAuxSources[apiBus];
+                if (saved == null) continue;
+                pending.push(
+                    this.connection
+                        .setAuxSource(saved, apiBus)
+                        .catch(err =>
+                            reportError(
+                                this.plugin,
+                                'atem',
+                                `setAuxSource(${bus}) failed`,
+                                err,
+                            ),
+                        ),
+                );
+            }
+        }
+
+        await Promise.all(pending);
     }
 
     public setVideoProgram() {

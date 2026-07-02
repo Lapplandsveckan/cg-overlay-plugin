@@ -171,7 +171,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.api.onReconnect(this.reconnectHandler);
     }
 
-    protected onDisable() {
+    protected async onDisable() {
         if (this.reconnectHandler) {
             this.api.offReconnect(this.reconnectHandler);
             this.reconnectHandler = null;
@@ -190,6 +190,12 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.templates.dispose();
         this.templates = null;
+
+        if (this.atem) {
+            await this.atem.resetToNormal().catch(() => {});
+            this.atem.disconnect();
+            this.atem = null;
+        }
     }
 
     private registerEffects() {
