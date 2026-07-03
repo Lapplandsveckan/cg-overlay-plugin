@@ -120,7 +120,7 @@ export const SlidesRundownItem: React.FC<SlidesRundownItemProps> = ({
                 onClose={() => {
                     setArmed(false);
                 }}
-                onStop={() => {
+                onClear={() => {
                     stopPlayback(conn).catch(console.error);
                 }}
                 onPlay={(slideId, grabAttention) => {

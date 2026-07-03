@@ -190,16 +190,14 @@
     },
     "runModal": {
         "heading": "Presentationer",
-        "stopTooltip": "Stoppa uppspelning, håll modalen öppen (Esc)",
-        "stop": "Stopp",
+        "clearTooltip": "Rensa den sända sliden, håll modalen öppen (F1–F3 / Esc)",
         "closeModal": "Stäng modal",
         "closeEsc": "Stäng (Esc)",
-        "close": "Stäng",
         "prev": "Föregående (←)",
         "next": "Nästa (→ / Mellanslag)",
         "noSlides": "Inga slides att spela.",
         "startFromHere": "Starta härifrån",
-        "grabAttentionHint": "Byt till sliden i mixern vid byte. Håll Shift för att invertera för ett enda steg."
+        "grabAttentionHint": "Byt automatiskt till sliden i mixern vid byte. Håll Shift för att invertera för ett enda steg."
     },
     "presentationIndex": {
         "heading": "Presentationer",

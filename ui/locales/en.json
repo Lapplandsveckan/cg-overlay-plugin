@@ -190,16 +190,14 @@
     },
     "runModal": {
         "heading": "Presentations",
-        "stopTooltip": "Stop playback, keep modal open (Esc)",
-        "stop": "Stop",
+        "clearTooltip": "Clear the on-air slide, keep modal open (F1–F3 / Esc)",
         "closeModal": "Close modal",
         "closeEsc": "Close (Esc)",
-        "close": "Close",
         "prev": "Previous (←)",
         "next": "Next (→ / Space)",
         "noSlides": "No slides to play.",
         "startFromHere": "Start from here",
-        "grabAttentionHint": "Cut the switcher to the slide on change. Hold Shift to invert for one advance."
+        "grabAttentionHint": "Auto-cut the switcher to the slide when it changes. Hold Shift to invert for one advance."
     },
     "presentationIndex": {
         "heading": "Presentations",

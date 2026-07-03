@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import {
     Box,
-    Button,
     Dialog,
     DialogContent,
     DialogTitle,
@@ -12,11 +11,13 @@ import {
     Typography,
 } from '@mui/material';
 
+import CancelPresentationIcon from '@mui/icons-material/CancelPresentationOutlined';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import FlashOffIcon from '@mui/icons-material/FlashOff';
-import FlashOnIcon from '@mui/icons-material/FlashOn';
+import CloseIcon from '@mui/icons-material/CloseOutlined';
+import LiveTvIcon from '@mui/icons-material/LiveTvOutlined';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import TvOffIcon from '@mui/icons-material/TvOffOutlined';
 import SlidePreview from './SlidePreview';
 import {
     type Presentation,
@@ -58,7 +59,7 @@ export interface RunModalProps {
     playback: PlaybackState | null;
 
     onClose: () => void;
-    onStop: () => void;
+    onClear: () => void;
     onPlay: (slideId: string, grabAttention: boolean) => void;
 }
 
@@ -67,7 +68,7 @@ export const RunModal: React.FC<RunModalProps> = ({
     presentation,
     playback,
     onClose,
-    onStop,
+    onClear,
     onPlay,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
@@ -124,8 +125,14 @@ export const RunModal: React.FC<RunModalProps> = ({
 
             if (e.key === 'Escape') {
                 e.preventDefault();
-                if (playingHere) onStop();
+                if (playingHere) onClear();
                 else onClose();
+                return;
+            }
+
+            if (e.key === 'F1' || e.key === 'F2' || e.key === 'F3') {
+                e.preventDefault();
+                if (playingHere) onClear();
                 return;
             }
 
@@ -177,37 +184,42 @@ export const RunModal: React.FC<RunModalProps> = ({
                         )}
                     </Stack>
                     <Stack direction="row" spacing={1} alignItems="center">
-                        <Tooltip title={t('runModal.grabAttentionHint')}>
-                            <IconButton
-                                size="small"
-                                onClick={() => setGrabAttention(g => !g)}
-                                color={grabAttention ? 'warning' : 'default'}
-                                sx={{ opacity: grabAttention ? 1 : 0.5 }}
-                            >
-                                {grabAttention ? (
-                                    <FlashOnIcon sx={{ fontSize: 20 }} />
-                                ) : (
-                                    <FlashOffIcon sx={{ fontSize: 20 }} />
-                                )}
-                            </IconButton>
-                        </Tooltip>
                         {playingHere && (
                             <Typography variant="body2" color="text.secondary">
                                 {`${currentIndex + 1} / ${slides.length}`}
                             </Typography>
                         )}
                         {playingHere && (
-                            <Tooltip title={t('runModal.stopTooltip')}>
-                                <Button
-                                    onClick={onStop}
+                            <Tooltip title={t('runModal.clearTooltip')}>
+                                <IconButton
                                     size="small"
+                                    onClick={onClear}
                                     color="error"
-                                    variant="outlined"
                                 >
-                                    {t('runModal.stop')}
-                                </Button>
+                                    <CancelPresentationIcon
+                                        sx={{ fontSize: 20 }}
+                                    />
+                                </IconButton>
                             </Tooltip>
                         )}
+                        <Tooltip title={t('runModal.grabAttentionHint')}>
+                            <IconButton
+                                size="small"
+                                onClick={() => setGrabAttention(g => !g)}
+                                color={grabAttention ? 'warning' : 'default'}
+                                sx={{
+                                    opacity: grabAttention ? 1 : 0.5,
+                                    position: 'relative',
+                                    top: -2,
+                                }}
+                            >
+                                {grabAttention ? (
+                                    <LiveTvIcon sx={{ fontSize: 20 }} />
+                                ) : (
+                                    <TvOffIcon sx={{ fontSize: 20 }} />
+                                )}
+                            </IconButton>
+                        </Tooltip>
                         <Tooltip
                             title={
                                 playingHere
@@ -215,19 +227,18 @@ export const RunModal: React.FC<RunModalProps> = ({
                                     : t('runModal.closeEsc')
                             }
                         >
-                            <Button
+                            <IconButton
                                 onClick={onClose}
                                 size="small"
                                 color="inherit"
-                                variant="outlined"
                             >
-                                {t('runModal.close')}
-                            </Button>
+                                <CloseIcon sx={{ fontSize: 20 }} />
+                            </IconButton>
                         </Tooltip>
                     </Stack>
                 </Stack>
             </DialogTitle>
-            <DialogContent>
+            <DialogContent sx={{ userSelect: 'none' }}>
                 {playingHere && current ? (
                     <PlayingView
                         slides={slides}
