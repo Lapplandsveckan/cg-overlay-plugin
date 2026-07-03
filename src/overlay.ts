@@ -114,6 +114,8 @@ export default class OverlayManager {
 
     private namnskylt: SidePair<NamnskyltOverlayEffect> = null;
     private namnskyltName: string | null = null;
+    private namnskyltStartedAt: number | null = null;
+    private namnskyltDuration: number | null = null;
 
     private caption: SidePair<CaptionOverlayEffect> = null;
     private captionState = 0;
@@ -574,13 +576,21 @@ export default class OverlayManager {
         // in lockstep, and guarding against a superseded pair keeps a
         // rapid re-trigger from clobbering the caption with a stale state.
         pair.left.onState = s => {
-            if (this.namnskylt === pair) this.setCaptionNamnskyltState(s);
+            if (this.namnskylt !== pair) return;
+            this.setCaptionNamnskyltState(s);
+            if (s === 1) {
+                this.namnskyltStartedAt = Date.now();
+                this.namnskyltDuration = 10000;
+                this.broadcastOverlay();
+            }
         };
 
         const clearOnDone = () => {
             if (this.namnskylt === pair) {
                 this.namnskylt = null;
                 this.namnskyltName = null;
+                this.namnskyltStartedAt = null;
+                this.namnskyltDuration = null;
                 this.broadcastOverlay();
             }
         };
@@ -593,6 +603,8 @@ export default class OverlayManager {
         const pair = this.namnskylt;
         this.namnskylt = null;
         this.namnskyltName = null;
+        this.namnskyltStartedAt = null;
+        this.namnskyltDuration = null;
         this.broadcastOverlay();
         pair.deactivate();
     }
@@ -781,6 +793,8 @@ export default class OverlayManager {
             namnskylt: {
                 on: this.namnskylt !== null,
                 name: this.namnskyltName,
+                startedAt: this.namnskyltStartedAt,
+                totalDuration: this.namnskyltDuration,
             },
         };
     }

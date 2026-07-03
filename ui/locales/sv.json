@@ -18,7 +18,8 @@
         "nameLabel": "Namn",
         "nameRequired": "Obligatoriskt",
         "nameHelper": "Namn som visas i lower-third-överlägget.",
-        "label": "Namnskylt"
+        "label": "Namnskylt",
+        "timeLeft": "{{time}} kvar"
     },
     "swish": {
         "heading": "Swish",
@@ -83,7 +84,8 @@
         "upNext": "Härnäst ({{count}})",
         "timeProgress": "{{elapsed}} / {{duration}} — {{timeLeft}} kvar",
         "setCurrentRundown": "Använd som aktiv rundown",
-        "currentRundown": "Aktiv rundown"
+        "currentRundown": "Aktiv rundown",
+        "clearQueue": "Rensa kö"
     },
     "panel": {
         "backAll": "← Alla",

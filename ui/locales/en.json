@@ -18,7 +18,8 @@
         "nameLabel": "Name",
         "nameRequired": "Required",
         "nameHelper": "Name shown on the lower-third overlay.",
-        "label": "Namnskylt"
+        "label": "Namnskylt",
+        "timeLeft": "{{time}} left"
     },
     "swish": {
         "heading": "Swish",
@@ -83,7 +84,8 @@
         "upNext": "Up next ({{count}})",
         "timeProgress": "{{elapsed}} / {{duration}} — {{timeLeft}} left",
         "setCurrentRundown": "Set as current",
-        "currentRundown": "Current rundown"
+        "currentRundown": "Current rundown",
+        "clearQueue": "Clear queue"
     },
     "panel": {
         "backAll": "← All",

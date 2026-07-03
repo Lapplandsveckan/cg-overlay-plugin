@@ -1,10 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Chip, Stack, Typography } from '@mui/material';
+import { Box, Chip, LinearProgress, Stack, Typography } from '@mui/material';
 
 import { useSocket, MediaCard } from '@web-lib';
 import { useTranslation } from '../i18n';
 import { buildThumbnailUrl } from '../thumbnail';
 import { LiveChip, useVideoPlayback } from '../overlay-state';
+
+function formatTime(seconds: number) {
+    if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+    const total = Math.round(seconds);
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+}
 
 interface RundownEntry {
     id: string;
@@ -37,7 +45,8 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
     const { t } = useTranslation('cg-overlay-plugin');
     const socket = useSocket();
     const [clip, setClip] = useState<any | null>(null);
-    const { currentClip, queued } = useVideoPlayback();
+    const { currentClip, queued, current } = useVideoPlayback();
+    const [playTime, setPlayTime] = useState(0);
 
     const data = useMediaCardData(clip);
     const playNow = entry.data?.options?.playNow;
@@ -52,6 +61,24 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
             .getMedia()
             .then(media => setClip(media.get(entry.data.clip) || null));
     }, [entry.data?.clip]);
+
+    useEffect(() => {
+        if (!isLive || !current) return;
+        setPlayTime(current.playDuration);
+        const interval = setInterval(
+            () => setPlayTime(prev => prev + 100),
+            100,
+        );
+        return () => clearInterval(interval);
+    }, [isLive, current]);
+
+    const clipDuration = (current?.clipDuration ?? 0) / 1000;
+    const elapsed = playTime / 1000;
+    const showProgress = isLive && !current?.loop && clipDuration > 0;
+    const progressPct = showProgress
+        ? Math.min(100, (elapsed / clipDuration) * 100)
+        : 0;
+    const timeLeft = showProgress ? Math.max(0, clipDuration - elapsed) : 0;
 
     return (
         <Stack spacing={1}>
@@ -81,6 +108,26 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
                         {t('playVideo.noClip')}
                     </Typography>
                 </Box>
+            )}
+            {isLive && (
+                <Stack spacing={0.5}>
+                    <Typography variant="caption" color="text.secondary">
+                        {current?.loop
+                            ? t('video.remainingLooping')
+                            : t('video.timeProgress', {
+                                  elapsed: formatTime(elapsed),
+                                  duration: formatTime(clipDuration),
+                                  timeLeft: formatTime(timeLeft),
+                              })}
+                    </Typography>
+                    {showProgress && (
+                        <LinearProgress
+                            variant="determinate"
+                            value={progressPct}
+                            sx={{ height: 4, borderRadius: 2 }}
+                        />
+                    )}
+                </Stack>
             )}
         </Stack>
     );

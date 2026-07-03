@@ -11,7 +11,12 @@ export interface OverlayState {
     caption: boolean;
     swish: { on: boolean; number: string };
     insamling: boolean;
-    namnskylt: { on: boolean; name: string | null };
+    namnskylt: {
+        on: boolean;
+        name: string | null;
+        startedAt: number | null;
+        totalDuration: number | null;
+    };
 }
 
 export function useOverlayState(): OverlayState | null {
@@ -38,15 +43,31 @@ export function useOverlayState(): OverlayState | null {
 export interface VideoPlayback {
     currentClip: string | null;
     queued: Set<string>;
+    current: {
+        playDuration: number;
+        clipDuration: number | null;
+        loop: boolean;
+    } | null;
 }
 
 function parseVideoData(data: any): VideoPlayback {
-    if (!data) return { currentClip: null, queued: new Set() };
+    if (!data) return { currentClip: null, queued: new Set(), current: null };
     const currentClip: string | null = data.current?.data?.id ?? null;
     const queued = new Set<string>(
         ((data.queue ?? []) as any[]).map(v => v?.data?.id).filter(Boolean),
     );
-    return { currentClip, queued };
+    const metadata = data.current?.metadata;
+    const current = metadata
+        ? {
+              playDuration: metadata.playDuration ?? 0,
+              clipDuration:
+                  typeof metadata.clipDuration === 'number'
+                      ? metadata.clipDuration
+                      : null,
+              loop: metadata.loop ?? false,
+          }
+        : null;
+    return { currentClip, queued, current };
 }
 
 export function useVideoPlayback(): VideoPlayback {
@@ -54,6 +75,7 @@ export function useVideoPlayback(): VideoPlayback {
     const [playback, setPlayback] = useState<VideoPlayback>({
         currentClip: null,
         queued: new Set(),
+        current: null,
     });
 
     useEffect(() => {

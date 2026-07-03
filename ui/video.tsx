@@ -11,12 +11,19 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloseIcon from '@mui/icons-material/Close';
 import FlagIcon from '@mui/icons-material/Flag';
-import React, { useEffect, useMemo, useState } from 'react';
+import PlaylistRemoveIcon from '@mui/icons-material/PlaylistRemove';
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 
 import { useSocket } from '@web-lib';
 import { useTranslation } from './i18n';
 import { buildThumbnailUrl } from './thumbnail';
-import { useActiveRundown } from './hooks';
+import { useActiveRundown, useBroadcast } from './hooks';
 
 function useRundownIdFromUrl(): string | null {
     return useMemo(() => {
@@ -252,6 +259,7 @@ const VideoQueue: React.FC<VideoQueueProps> = ({
     const [queue, setQueue] = useState<any[]>([]);
     const [current, setCurrent] = useState<any>(null);
     const [playTime, setPlayTime] = useState<number>(0);
+    const receivedBroadcast = useRef(false);
 
     const queueDuration = queue.reduce(
         (acc, item) =>
@@ -266,53 +274,60 @@ const VideoQueue: React.FC<VideoQueueProps> = ({
         : Math.max(0, currentDuration - elapsed);
     const totalRemaining = queueDuration + currentTimeLeft;
 
+    const setData = useCallback((data: VideoResponse) => {
+        setQueue(
+            data.queue.map(item => ({
+                id: item.id,
+                title: item.data.id,
+
+                clip: item.data,
+            })),
+        );
+
+        if (!data.current) return setCurrent(null);
+
+        setCurrent({
+            id: data.current.id,
+            title: data.current.data.id,
+
+            clip: data.current.data,
+            loop: data.current.metadata?.loop ?? false,
+        });
+
+        setPlayTime(data.current.metadata?.playDuration || 0);
+    }, []);
+
     useEffect(() => {
         const interval = setInterval(() => {
             setPlayTime(playTime => playTime + 100);
         }, 100);
-
-        const setData = (data: VideoResponse) => {
-            setQueue(
-                data.queue.map(item => ({
-                    id: item.id,
-                    title: item.data.id,
-
-                    clip: item.data,
-                })),
-            );
-
-            if (!data.current) return setCurrent(null);
-
-            setCurrent({
-                id: data.current.id,
-                title: data.current.data.id,
-
-                clip: data.current.data,
-                loop: data.current.metadata?.loop ?? false,
-            });
-
-            setPlayTime(data.current.metadata?.playDuration || 0);
-        };
-
-        const listener = {
-            path: 'plugin/lappis/videos',
-            method: 'UPDATE',
-
-            handler: req => setData(req.data),
-        };
-
-        conn.rawRequest(`/api/plugin/lappis/videos`, 'GET', {}).then(data =>
-            setData(data.data),
-        );
-        conn.routes.register(listener);
-
-        return () => {
-            conn.routes.unregister(listener);
-            clearInterval(interval);
-        };
+        return () => clearInterval(interval);
     }, []);
 
+    useEffect(() => {
+        if (!conn) return;
+        conn.rawRequest(`/api/plugin/lappis/videos`, 'GET', {})
+            .then(res => {
+                // Only apply the GET result if no broadcast has arrived yet.
+                if (!receivedBroadcast.current) setData(res.data);
+            })
+            .catch(console.error);
+    }, [conn, setData]);
+
+    const onUpdate = useCallback(
+        (req: { data?: any }) => {
+            receivedBroadcast.current = true;
+            setData(req.data);
+        },
+        [setData],
+    );
+    useBroadcast(conn, 'plugin/lappis/videos', 'UPDATE', onUpdate);
+
     const isEmpty = !current && queue.length === 0;
+    const clearQueue = () =>
+        conn
+            .rawRequest(`/api/plugin/lappis/videos`, 'DELETE', null)
+            .catch(console.error);
 
     return (
         <Stack
@@ -331,19 +346,28 @@ const VideoQueue: React.FC<VideoQueueProps> = ({
                     </Typography>
                     {showSetCurrentRundown && <SetCurrentRundownButton />}
                 </Stack>
-                {current?.loop ? (
-                    <Typography variant="body2" color="text.secondary">
-                        {t('video.remainingLooping')}
-                    </Typography>
-                ) : (
-                    totalRemaining > 0 && (
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                    {current?.loop ? (
                         <Typography variant="body2" color="text.secondary">
-                            {t('video.remaining', {
-                                time: formatTime(totalRemaining),
-                            })}
+                            {t('video.remainingLooping')}
                         </Typography>
-                    )
-                )}
+                    ) : (
+                        totalRemaining > 0 && (
+                            <Typography variant="body2" color="text.secondary">
+                                {t('video.remaining', {
+                                    time: formatTime(totalRemaining),
+                                })}
+                            </Typography>
+                        )
+                    )}
+                    {queue.length > 0 && (
+                        <Tooltip title={t('video.clearQueue')}>
+                            <IconButton size="small" onClick={clearQueue}>
+                                <PlaylistRemoveIcon sx={{ fontSize: 20 }} />
+                            </IconButton>
+                        </Tooltip>
+                    )}
+                </Stack>
             </Stack>
 
             {isEmpty && (
