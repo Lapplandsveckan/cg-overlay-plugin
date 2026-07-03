@@ -57,9 +57,19 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
 
     useEffect(() => {
         if (!entry.data?.clip) return;
+        const clip = entry.data.clip as string;
+
         socket.caspar
             .getMedia()
-            .then(media => setClip(media.get(entry.data.clip) || null));
+            .then(media => setClip(media.get(clip) || null));
+
+        const onMedia = (key: string, value: any) => {
+            if (key === clip && value) setClip(value);
+        };
+        socket.caspar.on('media', onMedia);
+        return () => {
+            socket.caspar.off('media', onMedia);
+        };
     }, [entry.data?.clip]);
 
     useEffect(() => {
