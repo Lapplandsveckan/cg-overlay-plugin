@@ -190,7 +190,6 @@
     },
     "runModal": {
         "heading": "Presentationer",
-        "clickToStart": "Klicka på en slide för att starta",
         "stopTooltip": "Stoppa uppspelning, håll modalen öppen (Esc)",
         "stop": "Stopp",
         "closeModal": "Stäng modal",

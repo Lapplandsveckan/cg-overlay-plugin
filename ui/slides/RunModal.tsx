@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import {
     Box,
     Button,
-    Chip,
     Dialog,
     DialogContent,
     DialogTitle,
@@ -159,9 +158,7 @@ export const RunModal: React.FC<RunModalProps> = ({
             open={open}
             onClose={onClose}
             onClick={e => e.stopPropagation()}
-            fullWidth
-            maxWidth={false}
-            PaperProps={{ sx: { width: 'min(92vw, 900px)', maxWidth: 'none' } }}
+            fullScreen
         >
             <DialogTitle sx={{ paddingBottom: 1 }}>
                 <Stack
@@ -177,14 +174,6 @@ export const RunModal: React.FC<RunModalProps> = ({
                             <Typography variant="body2" color="text.secondary">
                                 {presentation.title}
                             </Typography>
-                        )}
-                        {!playingHere && slides.length > 0 && (
-                            <Chip
-                                label={t('runModal.clickToStart')}
-                                size="small"
-                                variant="outlined"
-                                sx={{ borderStyle: 'dashed' }}
-                            />
                         )}
                     </Stack>
                     <Stack direction="row" spacing={1} alignItems="center">
@@ -443,6 +432,7 @@ const PickerView: React.FC<PickerViewProps> = ({
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
                 gap: 2,
+                paddingTop: 0.5,
                 paddingBottom: 1,
             }}
         >
@@ -460,19 +450,23 @@ const PickerView: React.FC<PickerViewProps> = ({
                     }}
                     sx={{
                         cursor: 'pointer',
-                        outline: 'none',
-                        borderRadius: 1.5,
-                        transition: 'transform 100ms, box-shadow 100ms',
-                        '&:hover, &:focus-visible': {
-                            transform: 'translateY(-2px)',
-                            boxShadow: '0 6px 20px rgba(74,144,226,0.3)',
-                        },
+                        '&:hover .picker-thumb, &:focus-visible .picker-thumb':
+                            { borderColor: '#ff9800' },
                         '&:hover .picker-overlay, &:focus-visible .picker-overlay':
                             { opacity: 1 },
                     }}
                 >
                     <Stack spacing={0.75}>
-                        <Box sx={{ position: 'relative' }}>
+                        <Box
+                            className="picker-thumb"
+                            sx={{
+                                position: 'relative',
+                                padding: '2px',
+                                border: '2px solid transparent',
+                                borderRadius: 1,
+                                transition: 'border-color 100ms',
+                            }}
+                        >
                             <SlidePreview
                                 {...slidePreviewProps(
                                     slide,

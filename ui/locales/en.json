@@ -190,7 +190,6 @@
     },
     "runModal": {
         "heading": "Presentations",
-        "clickToStart": "Click a slide to start",
         "stopTooltip": "Stop playback, keep modal open (Esc)",
         "stop": "Stop",
         "closeModal": "Close modal",
