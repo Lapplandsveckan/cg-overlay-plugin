@@ -24,7 +24,7 @@ import {
     useImageThumbnails,
     usePresentations,
 } from './slides/api';
-import { slidesEditorUrl, pluginHomeUrl } from './slides/urls';
+import { slidesEditorUrl, slidesHomeUrl } from './slides/urls';
 
 interface PresentationCardProps {
     presentation: Presentation;
@@ -208,7 +208,7 @@ const SlidesTab: React.FC = () => {
                         variant="outlined"
                         size="small"
                         component="a"
-                        href={pluginHomeUrl()}
+                        href={slidesHomeUrl()}
                     >
                         {t('panel.openAll')}
                     </Button>

@@ -71,7 +71,7 @@ import {
     fetchBibleSlides,
 } from './api';
 import { BOOKS, TRANSLATIONS } from './bible-api';
-import { pluginHomeUrl } from './urls';
+import { slidesHomeUrl } from './urls';
 
 const IMAGE_CODECS = new Set([
     'mjpeg',
@@ -329,7 +329,7 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                     <Typography variant="body1">
                         {t('presentationEditor.notFound')}
                     </Typography>
-                    <Link href={pluginHomeUrl()}>
+                    <Link href={slidesHomeUrl()}>
                         {t('presentationEditor.home')}
                     </Link>
                 </Stack>
@@ -385,7 +385,7 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
             setError('Failed to delete presentation');
             return;
         }
-        window.location.assign(pluginHomeUrl());
+        window.location.assign(slidesHomeUrl());
     };
 
     return (

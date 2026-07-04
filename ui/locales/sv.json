@@ -285,5 +285,8 @@
     "activeRundown": {
         "label": "Companion rundown",
         "none": "Ingen (första rundown:en)"
+    },
+    "nav": {
+        "slides": "Presentationer"
     }
 }

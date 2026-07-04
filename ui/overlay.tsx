@@ -16,8 +16,6 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useSocket } from '@web-lib';
 import { useTranslation } from './i18n';
 import VideoQueue from './video';
-import PresentationIndex from './slides/PresentationIndex';
-import PresentationEditor from './slides/PresentationEditor';
 import ActiveRundownSelector from './active-rundown';
 
 interface DiagEvent {
@@ -408,41 +406,16 @@ function SettingsPanel() {
     );
 }
 
-const OverlayTest = ({ path }) => {
-    if (path?.[0] === 'slides' && path[1]) {
-        return <PresentationEditor id={path[1]} />;
-    }
-
-    return (
-        <Box
-            sx={{ maxWidth: 1600, margin: '0 auto', padding: { xs: 2, md: 3 } }}
-        >
-            <Box sx={{ mb: 2 }}>
-                <ActiveRundownSelector />
-            </Box>
-            <Stack
-                direction={{ xs: 'column', md: 'row' }}
-                spacing={3}
-                alignItems="flex-start"
-            >
-                <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                    <PresentationIndex />
-                </Box>
-                <Box
-                    sx={{
-                        flexBasis: 380,
-                        flexShrink: 0,
-                        width: { xs: '100%', md: 'auto' },
-                    }}
-                >
-                    <VideoQueue showSetCurrentRundown={false} />
-                </Box>
-            </Stack>
-            <CaptionKitPanel />
-            <SettingsPanel />
-            <DiagnosticsPanel />
+const OverlayTest = () => (
+    <Box sx={{ maxWidth: 800, margin: '0 auto', padding: { xs: 2, md: 3 } }}>
+        <Box sx={{ mb: 2 }}>
+            <ActiveRundownSelector />
         </Box>
-    );
-};
+        <VideoQueue showSetCurrentRundown={false} />
+        <CaptionKitPanel />
+        <SettingsPanel />
+        <DiagnosticsPanel />
+    </Box>
+);
 
 export default OverlayTest;

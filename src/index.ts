@@ -144,6 +144,10 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             path.join(__dirname, 'ui', 'overlay'),
         );
         this.api.registerUI(
+            `${UI_INJECTION_ZONE.NAVBAR_PAGE}.slides` as UI_INJECTION_ZONE,
+            path.join(__dirname, 'ui', 'presentations'),
+        );
+        this.api.registerUI(
             UI_INJECTION_ZONE.RUNDOWN_SIDE,
             path.join(__dirname, 'ui', 'video'),
         );

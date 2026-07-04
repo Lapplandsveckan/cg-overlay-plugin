@@ -57,7 +57,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@gsap/react": "^2.1.0",
-    "@lappis/cg-manager": "^0.0.50",
+    "@lappis/cg-manager": "^0.0.51",
     "@mui/icons-material": "^5.15.11",
     "@mui/material": "^5.15.11",
     "atem-connection": "^3.5.0",
