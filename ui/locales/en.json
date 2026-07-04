@@ -44,31 +44,13 @@
         "currentHelper": "Amount collected so far.",
         "goalLabel": "Goal",
         "goalHelper": "Target amount for the campaign.",
-        "label": "Insamling",
-        "additionalOptions": "Additional options",
-        "introLabel": "Intro",
-        "introRegular": "Regular",
-        "introFast": "Fast",
-        "introFade": "Fade",
-        "introCut": "Cut",
-        "outroLabel": "Outro",
-        "outroFade": "Fade",
-        "outroCut": "Cut"
+        "label": "Insamling"
     },
     "playVideo": {
         "heading": "Play video",
         "headingInstant": "Instant playback",
         "titleLabel": "Title",
         "clearButton": "Clear",
-        "additionalOptions": "Additional options",
-        "introLabel": "Intro",
-        "introRegular": "Regular",
-        "introFast": "Fast",
-        "introFade": "Fade",
-        "introCut": "Cut",
-        "outroLabel": "Outro",
-        "outroFade": "Fade",
-        "outroCut": "Cut",
         "playbackLabel": "Playback",
         "playbackOnce": "Once",
         "playbackLoop": "Loop",
@@ -298,6 +280,17 @@
     "common": {
         "live": "Live",
         "queued": "Queued"
+    },
+    "transition": {
+        "additionalOptions": "Additional options",
+        "introLabel": "Intro",
+        "introRegular": "Regular",
+        "introFast": "Fast",
+        "introFade": "Fade",
+        "introCut": "Cut",
+        "outroLabel": "Outro",
+        "outroFade": "Fade",
+        "outroCut": "Cut"
     },
     "activeRundown": {
         "label": "Companion rundown",

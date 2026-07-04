@@ -13,6 +13,7 @@ import {
     type VideoOptions,
 } from '../video-utils';
 import { LiveChip, useVideoPlayback } from '../overlay-state';
+import { TransitionChips } from '../transition-chips';
 
 interface RundownEntry {
     id: string;
@@ -115,6 +116,7 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
                         variant="outlined"
                     />
                 )}
+                <TransitionChips options={opts} />
                 {isLive && <LiveChip variant="live" />}
                 {isQueued && <LiveChip variant="queued" />}
             </Stack>

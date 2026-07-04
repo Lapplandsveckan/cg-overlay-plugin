@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, LinearProgress, Stack, Typography } from '@mui/material';
 import { useTranslation } from '../i18n';
 import { LiveChip, useOverlayState } from '../overlay-state';
+import { TransitionChips } from '../transition-chips';
 
 interface RundownEntry {
     id: string;
@@ -41,6 +42,7 @@ export const InsamlingRundownItem: React.FC<InsamlingRundownItemProps> = ({
                         {t('insamling.label')}
                     </Typography>
                     {state?.insamling && <LiveChip variant="live" />}
+                    <TransitionChips options={entry.data?.options} />
                 </Stack>
                 <Typography variant="caption" color="text.secondary">
                     {formatKr(now)} / {formatKr(goal)}

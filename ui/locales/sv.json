@@ -44,31 +44,13 @@
         "currentHelper": "Insamlat belopp hittills.",
         "goalLabel": "Mål",
         "goalHelper": "Målbelopp för kampanjen.",
-        "label": "Insamling",
-        "additionalOptions": "Ytterligare alternativ",
-        "introLabel": "Intro",
-        "introRegular": "Vanlig",
-        "introFast": "Snabb",
-        "introFade": "Tona",
-        "introCut": "Klipp",
-        "outroLabel": "Avslut",
-        "outroFade": "Tona",
-        "outroCut": "Klipp"
+        "label": "Insamling"
     },
     "playVideo": {
         "heading": "Spela video",
         "headingInstant": "Direktuppspelning",
         "titleLabel": "Titel",
         "clearButton": "Rensa",
-        "additionalOptions": "Ytterligare alternativ",
-        "introLabel": "Intro",
-        "introRegular": "Vanlig",
-        "introFast": "Snabb",
-        "introFade": "Tona",
-        "introCut": "Klipp",
-        "outroLabel": "Avslut",
-        "outroFade": "Tona",
-        "outroCut": "Klipp",
         "playbackLabel": "Uppspelning",
         "playbackOnce": "En gång",
         "playbackLoop": "Loop",
@@ -298,6 +280,17 @@
     "common": {
         "live": "Live",
         "queued": "I kö"
+    },
+    "transition": {
+        "additionalOptions": "Ytterligare alternativ",
+        "introLabel": "Intro",
+        "introRegular": "Vanlig",
+        "introFast": "Snabb",
+        "introFade": "Tona",
+        "introCut": "Klipp",
+        "outroLabel": "Avslut",
+        "outroFade": "Tona",
+        "outroCut": "Klipp"
     },
     "activeRundown": {
         "label": "Companion rundown",

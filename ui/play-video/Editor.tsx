@@ -206,22 +206,22 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
     const introOptions: ModeOption[] = [
         {
             value: 'regular',
-            label: t('playVideo.introRegular'),
+            label: t('transition.introRegular'),
             icon: <PlayCircleOutlineIcon sx={{ fontSize: 16 }} />,
         },
         {
             value: 'fast',
-            label: t('playVideo.introFast'),
+            label: t('transition.introFast'),
             icon: <FastForwardIcon sx={{ fontSize: 16 }} />,
         },
         {
             value: 'fade',
-            label: t('playVideo.introFade'),
+            label: t('transition.introFade'),
             icon: <GradientIcon sx={{ fontSize: 16 }} />,
         },
         {
             value: 'cut',
-            label: t('playVideo.introCut'),
+            label: t('transition.introCut'),
             icon: <ContentCutIcon sx={{ fontSize: 16 }} />,
         },
     ];
@@ -229,12 +229,12 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
     const outroOptions: ModeOption[] = [
         {
             value: 'fade',
-            label: t('playVideo.outroFade'),
+            label: t('transition.outroFade'),
             icon: <GradientIcon sx={{ fontSize: 16 }} />,
         },
         {
             value: 'cut',
-            label: t('playVideo.outroCut'),
+            label: t('transition.outroCut'),
             icon: <ContentCutIcon sx={{ fontSize: 16 }} />,
         },
     ];
@@ -306,20 +306,20 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                     }}
                 >
                     <Typography variant="body2">
-                        {t('playVideo.additionalOptions')}
+                        {t('transition.additionalOptions')}
                         {additionalOptionsActive && ' •'}
                     </Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                     <Stack spacing={1.5}>
                         <ModeRow
-                            label={t('playVideo.introLabel')}
+                            label={t('transition.introLabel')}
                             value={intro}
                             onChange={v => setIntro(v as IntroMode)}
                             options={introOptions}
                         />
                         <ModeRow
-                            label={t('playVideo.outroLabel')}
+                            label={t('transition.outroLabel')}
                             value={outro}
                             onChange={v => setOutro(v as OutroMode)}
                             options={outroOptions}

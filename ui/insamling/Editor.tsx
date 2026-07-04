@@ -60,22 +60,22 @@ export const InsamlingEditor: React.FC<InsamlingEditorProps> = ({
     const introOptions: ModeOption[] = [
         {
             value: 'regular',
-            label: t('insamling.introRegular'),
+            label: t('transition.introRegular'),
             icon: <PlayCircleOutlineIcon sx={{ fontSize: 16 }} />,
         },
         {
             value: 'fast',
-            label: t('insamling.introFast'),
+            label: t('transition.introFast'),
             icon: <FastForwardIcon sx={{ fontSize: 16 }} />,
         },
         {
             value: 'fade',
-            label: t('insamling.introFade'),
+            label: t('transition.introFade'),
             icon: <GradientIcon sx={{ fontSize: 16 }} />,
         },
         {
             value: 'cut',
-            label: t('insamling.introCut'),
+            label: t('transition.introCut'),
             icon: <ContentCutIcon sx={{ fontSize: 16 }} />,
         },
     ];
@@ -83,12 +83,12 @@ export const InsamlingEditor: React.FC<InsamlingEditorProps> = ({
     const outroOptions: ModeOption[] = [
         {
             value: 'fade',
-            label: t('insamling.outroFade'),
+            label: t('transition.outroFade'),
             icon: <GradientIcon sx={{ fontSize: 16 }} />,
         },
         {
             value: 'cut',
-            label: t('insamling.outroCut'),
+            label: t('transition.outroCut'),
             icon: <ContentCutIcon sx={{ fontSize: 16 }} />,
         },
     ];
@@ -147,20 +147,20 @@ export const InsamlingEditor: React.FC<InsamlingEditorProps> = ({
                     }}
                 >
                     <Typography variant="body2">
-                        {t('insamling.additionalOptions')}
+                        {t('transition.additionalOptions')}
                         {additionalOptionsActive && ' •'}
                     </Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                     <Stack spacing={1.5}>
                         <ModeRow
-                            label={t('insamling.introLabel')}
+                            label={t('transition.introLabel')}
                             value={intro}
                             onChange={v => setIntro(v as IntroMode)}
                             options={introOptions}
                         />
                         <ModeRow
-                            label={t('insamling.outroLabel')}
+                            label={t('transition.outroLabel')}
                             value={outro}
                             onChange={v => setOutro(v as OutroMode)}
                             options={outroOptions}
