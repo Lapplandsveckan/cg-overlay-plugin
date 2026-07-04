@@ -3,6 +3,7 @@ import { Chip } from '@mui/material';
 import { useSocket } from '@web-lib';
 import { useTranslation } from './i18n';
 import { type BroadcastReq, useBroadcast } from './hooks';
+import { normalizeVideoPayload } from './video-utils';
 
 const ROOT = '/api/plugin/lappis';
 
@@ -44,30 +45,25 @@ export interface VideoPlayback {
     currentClip: string | null;
     queued: Set<string>;
     current: {
-        playDuration: number;
-        clipDuration: number | null;
+        elapsedSec: number;
+        durationSec: number | null;
         loop: boolean;
     } | null;
 }
 
 function parseVideoData(data: any): VideoPlayback {
-    if (!data) return { currentClip: null, queued: new Set(), current: null };
-    const currentClip: string | null = data.current?.data?.id ?? null;
-    const queued = new Set<string>(
-        ((data.queue ?? []) as any[]).map(v => v?.data?.id).filter(Boolean),
-    );
-    const metadata = data.current?.metadata;
-    const current = metadata
-        ? {
-              playDuration: metadata.playDuration ?? 0,
-              clipDuration:
-                  typeof metadata.clipDuration === 'number'
-                      ? metadata.clipDuration
-                      : null,
-              loop: metadata.loop ?? false,
-          }
-        : null;
-    return { currentClip, queued, current };
+    const { current, queue } = normalizeVideoPayload(data);
+    return {
+        currentClip: current?.clipId ?? null,
+        queued: new Set(queue.map(v => v.clipId).filter(Boolean) as string[]),
+        current: current
+            ? {
+                  elapsedSec: current.elapsedSec,
+                  durationSec: current.durationSec || null,
+                  loop: current.loop,
+              }
+            : null,
+    };
 }
 
 export function useVideoPlayback(): VideoPlayback {

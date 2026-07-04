@@ -1,18 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Chip, LinearProgress, Stack, Typography } from '@mui/material';
 
+import ContentCutIcon from '@mui/icons-material/ContentCut';
+import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import { useSocket, MediaCard } from '@web-lib';
 import { useTranslation } from '../i18n';
 import { buildThumbnailUrl } from '../thumbnail';
+import { formatTime } from '../format';
+import {
+    fullDurationOf,
+    hasFade,
+    isTrimmed,
+    playbackProgress,
+    type VideoOptions,
+} from '../video-utils';
 import { LiveChip, useVideoPlayback } from '../overlay-state';
-
-function formatTime(seconds: number) {
-    if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
-    const total = Math.round(seconds);
-    const m = Math.floor(total / 60);
-    const s = total % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-}
 
 interface RundownEntry {
     id: string;
@@ -31,7 +33,7 @@ function useMediaCardData(clip: any) {
         if (!clip) return null;
         return {
             name: clip.id,
-            duration: clip.mediainfo?.format?.duration,
+            duration: fullDurationOf(clip),
             backgroundUrl:
                 buildThumbnailUrl(clip) ??
                 'https://via.placeholder.com/1920x1080',
@@ -49,8 +51,13 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
     const [playTime, setPlayTime] = useState(0);
 
     const data = useMediaCardData(clip);
-    const playNow = entry.data?.options?.playNow;
+    const opts: VideoOptions = entry.data?.options ?? {};
+    const playNow = opts.playNow;
     const clipId: string | undefined = entry.data?.clip;
+
+    const fullDuration = fullDurationOf(clip);
+    const trimmed = isTrimmed(opts, fullDuration);
+    const faded = hasFade(opts);
 
     const isLive = !!clipId && currentClip === clipId;
     const isQueued = !isLive && !!clipId && queued.has(clipId);
@@ -74,7 +81,7 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
 
     useEffect(() => {
         if (!isLive || !current) return;
-        setPlayTime(current.playDuration);
+        setPlayTime(current.elapsedSec * 1000);
         const interval = setInterval(
             () => setPlayTime(prev => prev + 100),
             100,
@@ -82,13 +89,12 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
         return () => clearInterval(interval);
     }, [isLive, current]);
 
-    const clipDuration = (current?.clipDuration ?? 0) / 1000;
-    const elapsed = playTime / 1000;
-    const showProgress = isLive && !current?.loop && clipDuration > 0;
-    const progressPct = showProgress
-        ? Math.min(100, (elapsed / clipDuration) * 100)
-        : 0;
-    const timeLeft = showProgress ? Math.max(0, clipDuration - elapsed) : 0;
+    const progress = playbackProgress(
+        playTime / 1000,
+        current?.durationSec ?? 0,
+        { loop: current?.loop, active: isLive },
+    );
+    const showProgress = progress.active && !current?.loop;
 
     return (
         <Stack spacing={1}>
@@ -99,6 +105,25 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
                         label={t('playVideo.playNowChip')}
                         size="small"
                         color="warning"
+                    />
+                )}
+                {trimmed && (
+                    <Chip
+                        icon={<ContentCutIcon sx={{ fontSize: 14 }} />}
+                        label={t('playVideo.trimmedChip', {
+                            in: formatTime(opts.inPoint ?? 0),
+                            out: formatTime(opts.outPoint ?? fullDuration),
+                        })}
+                        size="small"
+                        variant="outlined"
+                    />
+                )}
+                {faded && (
+                    <Chip
+                        icon={<GraphicEqIcon sx={{ fontSize: 14 }} />}
+                        label={t('playVideo.fadeChip')}
+                        size="small"
+                        variant="outlined"
                     />
                 )}
                 {isLive && <LiveChip variant="live" />}
@@ -125,15 +150,17 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
                         {current?.loop
                             ? t('video.remainingLooping')
                             : t('video.timeProgress', {
-                                  elapsed: formatTime(elapsed),
-                                  duration: formatTime(clipDuration),
-                                  timeLeft: formatTime(timeLeft),
+                                  elapsed: formatTime(progress.elapsed),
+                                  duration: formatTime(
+                                      current?.durationSec ?? 0,
+                                  ),
+                                  timeLeft: formatTime(progress.timeLeft),
                               })}
                     </Typography>
                     {showProgress && (
                         <LinearProgress
                             variant="determinate"
-                            value={progressPct}
+                            value={progress.percent}
                             sx={{ height: 4, borderRadius: 2 }}
                         />
                     )}

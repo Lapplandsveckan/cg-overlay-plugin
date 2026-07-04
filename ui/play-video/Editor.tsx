@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Accordion,
     AccordionDetails,
@@ -12,6 +12,7 @@ import {
     Typography,
 } from '@mui/material';
 
+import ContentCutIcon from '@mui/icons-material/ContentCut';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import FlashOnIcon from '@mui/icons-material/FlashOn';
@@ -22,6 +23,17 @@ import QueueMusicIcon from '@mui/icons-material/QueueMusic';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import { useSocket, MediaSelect, RundownEditorActionBar } from '@web-lib';
 import { useTranslation } from '../i18n';
+import { formatTime } from '../format';
+import {
+    DEFAULT_FPS,
+    fullDurationOf,
+    hasFade,
+    isTrimmed,
+    normalizeVideoPayload,
+} from '../video-utils';
+import { useBroadcast } from '../hooks';
+import { type VideoInspectorValue } from './VideoInspector';
+import VideoInspectorModal from './VideoInspectorModal';
 
 interface RundownEntry {
     id: string;
@@ -139,6 +151,15 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
         opts?.loop ? 'loop' : 'once',
     );
     const [when, setWhen] = useState<WhenMode>(opts?.playNow ? 'now' : 'queue');
+    const [inspectorOpen, setInspectorOpen] = useState(false);
+    const [channelFps, setChannelFps] = useState(DEFAULT_FPS);
+    const [trim, setTrim] = useState<VideoInspectorValue>({
+        inPoint: opts?.inPoint ?? 0,
+        outPoint: opts?.outPoint ?? 0,
+        volume: opts?.volume ?? 1,
+        fadeIn: opts?.fadeIn ?? 0,
+        fadeOut: opts?.fadeOut ?? 0,
+    });
 
     useEffect(() => {
         if (!entry.data?.clip) return;
@@ -157,8 +178,80 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
         };
     }, [entry.data?.clip]);
 
+    useEffect(() => {
+        socket
+            .rawRequest(`/api/plugin/lappis/videos`, 'GET', {})
+            .then(res =>
+                setChannelFps(normalizeVideoPayload(res.data).channelFps),
+            )
+            .catch(() => {});
+    }, [socket]);
+    useBroadcast(
+        socket,
+        'plugin/lappis/videos',
+        'UPDATE',
+        useCallback(
+            (req: { data?: any }) =>
+                setChannelFps(normalizeVideoPayload(req.data).channelFps),
+            [],
+        ),
+    );
+
+    const fullDuration = fullDurationOf(media);
+
+    // Reset trim when the clip is swapped, but not on the initial async media load.
+    const lastClipId = useRef<string | null>(entry.data?.clip ?? null);
+    const hydrated = useRef(!entry.data?.clip);
+    const outPointReady = useRef(opts?.outPoint !== undefined);
+    useEffect(() => {
+        const clipId = media?.id ?? null;
+
+        if (!hydrated.current) {
+            if (clipId === lastClipId.current) hydrated.current = true;
+            return;
+        }
+
+        if (clipId === lastClipId.current) return;
+
+        lastClipId.current = clipId;
+        outPointReady.current = false;
+        setTrim({ inPoint: 0, outPoint: 0, volume: 1, fadeIn: 0, fadeOut: 0 });
+    }, [media?.id]);
+
+    useEffect(() => {
+        if (outPointReady.current || !fullDuration) return;
+
+        outPointReady.current = true;
+        setTrim(prev => ({ ...prev, outPoint: fullDuration }));
+    }, [fullDuration]);
+
+    // Ignore the outPoint=0 placeholder to avoid a one-frame "trimmed" flash.
+    const trimmed = outPointReady.current && isTrimmed(trim, fullDuration);
+    const faded = hasFade(trim);
+    const volumeChanged = trim.volume !== 1;
+    const trimActive = trimmed || volumeChanged || faded;
+    const trimRangeValid = trim.outPoint > trim.inPoint;
+
+    const inspectorSummary = [
+        trimmed &&
+            t('playVideo.trimmedChip', {
+                in: formatTime(trim.inPoint),
+                out: formatTime(trim.outPoint),
+            }),
+        faded && t('playVideo.fadeChip'),
+        volumeChanged &&
+            t('playVideo.volumeChip', {
+                volume: Math.round(trim.volume * 100),
+            }),
+    ]
+        .filter(Boolean)
+        .join(' · ');
+
     const additionalOptionsActive =
-        intro !== 'regular' || playback !== 'once' || when !== 'queue';
+        intro !== 'regular' ||
+        playback !== 'once' ||
+        when !== 'queue' ||
+        trimActive;
 
     const introOptions: ModeOption[] = [
         {
@@ -269,9 +362,46 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                             onChange={v => setWhen(v as WhenMode)}
                             options={whenOptions}
                         />
+                        {media && (
+                            <Stack
+                                direction="row"
+                                alignItems="center"
+                                spacing={1.5}
+                                sx={{ pt: 1 }}
+                            >
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ flexGrow: 1, minWidth: 0 }}
+                                    noWrap
+                                >
+                                    {inspectorSummary || t('playVideo.noTrim')}
+                                </Typography>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={
+                                        <ContentCutIcon sx={{ fontSize: 16 }} />
+                                    }
+                                    onClick={() => setInspectorOpen(true)}
+                                    sx={{ flexShrink: 0 }}
+                                >
+                                    {t('playVideo.openInspector')}
+                                </Button>
+                            </Stack>
+                        )}
                     </Stack>
                 </AccordionDetails>
             </Accordion>
+
+            <VideoInspectorModal
+                open={inspectorOpen}
+                onClose={() => setInspectorOpen(false)}
+                clip={media}
+                value={trim}
+                onChange={setTrim}
+                fps={channelFps}
+            />
 
             <RundownEditorActionBar
                 exists={!creating}
@@ -286,6 +416,19 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                                 fast: intro === 'fast',
                                 loop: playback === 'loop',
                                 playNow: when === 'now',
+                                ...(trimActive
+                                    ? {
+                                          ...(trimmed && trimRangeValid
+                                              ? {
+                                                    inPoint: trim.inPoint,
+                                                    outPoint: trim.outPoint,
+                                                }
+                                              : {}),
+                                          volume: trim.volume,
+                                          fadeIn: trim.fadeIn,
+                                          fadeOut: trim.fadeOut,
+                                      }
+                                    : {}),
                             },
                         },
                         ...(instant ? {} : { title }),

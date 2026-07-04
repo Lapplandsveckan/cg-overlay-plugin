@@ -1,7 +1,7 @@
 import { noTry, noTryAsync } from 'no-try';
 import { type VideoEffect } from './effects/misc/video';
 import type LappisOverlayPlugin from './index';
-import { VideoSessionStoppedError } from './overlay';
+import { CHANNELS, VideoSessionStoppedError } from './overlay';
 
 interface VideoInfo {
     id: string;
@@ -12,6 +12,11 @@ interface VideoInfo {
         loop?: boolean;
         skipIntro?: boolean;
         fast?: boolean;
+        inPoint?: number;
+        outPoint?: number;
+        volume?: number;
+        fadeIn?: number;
+        fadeOut?: number;
     };
 }
 
@@ -38,8 +43,17 @@ export default class VideoManager {
         id: string,
         options: Omit<VideoInfo['metadata'], 'queueId' | 'clipDuration'> = {},
     ): VideoInfo {
-        const clipDuration = this.plugin['api'].getFileDatabase().get(id)
+        const fullDuration = this.plugin['api'].getFileDatabase().get(id)
             ?.mediainfo?.format?.duration;
+        const clipDuration =
+            fullDuration === undefined
+                ? undefined
+                : Math.max(
+                      0,
+                      Math.min(options.outPoint ?? fullDuration, fullDuration) -
+                          (options.inPoint ?? 0),
+                  );
+
         return {
             id,
             metadata: {
@@ -84,10 +98,20 @@ export default class VideoManager {
             return;
         }
 
+        const { loop, inPoint, outPoint, volume, fadeIn, fadeOut } =
+            video.metadata;
         const [err, effect] = noTry(() =>
-            this.plugin
-                .getOverlayManager()
-                .playVideo(video.id, video.metadata.loop),
+            this.plugin.getOverlayManager().playVideo(video.id, {
+                loop,
+                seekSec: inPoint,
+                lengthSec:
+                    outPoint !== undefined
+                        ? outPoint - (inPoint ?? 0)
+                        : undefined,
+                volume,
+                fadeIn,
+                fadeOut,
+            }),
         );
         if (err) {
             this.plugin.getLogger().error(`Failed to play video: ${err}`);
@@ -141,11 +165,15 @@ export default class VideoManager {
         const media = videos.map(video => ({
             id: video.metadata.queueId,
             data: this.plugin['api'].getFileDatabase().get(video.id),
+            options: video.metadata,
         }));
 
         const data = {
             current: null,
             queue: media,
+            channelFps: this.plugin
+                .getOverlayManager()
+                .getChannelFps(CHANNELS.VIDEO),
         };
 
         if (this.playing) {

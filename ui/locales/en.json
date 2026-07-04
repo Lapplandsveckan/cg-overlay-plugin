@@ -64,7 +64,21 @@
         "whenNow": "Play now",
         "label": "Play video",
         "playNowChip": "Skip queue",
-        "noClip": "No clip selected"
+        "noClip": "No clip selected",
+        "inspectorLabel": "Trim & volume",
+        "trimLabel": "Trim",
+        "inPoint": "In",
+        "outPoint": "Out",
+        "volumeLabel": "Volume",
+        "fadeInLabel": "Fade in",
+        "fadeOutLabel": "Fade out",
+        "resetTrim": "Reset",
+        "trimmedChip": "Trimmed {{in}}-{{out}}",
+        "fadeChip": "Fade",
+        "volumeChip": "Volume {{volume}}%",
+        "noTrim": "Full clip, no fade",
+        "openInspector": "Trim & volume…",
+        "close": "Close"
     },
     "text": {
         "heading": "Text",

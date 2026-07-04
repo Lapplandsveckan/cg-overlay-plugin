@@ -64,7 +64,21 @@
         "whenNow": "Spela nu",
         "label": "Spela video",
         "playNowChip": "Hoppa över kön",
-        "noClip": "Inget klipp valt"
+        "noClip": "Inget klipp valt",
+        "inspectorLabel": "Trimning & volym",
+        "trimLabel": "Trimning",
+        "inPoint": "In",
+        "outPoint": "Ut",
+        "volumeLabel": "Volym",
+        "fadeInLabel": "Tona in",
+        "fadeOutLabel": "Tona ut",
+        "resetTrim": "Återställ",
+        "trimmedChip": "Trimmad {{in}}-{{out}}",
+        "fadeChip": "Tonar",
+        "volumeChip": "Volym {{volume}}%",
+        "noTrim": "Hela klippet, ingen toning",
+        "openInspector": "Trimning & volym…",
+        "close": "Stäng"
     },
     "text": {
         "heading": "Text",

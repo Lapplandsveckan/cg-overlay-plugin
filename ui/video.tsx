@@ -10,7 +10,9 @@ import {
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloseIcon from '@mui/icons-material/Close';
+import ContentCutIcon from '@mui/icons-material/ContentCut';
 import FlagIcon from '@mui/icons-material/Flag';
+import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import PlaylistRemoveIcon from '@mui/icons-material/PlaylistRemove';
 import React, {
     useCallback,
@@ -23,6 +25,16 @@ import React, {
 import { useSocket } from '@web-lib';
 import { useTranslation } from './i18n';
 import { buildThumbnailUrl } from './thumbnail';
+import { formatTime } from './format';
+import {
+    fullDurationOf,
+    hasFade,
+    isTrimmed,
+    normalizeVideoPayload,
+    playbackProgress,
+    type NormalizedCurrent,
+    type NormalizedItem,
+} from './video-utils';
 import { useActiveRundown, useBroadcast } from './hooks';
 
 function useRundownIdFromUrl(): string | null {
@@ -79,33 +91,11 @@ function SetCurrentRundownButton() {
     );
 }
 
-function formatTime(seconds: number) {
-    if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
-    const total = Math.round(seconds);
-    const m = Math.floor(total / 60);
-    const s = total % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
+function useThumbnailUrl(clip: any): string | null {
+    return useMemo(() => buildThumbnailUrl(clip), [clip]);
 }
 
-function useThumbnail(clip: any): {
-    url: string | null;
-    name: string;
-    duration: number;
-} {
-    return useMemo(() => {
-        if (!clip) return { url: null, name: '', duration: 0 };
-        return {
-            url: buildThumbnailUrl(clip),
-            name: clip.id as string,
-            duration: Number(clip.mediainfo?.format?.duration) || 0,
-        };
-    }, [clip]);
-}
-
-interface VideoItemProps {
-    title: string;
-    clip: any;
-
+interface VideoItemProps extends NormalizedItem {
     elapsed?: number;
     isCurrent?: boolean;
     loop?: boolean;
@@ -115,25 +105,24 @@ interface VideoItemProps {
 const VideoItem: React.FC<VideoItemProps> = ({
     title,
     clip,
+    options,
+    durationSec,
     onRemove,
     elapsed,
     isCurrent,
     loop,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
-    const media = useThumbnail(clip);
-    const displayElapsed =
-        loop && media.duration > 0 && typeof elapsed === 'number'
-            ? elapsed % media.duration
-            : elapsed;
-    const showProgress =
-        isCurrent && media.duration > 0 && typeof displayElapsed === 'number';
-    const progressPct = showProgress
-        ? Math.min(100, (displayElapsed! / media.duration) * 100)
-        : 0;
-    const timeLeft = showProgress
-        ? Math.max(0, media.duration - displayElapsed!)
-        : media.duration;
+    const thumbnailUrl = useThumbnailUrl(clip);
+    const fullDuration = fullDurationOf(clip);
+    const trimmed = isTrimmed(options, fullDuration);
+    const faded = hasFade(options);
+    const progress = playbackProgress(elapsed ?? 0, durationSec, {
+        loop,
+        active: isCurrent,
+    });
+    const showProgress = progress.active && !loop;
+    const hasChips = isCurrent || loop || trimmed || faded;
 
     return (
         <Stack
@@ -156,8 +145,8 @@ const VideoItem: React.FC<VideoItemProps> = ({
                     height: 68,
                     borderRadius: 1,
                     backgroundColor: '#1a1c22',
-                    backgroundImage: media.url
-                        ? `url(${media.url})`
+                    backgroundImage: thumbnailUrl
+                        ? `url(${thumbnailUrl})`
                         : undefined,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
@@ -175,11 +164,32 @@ const VideoItem: React.FC<VideoItemProps> = ({
                     alignItems="center"
                     justifyContent="space-between"
                 >
+                    <Typography
+                        variant="subtitle1"
+                        noWrap
+                        title={title}
+                        sx={{ minWidth: 0, flexGrow: 1 }}
+                    >
+                        {title}
+                    </Typography>
+                    <Tooltip title={t('video.removeFromQueue')}>
+                        <IconButton
+                            size="small"
+                            onClick={e => {
+                                e.stopPropagation();
+                                onRemove();
+                            }}
+                        >
+                            <CloseIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                    </Tooltip>
+                </Stack>
+                {hasChips && (
                     <Stack
                         direction="row"
                         spacing={1}
-                        alignItems="center"
-                        sx={{ minWidth: 0 }}
+                        useFlexGap
+                        flexWrap="wrap"
                     >
                         {isCurrent && (
                             <Chip
@@ -195,40 +205,42 @@ const VideoItem: React.FC<VideoItemProps> = ({
                                 variant="outlined"
                             />
                         )}
-                        <Typography
-                            variant="subtitle1"
-                            noWrap
-                            title={title}
-                            sx={{ minWidth: 0 }}
-                        >
-                            {title}
-                        </Typography>
+                        {trimmed && (
+                            <Chip
+                                icon={<ContentCutIcon sx={{ fontSize: 14 }} />}
+                                label={t('playVideo.trimmedChip', {
+                                    in: formatTime(options?.inPoint ?? 0),
+                                    out: formatTime(
+                                        options?.outPoint ?? fullDuration,
+                                    ),
+                                })}
+                                size="small"
+                                variant="outlined"
+                            />
+                        )}
+                        {faded && (
+                            <Chip
+                                icon={<GraphicEqIcon sx={{ fontSize: 14 }} />}
+                                label={t('playVideo.fadeChip')}
+                                size="small"
+                                variant="outlined"
+                            />
+                        )}
                     </Stack>
-                    <Tooltip title={t('video.removeFromQueue')}>
-                        <IconButton
-                            size="small"
-                            onClick={e => {
-                                e.stopPropagation();
-                                onRemove();
-                            }}
-                        >
-                            <CloseIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                    </Tooltip>
-                </Stack>
+                )}
                 <Typography variant="caption" color="text.secondary">
                     {showProgress
                         ? t('video.timeProgress', {
-                              elapsed: formatTime(displayElapsed!),
-                              duration: formatTime(media.duration),
-                              timeLeft: formatTime(timeLeft),
+                              elapsed: formatTime(progress.elapsed),
+                              duration: formatTime(durationSec),
+                              timeLeft: formatTime(progress.timeLeft),
                           })
-                        : formatTime(media.duration)}
+                        : formatTime(durationSec)}
                 </Typography>
                 {showProgress && (
                     <LinearProgress
                         variant="determinate"
-                        value={progressPct}
+                        value={progress.percent}
                         sx={{ marginTop: 0.5, height: 4, borderRadius: 2 }}
                     />
                 )}
@@ -236,16 +248,6 @@ const VideoItem: React.FC<VideoItemProps> = ({
         </Stack>
     );
 };
-
-interface VideoItemData {
-    id: string;
-    data: any;
-}
-
-interface VideoResponse {
-    current: VideoItemData & { metadata?: any };
-    queue: VideoItemData[];
-}
 
 interface VideoQueueProps {
     showSetCurrentRundown?: boolean;
@@ -256,45 +258,27 @@ const VideoQueue: React.FC<VideoQueueProps> = ({
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
-    const [queue, setQueue] = useState<any[]>([]);
-    const [current, setCurrent] = useState<any>(null);
+    const [queue, setQueue] = useState<NormalizedItem[]>([]);
+    const [current, setCurrent] = useState<NormalizedCurrent | null>(null);
     const [playTime, setPlayTime] = useState<number>(0);
     const receivedBroadcast = useRef(false);
 
-    const queueDuration = queue.reduce(
-        (acc, item) =>
-            acc + (Number(item?.clip?.mediainfo?.format?.duration) || 0),
+    const queueDurationSec = queue.reduce(
+        (acc, item) => acc + item.durationSec,
         0,
     );
-    const currentDuration =
-        Number(current?.clip?.mediainfo?.format?.duration) || 0;
     const elapsed = playTime / 1000;
-    const currentTimeLeft = current?.loop
-        ? 0
-        : Math.max(0, currentDuration - elapsed);
-    const totalRemaining = queueDuration + currentTimeLeft;
+    const currentTimeLeft =
+        current && !current.loop
+            ? Math.max(0, current.durationSec - elapsed)
+            : 0;
+    const totalRemaining = queueDurationSec + currentTimeLeft;
 
-    const setData = useCallback((data: VideoResponse) => {
-        setQueue(
-            data.queue.map(item => ({
-                id: item.id,
-                title: item.data.id,
-
-                clip: item.data,
-            })),
-        );
-
-        if (!data.current) return setCurrent(null);
-
-        setCurrent({
-            id: data.current.id,
-            title: data.current.data.id,
-
-            clip: data.current.data,
-            loop: data.current.metadata?.loop ?? false,
-        });
-
-        setPlayTime(data.current.metadata?.playDuration || 0);
+    const setData = useCallback((data: any) => {
+        const normalized = normalizeVideoPayload(data);
+        setQueue(normalized.queue);
+        setCurrent(normalized.current);
+        setPlayTime((normalized.current?.elapsedSec ?? 0) * 1000);
     }, []);
 
     useEffect(() => {
@@ -386,8 +370,7 @@ const VideoQueue: React.FC<VideoQueueProps> = ({
 
             {current && (
                 <VideoItem
-                    title={current.title}
-                    clip={current.clip}
+                    {...current}
                     isCurrent
                     loop={current.loop}
                     elapsed={elapsed}
@@ -410,8 +393,7 @@ const VideoQueue: React.FC<VideoQueueProps> = ({
                         {queue.map(item => (
                             <VideoItem
                                 key={item.id}
-                                title={item.title}
-                                clip={item.clip}
+                                {...item}
                                 onRemove={() =>
                                     conn.rawRequest(
                                         `/api/plugin/lappis/videos/${item.id}`,

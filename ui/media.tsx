@@ -16,19 +16,12 @@ import { MediaDropZone, useSocket, useRundownLive } from '@web-lib';
 import { useTranslation } from './i18n';
 import { setRundownDragPayload } from './drag';
 import { buildThumbnailUrl } from './thumbnail';
+import { formatDuration } from './format';
 
 interface MediaItem {
     id: string;
     duration: number;
     thumbnailUrl: string | null;
-}
-
-function formatDuration(seconds: number) {
-    if (!Number.isFinite(seconds) || seconds <= 0) return '';
-    const total = Math.round(seconds);
-    const m = Math.floor(total / 60);
-    const s = total % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
 interface DraggableClipProps {

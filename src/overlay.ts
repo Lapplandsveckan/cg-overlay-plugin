@@ -1,4 +1,5 @@
 /* eslint-disable max-lines */
+import { noTryAsync } from 'no-try';
 import { type Effect, type Logger, type PluginAPI } from '@lappis/cg-manager';
 import { type BarsOverlayEffect } from './effects/overlay/bars';
 import { type SwishOverlayEffect } from './effects/overlay/swish';
@@ -9,15 +10,24 @@ import {
     type InsamlingOverlayEffect,
     type InsamlingOverlayEffectOptions,
 } from './effects/overlay/insamling';
-import { type VideoEffect } from './effects/misc/video';
+import {
+    type VideoEffect,
+    type VideoEffectOptions,
+} from './effects/misc/video';
 import type LappisOverlayPlugin from './index';
 import { type PresentationOverlayEffect } from './effects/overlay/presentation';
 import { SidePair } from './effects/side-pair';
 import { reportError, reportWarn } from './diagnostics';
+import { DEFAULT_CHANNEL_FPS, parseChannelFps } from './effects/misc/fps';
 
 // Re-export the canonical slide type from the store; OverlayManager
 // stays narrow and only cares about (presentationId, slideId).
 export type { Slide } from './presentations';
+
+type VideoPlayoutOptions = Pick<
+    VideoEffectOptions,
+    'loop' | 'seekSec' | 'lengthSec' | 'volume' | 'fadeIn' | 'fadeOut'
+>;
 
 export interface PresentationPlaybackState {
     playing: boolean;
@@ -141,6 +151,33 @@ export default class OverlayManager {
 
     private recyclables = new Map<string, Recyclable>();
     private idleSweepInterval: ReturnType<typeof setInterval> | null = null;
+
+    private channelFps = new Map<number, number>();
+
+    // Cached per channel; re-resolved on initialize() since the mode can change across a restart.
+    private async resolveChannelFps(channel: number): Promise<number> {
+        const [err, result] = await noTryAsync(() =>
+            this.api.getChannel(channel).executor.promise(`INFO ${channel}`),
+        );
+        const fps = !err ? parseChannelFps(result.data) : null;
+
+        if (fps === null) {
+            reportWarn(
+                this.plugin,
+                'video',
+                `Could not resolve fps for channel ${channel}, falling back to ${DEFAULT_CHANNEL_FPS}`,
+            );
+            this.channelFps.delete(channel);
+            return DEFAULT_CHANNEL_FPS;
+        }
+
+        this.channelFps.set(channel, fps);
+        return fps;
+    }
+
+    public getChannelFps(channel: number): number {
+        return this.channelFps.get(channel) ?? DEFAULT_CHANNEL_FPS;
+    }
 
     // Build a SidePair targeting LEFT and RIGHT channels with the given group.
     // optsFor receives the channel number so per-side options (e.g. direction)
@@ -423,6 +460,8 @@ export default class OverlayManager {
             this.idleSweepInterval = null;
         }
 
+        this.resolveChannelFps(CHANNELS.VIDEO);
+
         this.buildBars();
         this.buildSwish();
         this.buildCaption();
@@ -539,7 +578,7 @@ export default class OverlayManager {
         this.videoSession = null;
     }
 
-    public playVideo(video: string, loop?: boolean) {
+    public playVideo(video: string, options?: VideoPlayoutOptions) {
         const media = this.api.getFileDatabase().get(video);
         if (!media) throw new Error('Video not found');
 
@@ -550,7 +589,8 @@ export default class OverlayManager {
                 media,
                 holdLastFrame: true,
                 disposeOnStop: true,
-                loop,
+                channelFps: this.getChannelFps(CHANNELS.VIDEO),
+                ...options,
             },
         ) as VideoEffect;
     }
