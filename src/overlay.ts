@@ -26,8 +26,13 @@ export type { Slide } from './presentations';
 
 type VideoPlayoutOptions = Pick<
     VideoEffectOptions,
-    'loop' | 'seekSec' | 'lengthSec' | 'volume' | 'fadeIn' | 'fadeOut'
+    'loop' | 'seekSec' | 'lengthSec' | 'volume'
 >;
+
+// 'regular'/'fast' show the beratta-om banner (ATEM hard-cuts behind it);
+// 'cut'/'fade' skip the banner and drive the transition on the ATEM directly.
+export type VideoIntroMode = 'regular' | 'fast' | 'fade' | 'cut';
+export type VideoOutroMode = 'fade' | 'cut';
 
 export interface PresentationPlaybackState {
     playing: boolean;
@@ -534,17 +539,23 @@ export default class OverlayManager {
             this.plugin.atem.setProjectorsProgram();
     }
 
-    public startVideoSession(atem = false, skipIntro = false, fast = false) {
+    private async fadeVideoToProgram() {
+        await this.plugin.atem.fadeVideoToProgram();
+        if (this.plugin.settings.get().projectorsToProgram)
+            this.plugin.atem.setProjectorsProgram();
+    }
+
+    public startVideoSession(atem = false, intro: VideoIntroMode = 'regular') {
         if (this.videoSession) return Promise.resolve();
 
         this.videoSession = { stop: () => null };
-        if (this.videoTransitionState !== 1)
-            this.toggleVideoTransition(skipIntro, fast);
 
-        if (skipIntro) {
-            if (atem) this.cutVideoToProgram();
-            return Promise.resolve();
+        if (intro === 'cut' || intro === 'fade') {
+            return this.startVideoSessionDirect(atem, intro);
         }
+
+        const fast = intro === 'fast';
+        if (this.videoTransitionState !== 1) this.toggleVideoTransition(fast);
 
         const holdMs = fast
             ? FAST_TRANSITION_CUT_DELAY
@@ -566,13 +577,26 @@ export default class OverlayManager {
         });
     }
 
-    public stopVideoSession(atem = false) {
+    // No banner — the transition itself happens on the ATEM (hard cut or mix).
+    private async startVideoSessionDirect(
+        atem: boolean,
+        intro: 'cut' | 'fade',
+    ) {
+        if (!atem) return;
+        if (intro === 'fade') await this.fadeVideoToProgram();
+        else this.cutVideoToProgram();
+    }
+
+    public async stopVideoSession(atem = false, outro: VideoOutroMode = 'cut') {
         if (this.insamlingState === 1) return; // insamling still showing — keep session alive
         if (!this.videoSession)
             return this.logger.warn('No video session to stop');
         if (this.videoTransitionState !== 0) this.toggleVideoTransition();
 
-        if (atem) this.plugin.atem.returnToPreview();
+        if (atem) {
+            if (outro === 'fade') await this.plugin.atem.fadeReturnToPreview();
+            else this.plugin.atem.returnToPreview();
+        }
 
         this.videoSession.stop();
         this.videoSession = null;
@@ -732,15 +756,13 @@ export default class OverlayManager {
         }
     }
 
-    public toggleVideoTransition(skipIntro = false, fast = false) {
+    public toggleVideoTransition(fast = false) {
         if (this.videoTransitionState === 1) {
             this.videoTransitionState = 0;
             return;
         }
 
         this.videoTransitionState = 1;
-        if (skipIntro) return;
-
         this.touchRecyclable('videotransition');
         this.videoTransition.update({ fast });
         this.videoTransition.activate();

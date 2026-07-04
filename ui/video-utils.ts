@@ -1,18 +1,37 @@
 // All values here are in seconds; ms only exists inside normalizeVideoPayload.
 
+export type IntroMode = 'regular' | 'fast' | 'fade' | 'cut';
+export type OutroMode = 'fade' | 'cut';
+
 export interface VideoOptions {
-    skipIntro?: boolean;
-    fast?: boolean;
+    intro?: IntroMode;
+    outro?: OutroMode;
     loop?: boolean;
     playNow?: boolean;
 
     inPoint?: number;
     outPoint?: number;
     volume?: number;
-    fadeIn?: number;
-    fadeOut?: number;
 
     clipDuration?: number;
+
+    // Deprecated, kept only so entries saved before intro/outro existed still
+    // resolve to a sensible mode — see normalizeIntro().
+    skipIntro?: boolean;
+    fast?: boolean;
+}
+
+// Entries saved before intro/outro existed used skipIntro/fast booleans
+// instead — map them onto the new modes for compatibility.
+export function normalizeIntro(o?: VideoOptions): IntroMode {
+    if (o?.intro) return o.intro;
+    if (o?.skipIntro) return 'cut';
+    if (o?.fast) return 'fast';
+    return 'regular';
+}
+
+export function normalizeOutro(o?: VideoOptions): OutroMode {
+    return o?.outro ?? 'cut';
 }
 
 export const fullDurationOf = (clip: any): number =>
@@ -80,9 +99,6 @@ export function isTrimmed(o: VideoOptions | undefined, full: number): boolean {
         full > 0 && o?.outPoint !== undefined && o.outPoint < full;
     return startsLate || endsEarly;
 }
-
-export const hasFade = (o?: VideoOptions): boolean =>
-    (o?.fadeIn ?? 0) > 0 || (o?.fadeOut ?? 0) > 0;
 
 export interface Progress {
     active: boolean;

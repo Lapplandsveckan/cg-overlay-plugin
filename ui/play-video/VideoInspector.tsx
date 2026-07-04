@@ -11,7 +11,6 @@ import {
 } from '@mui/material';
 
 import ContentCutIcon from '@mui/icons-material/ContentCut';
-import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
@@ -30,14 +29,10 @@ import {
     stepFrames,
 } from '../video-utils';
 
-const MAX_FADE_SECONDS = 15;
-
 export interface VideoInspectorValue {
     inPoint: number;
     outPoint: number;
     volume: number;
-    fadeIn: number;
-    fadeOut: number;
 }
 
 interface VideoInspectorProps {
@@ -440,38 +435,6 @@ export const VideoInspector: React.FC<VideoInspectorProps> = ({
                 />
             </Row>
 
-            <Row
-                icon={<GraphicEqIcon fontSize="inherit" />}
-                label={t('playVideo.fadeInLabel')}
-            >
-                <Slider
-                    size="small"
-                    value={value.fadeIn}
-                    min={0}
-                    max={MAX_FADE_SECONDS}
-                    step={0.1}
-                    onChange={(_, v) => update({ fadeIn: v as number })}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={v => `${v.toFixed(1)}s`}
-                />
-            </Row>
-
-            <Row
-                icon={<GraphicEqIcon fontSize="inherit" />}
-                label={t('playVideo.fadeOutLabel')}
-            >
-                <Slider
-                    size="small"
-                    value={value.fadeOut}
-                    min={0}
-                    max={MAX_FADE_SECONDS}
-                    step={0.1}
-                    onChange={(_, v) => update({ fadeOut: v as number })}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={v => `${v.toFixed(1)}s`}
-                />
-            </Row>
-
             <Box>
                 <Button
                     size="small"
@@ -481,8 +444,6 @@ export const VideoInspector: React.FC<VideoInspectorProps> = ({
                             inPoint: 0,
                             outPoint: duration,
                             volume: 1,
-                            fadeIn: 0,
-                            fadeOut: 0,
                         })
                     }
                 >

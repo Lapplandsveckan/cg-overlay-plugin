@@ -1,7 +1,12 @@
 import { noTry, noTryAsync } from 'no-try';
 import { type VideoEffect } from './effects/misc/video';
 import type LappisOverlayPlugin from './index';
-import { CHANNELS, VideoSessionStoppedError } from './overlay';
+import {
+    CHANNELS,
+    VideoSessionStoppedError,
+    type VideoIntroMode,
+    type VideoOutroMode,
+} from './overlay';
 
 interface VideoInfo {
     id: string;
@@ -10,19 +15,32 @@ interface VideoInfo {
         queueId: string;
         clipDuration?: number;
         loop?: boolean;
-        skipIntro?: boolean;
-        fast?: boolean;
+        intro?: VideoIntroMode;
+        outro?: VideoOutroMode;
         inPoint?: number;
         outPoint?: number;
         volume?: number;
-        fadeIn?: number;
-        fadeOut?: number;
+
+        // Deprecated, kept only so entries saved before intro/outro existed
+        // still resolve to a sensible mode — see normalizeIntroOutro().
+        skipIntro?: boolean;
+        fast?: boolean;
     };
 }
 
 interface PlayingVideo {
     video: VideoInfo;
     effect: VideoEffect;
+}
+
+function normalizeIntroOutro(metadata: VideoInfo['metadata']): {
+    intro: VideoIntroMode;
+    outro: VideoOutroMode;
+} {
+    const intro =
+        metadata.intro ??
+        (metadata.skipIntro ? 'cut' : metadata.fast ? 'fast' : 'regular');
+    return { intro, outro: metadata.outro ?? 'cut' };
 }
 
 export default class VideoManager {
@@ -89,7 +107,19 @@ export default class VideoManager {
         if (!video) {
             if (this.playing) {
                 this.playing.effect.deactivate();
-                this.plugin.getOverlayManager().stopVideoSession(true);
+                const { outro } = normalizeIntroOutro(
+                    this.playing.video.metadata,
+                );
+                const [stopErr] = await noTryAsync(() =>
+                    this.plugin
+                        .getOverlayManager()
+                        .stopVideoSession(true, outro),
+                );
+                if (stopErr) {
+                    this.plugin
+                        .getLogger()
+                        .error(`Failed to stop video session: ${stopErr}`);
+                }
             }
 
             this.playing = null;
@@ -98,8 +128,8 @@ export default class VideoManager {
             return;
         }
 
-        const { loop, inPoint, outPoint, volume, fadeIn, fadeOut } =
-            video.metadata;
+        const { loop, inPoint, outPoint, volume } = video.metadata;
+        const { intro } = normalizeIntroOutro(video.metadata);
         const [err, effect] = noTry(() =>
             this.plugin.getOverlayManager().playVideo(video.id, {
                 loop,
@@ -109,8 +139,6 @@ export default class VideoManager {
                         ? outPoint - (inPoint ?? 0)
                         : undefined,
                 volume,
-                fadeIn,
-                fadeOut,
             }),
         );
         if (err) {
@@ -122,13 +150,7 @@ export default class VideoManager {
         this.plugin.getOverlayManager().suspendCaption();
 
         const [error] = await noTryAsync(() =>
-            this.plugin
-                .getOverlayManager()
-                .startVideoSession(
-                    true,
-                    video.metadata.skipIntro,
-                    video.metadata.fast,
-                ),
+            this.plugin.getOverlayManager().startVideoSession(true, intro),
         );
         if (error) {
             // VideoSessionStoppedError is a normal stop — not a real failure.

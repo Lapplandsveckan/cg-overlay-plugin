@@ -1,4 +1,4 @@
-import { Atem } from 'atem-connection';
+import { Atem, Enums } from 'atem-connection';
 import { config } from './config';
 import { type PluginRef, getLogger, reportError } from './diagnostics';
 import { AtemStateStore } from './atem-state';
@@ -225,6 +225,46 @@ export class AtemManager {
             this.connection.changeProgramInput(previewInput);
         }
         this.returnStage();
+    }
+
+    // Dissolves program to the video input instead of hard-cutting to it.
+    // An auto-transition swaps program/preview on completion, which parks the
+    // previous program on preview for free — same end state as
+    // setVideoProgram(), just reached via a mix.
+    public async fadeVideoToProgram() {
+        if (!this.ready('fadeVideoToProgram')) return;
+        if (config.atem.videoInput < 0) {
+            reportError(
+                this.plugin,
+                'atem',
+                'fadeVideoToProgram called but no video input is configured',
+            );
+            return;
+        }
+
+        await this.connection.changePreviewInput(config.atem.videoInput);
+        await this.mixTransition();
+        this.setStageCaspar();
+    }
+
+    // Dissolves program away from the video input back to the parked source.
+    public async fadeReturnToPreview() {
+        if (!this.ready('fadeReturnToPreview')) return;
+        if (this.state.programInput === config.atem.videoInput)
+            await this.mixTransition();
+        this.returnStage();
+    }
+
+    // Runs a single MIX auto-transition at whatever rate the switcher is
+    // already set to, then restores the transition style so a manual
+    // T-bar/cut still behaves as before.
+    private async mixTransition() {
+        const { style: prevStyle } = this.state.transitionProperties;
+        await this.connection.setTransitionStyle({
+            nextStyle: Enums.TransitionStyle.MIX,
+        });
+        await this.connection.autoTransition();
+        await this.connection.setTransitionStyle({ nextStyle: prevStyle });
     }
 
     // Routes the projector aux outputs to their respective ME program buses.

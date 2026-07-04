@@ -12,7 +12,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import FlagIcon from '@mui/icons-material/Flag';
-import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import PlaylistRemoveIcon from '@mui/icons-material/PlaylistRemove';
 import React, {
     useCallback,
@@ -28,7 +27,6 @@ import { buildThumbnailUrl } from './thumbnail';
 import { formatTime } from './format';
 import {
     fullDurationOf,
-    hasFade,
     isTrimmed,
     normalizeVideoPayload,
     playbackProgress,
@@ -116,13 +114,12 @@ const VideoItem: React.FC<VideoItemProps> = ({
     const thumbnailUrl = useThumbnailUrl(clip);
     const fullDuration = fullDurationOf(clip);
     const trimmed = isTrimmed(options, fullDuration);
-    const faded = hasFade(options);
     const progress = playbackProgress(elapsed ?? 0, durationSec, {
         loop,
         active: isCurrent,
     });
     const showProgress = progress.active && !loop;
-    const hasChips = isCurrent || loop || trimmed || faded;
+    const hasChips = isCurrent || loop || trimmed;
 
     return (
         <Stack
@@ -214,14 +211,6 @@ const VideoItem: React.FC<VideoItemProps> = ({
                                         options?.outPoint ?? fullDuration,
                                     ),
                                 })}
-                                size="small"
-                                variant="outlined"
-                            />
-                        )}
-                        {faded && (
-                            <Chip
-                                icon={<GraphicEqIcon sx={{ fontSize: 14 }} />}
-                                label={t('playVideo.fadeChip')}
                                 size="small"
                                 variant="outlined"
                             />

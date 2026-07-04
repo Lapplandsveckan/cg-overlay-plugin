@@ -2,14 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Chip, LinearProgress, Stack, Typography } from '@mui/material';
 
 import ContentCutIcon from '@mui/icons-material/ContentCut';
-import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import { useSocket, MediaCard } from '@web-lib';
 import { useTranslation } from '../i18n';
 import { buildThumbnailUrl } from '../thumbnail';
 import { formatTime } from '../format';
 import {
     fullDurationOf,
-    hasFade,
     isTrimmed,
     playbackProgress,
     type VideoOptions,
@@ -57,7 +55,6 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
 
     const fullDuration = fullDurationOf(clip);
     const trimmed = isTrimmed(opts, fullDuration);
-    const faded = hasFade(opts);
 
     const isLive = !!clipId && currentClip === clipId;
     const isQueued = !isLive && !!clipId && queued.has(clipId);
@@ -114,14 +111,6 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
                             in: formatTime(opts.inPoint ?? 0),
                             out: formatTime(opts.outPoint ?? fullDuration),
                         })}
-                        size="small"
-                        variant="outlined"
-                    />
-                )}
-                {faded && (
-                    <Chip
-                        icon={<GraphicEqIcon sx={{ fontSize: 14 }} />}
-                        label={t('playVideo.fadeChip')}
                         size="small"
                         variant="outlined"
                     />

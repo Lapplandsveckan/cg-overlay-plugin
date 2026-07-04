@@ -16,20 +16,23 @@ import ContentCutIcon from '@mui/icons-material/ContentCut';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import FlashOnIcon from '@mui/icons-material/FlashOn';
+import GradientIcon from '@mui/icons-material/Gradient';
 import LooksOneIcon from '@mui/icons-material/LooksOne';
 import LoopIcon from '@mui/icons-material/Loop';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import QueueMusicIcon from '@mui/icons-material/QueueMusic';
-import SkipNextIcon from '@mui/icons-material/SkipNext';
 import { useSocket, MediaSelect, RundownEditorActionBar } from '@web-lib';
 import { useTranslation } from '../i18n';
 import { formatTime } from '../format';
 import {
     DEFAULT_FPS,
     fullDurationOf,
-    hasFade,
     isTrimmed,
+    normalizeIntro,
+    normalizeOutro,
     normalizeVideoPayload,
+    type IntroMode,
+    type OutroMode,
 } from '../video-utils';
 import { useBroadcast } from '../hooks';
 import { type VideoInspectorValue } from './VideoInspector';
@@ -126,7 +129,6 @@ const ModeRow: React.FC<ModeRowProps> = ({
     </Stack>
 );
 
-type IntroMode = 'regular' | 'fast' | 'skip';
 type PlaybackMode = 'once' | 'loop';
 type WhenMode = 'queue' | 'now';
 
@@ -144,9 +146,8 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
     const [title, setTitle] = useState(entry.title);
 
     const opts = entry.data?.options;
-    const [intro, setIntro] = useState<IntroMode>(
-        opts?.skipIntro ? 'skip' : opts?.fast ? 'fast' : 'regular',
-    );
+    const [intro, setIntro] = useState<IntroMode>(normalizeIntro(opts));
+    const [outro, setOutro] = useState<OutroMode>(normalizeOutro(opts));
     const [playback, setPlayback] = useState<PlaybackMode>(
         opts?.loop ? 'loop' : 'once',
     );
@@ -157,8 +158,6 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
         inPoint: opts?.inPoint ?? 0,
         outPoint: opts?.outPoint ?? 0,
         volume: opts?.volume ?? 1,
-        fadeIn: opts?.fadeIn ?? 0,
-        fadeOut: opts?.fadeOut ?? 0,
     });
 
     useEffect(() => {
@@ -215,7 +214,7 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
 
         lastClipId.current = clipId;
         outPointReady.current = false;
-        setTrim({ inPoint: 0, outPoint: 0, volume: 1, fadeIn: 0, fadeOut: 0 });
+        setTrim({ inPoint: 0, outPoint: 0, volume: 1 });
     }, [media?.id]);
 
     useEffect(() => {
@@ -227,9 +226,8 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
 
     // Ignore the outPoint=0 placeholder to avoid a one-frame "trimmed" flash.
     const trimmed = outPointReady.current && isTrimmed(trim, fullDuration);
-    const faded = hasFade(trim);
     const volumeChanged = trim.volume !== 1;
-    const trimActive = trimmed || volumeChanged || faded;
+    const trimActive = trimmed || volumeChanged;
     const trimRangeValid = trim.outPoint > trim.inPoint;
 
     const inspectorSummary = [
@@ -238,7 +236,6 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                 in: formatTime(trim.inPoint),
                 out: formatTime(trim.outPoint),
             }),
-        faded && t('playVideo.fadeChip'),
         volumeChanged &&
             t('playVideo.volumeChip', {
                 volume: Math.round(trim.volume * 100),
@@ -249,6 +246,7 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
 
     const additionalOptionsActive =
         intro !== 'regular' ||
+        outro !== 'cut' ||
         playback !== 'once' ||
         when !== 'queue' ||
         trimActive;
@@ -265,9 +263,27 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
             icon: <FastForwardIcon sx={{ fontSize: 16 }} />,
         },
         {
-            value: 'skip',
-            label: t('playVideo.introSkip'),
-            icon: <SkipNextIcon sx={{ fontSize: 16 }} />,
+            value: 'fade',
+            label: t('playVideo.introFade'),
+            icon: <GradientIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'cut',
+            label: t('playVideo.introCut'),
+            icon: <ContentCutIcon sx={{ fontSize: 16 }} />,
+        },
+    ];
+
+    const outroOptions: ModeOption[] = [
+        {
+            value: 'fade',
+            label: t('playVideo.outroFade'),
+            icon: <GradientIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'cut',
+            label: t('playVideo.outroCut'),
+            icon: <ContentCutIcon sx={{ fontSize: 16 }} />,
         },
     ];
 
@@ -351,6 +367,12 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                             options={introOptions}
                         />
                         <ModeRow
+                            label={t('playVideo.outroLabel')}
+                            value={outro}
+                            onChange={v => setOutro(v as OutroMode)}
+                            options={outroOptions}
+                        />
+                        <ModeRow
                             label={t('playVideo.playbackLabel')}
                             value={playback}
                             onChange={v => setPlayback(v as PlaybackMode)}
@@ -412,8 +434,8 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                         data: {
                             clip: media?.id,
                             options: {
-                                skipIntro: intro === 'skip',
-                                fast: intro === 'fast',
+                                intro,
+                                outro,
                                 loop: playback === 'loop',
                                 playNow: when === 'now',
                                 ...(trimActive
@@ -425,8 +447,6 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                                                 }
                                               : {}),
                                           volume: trim.volume,
-                                          fadeIn: trim.fadeIn,
-                                          fadeOut: trim.fadeOut,
                                       }
                                     : {}),
                             },

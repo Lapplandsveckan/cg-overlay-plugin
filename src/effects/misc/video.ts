@@ -35,8 +35,6 @@ export interface VideoEffectOptions {
     seekSec?: number;
     lengthSec?: number;
     volume?: number;
-    fadeIn?: number;
-    fadeOut?: number;
     channelFps?: number;
 }
 
@@ -89,8 +87,6 @@ export class VideoEffect extends Effect {
         let commandType = LoadBGCommand;
         if (play) commandType = PlayCommand;
 
-        if (play) this.primeFadeIn();
-
         const cmd = commandType.video(
             this.options.media.id,
             this.getPlayoutOptions(),
@@ -116,8 +112,6 @@ export class VideoEffect extends Effect {
         if (!this.active) return this.activate(true);
         if (this.playing) return;
         if (this.canceled) return;
-
-        this.primeFadeIn();
 
         const cmd = PlayCommand.video(
             this.options.media.id,
@@ -153,7 +147,6 @@ export class VideoEffect extends Effect {
     }
 
     private playTimeout: any;
-    private fadeOutTimeout: any;
 
     protected getEffectiveDuration(): number | undefined {
         const duration = this.options.media.mediainfo?.format?.duration;
@@ -164,35 +157,11 @@ export class VideoEffect extends Effect {
         return Math.max(0, Math.min(length, duration - seek));
     }
 
-    protected primeFadeIn() {
-        if (!this.options.fadeIn) return;
+    protected applyVolume() {
+        const { volume } = this.options;
+        if (volume === undefined) return;
 
-        const cmd = MixerCommand.create()
-            .volume(0)
-            .opacity(0)
-            .allocate(this.layer);
-
-        const result = this.executor.execute(cmd);
-        if (this.logger)
-            execChecked(
-                this.logger,
-                `prime fade-in for video "${this.options.media.id}"`,
-                result,
-            );
-    }
-
-    protected applyFades() {
-        const { volume, fadeIn } = this.options;
-        if (volume === undefined && !fadeIn) return;
-
-        const cmd = MixerCommand.create();
-        if (fadeIn) {
-            const duration = secToFrames(fadeIn, this.getFps());
-            cmd.volume(volume ?? 1, { duration }).opacity(1, { duration });
-        } else {
-            cmd.volume(volume ?? 1);
-        }
-        cmd.allocate(this.layer);
+        const cmd = MixerCommand.create().volume(volume).allocate(this.layer);
 
         const result = this.executor.execute(cmd);
         if (this.logger)
@@ -203,27 +172,12 @@ export class VideoEffect extends Effect {
             );
     }
 
-    protected scheduleFadeOut(remainingMs: number) {
-        const { fadeOut } = this.options;
-        if (!fadeOut) return;
-
-        const delay = Math.max(0, remainingMs - fadeOut * 1000);
-        this.fadeOutTimeout = setTimeout(() => {
-            const duration = secToFrames(fadeOut, this.getFps());
-            const cmd = MixerCommand.create()
-                .volume(0, { duration })
-                .opacity(0, { duration })
-                .allocate(this.layer);
-            this.executor.execute(cmd);
-        }, delay);
-    }
-
     protected handlePlay() {
         this.playing = true;
         this.paused = false;
 
         this.emit('video:play');
-        this.applyFades();
+        this.applyVolume();
 
         const duration = this.getEffectiveDuration();
         if (duration === undefined) return;
@@ -236,7 +190,6 @@ export class VideoEffect extends Effect {
             () => this.handleFinish(),
             duration * 1000,
         );
-        this.scheduleFadeOut(duration * 1000);
     }
 
     protected handleFinish() {
@@ -256,7 +209,6 @@ export class VideoEffect extends Effect {
         this.paused = true;
 
         clearTimeout(this.playTimeout); // TODO: only pause the timeout
-        clearTimeout(this.fadeOutTimeout);
         this.pausedTime = Date.now();
 
         const cmd = new PauseCommand(this.layer);
@@ -286,7 +238,6 @@ export class VideoEffect extends Effect {
         if (!this.options.loop) {
             const remaining = this.clipDuration * 1000 - playTime;
             this.playTimeout = setTimeout(() => this.handleFinish(), remaining);
-            this.scheduleFadeOut(remaining);
         }
 
         const cmd = new ResumeCommand(this.layer);
@@ -305,7 +256,6 @@ export class VideoEffect extends Effect {
         this.emit('video:deactivate');
 
         clearTimeout(this.playTimeout);
-        clearTimeout(this.fadeOutTimeout);
         this.playing = false;
 
         const cmd: Command = new ClearCommand(this.layer);
@@ -348,8 +298,6 @@ export class VideoEffect extends Effect {
             seekSec: this.options.seekSec,
             lengthSec: this.options.lengthSec,
             volume: this.options.volume,
-            fadeIn: this.options.fadeIn,
-            fadeOut: this.options.fadeOut,
         };
     }
 }
