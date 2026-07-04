@@ -44,7 +44,16 @@
         "currentHelper": "Insamlat belopp hittills.",
         "goalLabel": "Mål",
         "goalHelper": "Målbelopp för kampanjen.",
-        "label": "Insamling"
+        "label": "Insamling",
+        "additionalOptions": "Ytterligare alternativ",
+        "introLabel": "Intro",
+        "introRegular": "Vanlig",
+        "introFast": "Snabb",
+        "introFade": "Tona",
+        "introCut": "Klipp",
+        "outroLabel": "Avslut",
+        "outroFade": "Tona",
+        "outroCut": "Klipp"
     },
     "playVideo": {
         "heading": "Spela video",

@@ -138,6 +138,7 @@ export default class OverlayManager {
 
     private insamling: InsamlingOverlayEffect = null;
     private insamlingState = 0;
+    private insamlingOutro: VideoOutroMode = 'cut';
 
     private presentationEffect: PresentationOverlayEffect = null;
     private presentationImageEffect: VideoEffect = null;
@@ -809,19 +810,26 @@ export default class OverlayManager {
         this.broadcastOverlay();
     }
 
-    public async toggleInsamling(options?: InsamlingOverlayEffectOptions) {
+    public async toggleInsamling(
+        data?: InsamlingOverlayEffectOptions & {
+            options?: { intro?: VideoIntroMode; outro?: VideoOutroMode };
+        },
+    ) {
         this.insamlingState = 1 - this.insamlingState;
         this.broadcastOverlay();
 
-        if (options) this.insamling.update(options);
+        const { options, ...effectOptions } = data ?? {};
+        if (data) this.insamling.update(effectOptions);
 
         switch (this.insamlingState) {
             case 0:
                 this.insamling.deactivate();
-                if (!this.plugin.video.playing) this.stopVideoSession(true);
+                if (!this.plugin.video.playing)
+                    this.stopVideoSession(true, this.insamlingOutro);
                 break;
             case 1:
-                await this.startVideoSession(true);
+                this.insamlingOutro = options?.outro ?? 'cut';
+                await this.startVideoSession(true, options?.intro ?? 'regular');
                 this.touchRecyclable('insamling');
                 this.insamling.activate();
                 break;
@@ -832,7 +840,8 @@ export default class OverlayManager {
         this.insamlingState = 0;
         this.broadcastOverlay();
         this.insamling.deactivate();
-        if (!this.plugin.video.playing) this.stopVideoSession(true);
+        if (!this.plugin.video.playing)
+            this.stopVideoSession(true, this.insamlingOutro);
     }
 
     public getPresentationState(): PresentationPlaybackState {

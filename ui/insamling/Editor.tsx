@@ -1,8 +1,28 @@
 import React, { useState } from 'react';
-import { InputAdornment, Stack, TextField, Typography } from '@mui/material';
+import {
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
+    InputAdornment,
+    Stack,
+    TextField,
+    Typography,
+} from '@mui/material';
 
+import ContentCutIcon from '@mui/icons-material/ContentCut';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import FastForwardIcon from '@mui/icons-material/FastForward';
+import GradientIcon from '@mui/icons-material/Gradient';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import { RundownEditorActionBar } from '@web-lib';
 import { useTranslation } from '../i18n';
+import { ModeRow, type ModeOption } from '../mode-row';
+import {
+    normalizeIntro,
+    normalizeOutro,
+    type IntroMode,
+    type OutroMode,
+} from '../video-utils';
 
 interface RundownEntry {
     id: string;
@@ -30,6 +50,48 @@ export const InsamlingEditor: React.FC<InsamlingEditorProps> = ({
     const [title, setTitle] = useState(entry?.title ?? '');
     const [goal, setGoal] = useState<string>(String(entry?.data.goal ?? '0'));
     const [now, setNow] = useState<string>(String(entry?.data.now ?? '0'));
+
+    const opts = entry?.data?.options;
+    const [intro, setIntro] = useState<IntroMode>(normalizeIntro(opts));
+    const [outro, setOutro] = useState<OutroMode>(normalizeOutro(opts));
+
+    const additionalOptionsActive = intro !== 'regular' || outro !== 'cut';
+
+    const introOptions: ModeOption[] = [
+        {
+            value: 'regular',
+            label: t('insamling.introRegular'),
+            icon: <PlayCircleOutlineIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'fast',
+            label: t('insamling.introFast'),
+            icon: <FastForwardIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'fade',
+            label: t('insamling.introFade'),
+            icon: <GradientIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'cut',
+            label: t('insamling.introCut'),
+            icon: <ContentCutIcon sx={{ fontSize: 16 }} />,
+        },
+    ];
+
+    const outroOptions: ModeOption[] = [
+        {
+            value: 'fade',
+            label: t('insamling.outroFade'),
+            icon: <GradientIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'cut',
+            label: t('insamling.outroCut'),
+            icon: <ContentCutIcon sx={{ fontSize: 16 }} />,
+        },
+    ];
 
     const kr = <InputAdornment position="end">kr</InputAdornment>;
 
@@ -65,6 +127,48 @@ export const InsamlingEditor: React.FC<InsamlingEditorProps> = ({
                 />
             </Stack>
 
+            <Accordion
+                defaultExpanded={additionalOptionsActive}
+                disableGutters
+                square
+                sx={{
+                    backgroundColor: 'transparent',
+                    boxShadow: 'none',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 1,
+                    '&:before': { display: 'none' },
+                }}
+            >
+                <AccordionSummary
+                    expandIcon={<ExpandMoreIcon sx={{ fontSize: 14 }} />}
+                    sx={{
+                        minHeight: 40,
+                        '& .MuiAccordionSummary-content': { margin: '8px 0' },
+                    }}
+                >
+                    <Typography variant="body2">
+                        {t('insamling.additionalOptions')}
+                        {additionalOptionsActive && ' •'}
+                    </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <Stack spacing={1.5}>
+                        <ModeRow
+                            label={t('insamling.introLabel')}
+                            value={intro}
+                            onChange={v => setIntro(v as IntroMode)}
+                            options={introOptions}
+                        />
+                        <ModeRow
+                            label={t('insamling.outroLabel')}
+                            value={outro}
+                            onChange={v => setOutro(v as OutroMode)}
+                            options={outroOptions}
+                        />
+                    </Stack>
+                </AccordionDetails>
+            </Accordion>
+
             <RundownEditorActionBar
                 exists={!creating}
                 onDelete={() => deleteEntry(entry)}
@@ -74,6 +178,7 @@ export const InsamlingEditor: React.FC<InsamlingEditorProps> = ({
                         data: {
                             goal,
                             now,
+                            options: { intro, outro },
                         },
                         title,
                     });

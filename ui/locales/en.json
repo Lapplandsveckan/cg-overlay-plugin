@@ -44,7 +44,16 @@
         "currentHelper": "Amount collected so far.",
         "goalLabel": "Goal",
         "goalHelper": "Target amount for the campaign.",
-        "label": "Insamling"
+        "label": "Insamling",
+        "additionalOptions": "Additional options",
+        "introLabel": "Intro",
+        "introRegular": "Regular",
+        "introFast": "Fast",
+        "introFade": "Fade",
+        "introCut": "Cut",
+        "outroLabel": "Outro",
+        "outroFade": "Fade",
+        "outroCut": "Cut"
     },
     "playVideo": {
         "heading": "Play video",
