@@ -1,5 +1,5 @@
 /* eslint-disable max-lines */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
     Box,
     Dialog,
@@ -160,6 +160,18 @@ export const RunModal: React.FC<RunModalProps> = ({
         open,
     );
 
+    const contentRef = useRef<HTMLDivElement>(null);
+    const pickerScrollTop = useRef(0);
+
+    useEffect(() => {
+        if (open) pickerScrollTop.current = 0;
+    }, [open, presentation?.id]);
+
+    useLayoutEffect(() => {
+        if (!playingHere && contentRef.current)
+            contentRef.current.scrollTop = pickerScrollTop.current;
+    }, [playingHere]);
+
     return (
         <Dialog
             open={open}
@@ -238,7 +250,14 @@ export const RunModal: React.FC<RunModalProps> = ({
                     </Stack>
                 </Stack>
             </DialogTitle>
-            <DialogContent sx={{ userSelect: 'none' }}>
+            <DialogContent
+                ref={contentRef}
+                onScroll={e => {
+                    if (!playingHere)
+                        pickerScrollTop.current = e.currentTarget.scrollTop;
+                }}
+                sx={{ userSelect: 'none' }}
+            >
                 {playingHere && current ? (
                     <PlayingView
                         slides={slides}
