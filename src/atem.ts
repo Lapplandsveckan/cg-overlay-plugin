@@ -85,12 +85,17 @@ export class AtemManager {
         this.connection.connect(ip);
     }
 
-    public disconnect() {
-        if (!this.connection) return;
-        this.connection.disconnect();
-        this.connection.removeAllListeners();
+    public async disconnect() {
+        const conn = this.connection;
+        if (!conn) return;
         this.connection = null;
         this.connected = false;
+        conn.removeAllListeners();
+        await conn
+            .disconnect()
+            .catch(err =>
+                reportError(this.plugin, 'atem', 'ATEM disconnect failed', err),
+            );
     }
 
     private trackAuxSource(apiBus: number, source: number | undefined) {

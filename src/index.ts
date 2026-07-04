@@ -196,7 +196,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         if (this.atem) {
             await this.atem.resetToNormal().catch(() => {});
-            this.atem.disconnect();
+            await this.atem.disconnect();
             this.atem = null;
         }
     }
