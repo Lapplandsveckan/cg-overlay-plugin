@@ -78,7 +78,14 @@
         "volumeChip": "Volume {{volume}}%",
         "noTrim": "Full clip, no fade",
         "openInspector": "Trim & volume…",
-        "close": "Close"
+        "close": "Close",
+        "setIn": "Set in",
+        "setOut": "Set out",
+        "setInHint": "Set in point at playhead (I)",
+        "setOutHint": "Set out point at playhead (O)",
+        "playHint": "Play / pause (Space)",
+        "prevFrameHint": "Previous frame (←)",
+        "nextFrameHint": "Next frame (→)"
     },
     "text": {
         "heading": "Text",

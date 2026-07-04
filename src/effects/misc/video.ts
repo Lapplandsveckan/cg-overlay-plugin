@@ -89,14 +89,16 @@ export class VideoEffect extends Effect {
         let commandType = LoadBGCommand;
         if (play) commandType = PlayCommand;
 
+        if (play) this.primeFadeIn();
+
         const cmd = commandType.video(
             this.options.media.id,
             this.getPlayoutOptions(),
         );
         cmd.allocate(this.layer);
 
-        if (play) this.handlePlay();
         const result = this.executor.execute(cmd);
+        if (play) this.handlePlay();
         if (this.logger)
             execChecked(
                 this.logger,
@@ -115,14 +117,16 @@ export class VideoEffect extends Effect {
         if (this.playing) return;
         if (this.canceled) return;
 
+        this.primeFadeIn();
+
         const cmd = PlayCommand.video(
             this.options.media.id,
             this.getPlayoutOptions(),
         );
         cmd.allocate(this.layer);
 
-        this.handlePlay();
         const result = this.executor.execute(cmd);
+        this.handlePlay();
         if (this.logger)
             execChecked(
                 this.logger,
@@ -160,15 +164,31 @@ export class VideoEffect extends Effect {
         return Math.max(0, Math.min(length, duration - seek));
     }
 
-    protected applyVolume() {
+    protected primeFadeIn() {
+        if (!this.options.fadeIn) return;
+
+        const cmd = MixerCommand.create()
+            .volume(0)
+            .opacity(0)
+            .allocate(this.layer);
+
+        const result = this.executor.execute(cmd);
+        if (this.logger)
+            execChecked(
+                this.logger,
+                `prime fade-in for video "${this.options.media.id}"`,
+                result,
+            );
+    }
+
+    protected applyFades() {
         const { volume, fadeIn } = this.options;
         if (volume === undefined && !fadeIn) return;
 
         const cmd = MixerCommand.create();
         if (fadeIn) {
-            cmd.volume(0).volume(volume ?? 1, {
-                duration: secToFrames(fadeIn, this.getFps()),
-            });
+            const duration = secToFrames(fadeIn, this.getFps());
+            cmd.volume(volume ?? 1, { duration }).opacity(1, { duration });
         } else {
             cmd.volume(volume ?? 1);
         }
@@ -189,8 +209,10 @@ export class VideoEffect extends Effect {
 
         const delay = Math.max(0, remainingMs - fadeOut * 1000);
         this.fadeOutTimeout = setTimeout(() => {
+            const duration = secToFrames(fadeOut, this.getFps());
             const cmd = MixerCommand.create()
-                .volume(0, { duration: secToFrames(fadeOut, this.getFps()) })
+                .volume(0, { duration })
+                .opacity(0, { duration })
                 .allocate(this.layer);
             this.executor.execute(cmd);
         }, delay);
@@ -201,7 +223,7 @@ export class VideoEffect extends Effect {
         this.paused = false;
 
         this.emit('video:play');
-        this.applyVolume();
+        this.applyFades();
 
         const duration = this.getEffectiveDuration();
         if (duration === undefined) return;

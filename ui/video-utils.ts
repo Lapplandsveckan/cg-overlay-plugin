@@ -55,6 +55,17 @@ export function parseFrameTimecode(
     return Number.isFinite(asSeconds) ? asSeconds : null;
 }
 
+// Steps `seconds` by `frames` (positive or negative) at the given fps,
+// clamped to [0, max].
+export function stepFrames(
+    seconds: number,
+    frames: number,
+    fps: number,
+    max: number,
+): number {
+    return Math.max(0, Math.min(max, seconds + frames / fps));
+}
+
 export function effectiveDuration(full: number, o?: VideoOptions): number {
     if (!full) return 0;
 

@@ -78,7 +78,14 @@
         "volumeChip": "Volym {{volume}}%",
         "noTrim": "Hela klippet, ingen toning",
         "openInspector": "Trimning & volym…",
-        "close": "Stäng"
+        "close": "Stäng",
+        "setIn": "Sätt in",
+        "setOut": "Sätt ut",
+        "setInHint": "Sätt inpunkt vid spelhuvudet (I)",
+        "setOutHint": "Sätt utpunkt vid spelhuvudet (O)",
+        "playHint": "Spela/pausa (mellanslag)",
+        "prevFrameHint": "Föregående bildruta (←)",
+        "nextFrameHint": "Nästa bildruta (→)"
     },
     "text": {
         "heading": "Text",
