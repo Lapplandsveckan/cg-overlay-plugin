@@ -55,7 +55,7 @@ export const NamnskyltEditor: React.FC<NamnskyltEditorProps> = ({
                         data: {
                             name,
                         },
-                        title: name,
+                        title: name.toUpperCase(),
                     });
                 }}
             />
