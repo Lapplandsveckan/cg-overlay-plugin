@@ -528,9 +528,9 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                 );
                 const doc =
                     item && this.api.getFileDatabase().get(item.data.clip);
-                const png64 = (doc as any)?._attachments?.[
-                    'thumb.png'
-                ]?.data?.toString('base64');
+                const png64 = attachmentToBase64(
+                    (doc as any)?._attachments?.['thumb.png'],
+                );
                 const info = this.video.getInformation();
                 const isPlaying =
                     item && (info.current?.data as any)?.id === item.data.clip;
@@ -1136,4 +1136,17 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
 function stripExt(name: string): string {
     return name.replace(/\.[^.]+$/, '');
+}
+
+// `FileDatabase.save()/load()` round-trips through JSON, so a reloaded doc's
+// attachment `.data` is `{ type: 'Buffer', data: number[] }` rather than a
+// real Buffer — handle both shapes.
+function attachmentToBase64(attach: any): string | undefined {
+    const data = attach?.data;
+    if (!data) return undefined;
+    if (Buffer.isBuffer(data)) return data.toString('base64');
+    if (Array.isArray(data.data))
+        return Buffer.from(data.data).toString('base64');
+    if (typeof data === 'string') return data;
+    return undefined;
 }
