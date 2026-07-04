@@ -309,6 +309,11 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         );
     }
 
+    private dispatchVideo(id: string, options?: any) {
+        if (options?.playNow) this.video.playVideo(id, options);
+        else this.video.queueVideo(id, options);
+    }
+
     protected registerRundownActions() {
         const registerRundownAction = (
             key: string,
@@ -340,9 +345,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                     return null;
                 }
 
-                if (rundown.data.options?.playNow)
-                    this.video.playVideo(video.id, rundown.data.options);
-                else this.video.queueVideo(video.id, rundown.data.options);
+                this.dispatchVideo(video.id, rundown.data.options);
             },
             {
                 accepts: {
@@ -478,7 +481,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
 
         this.api.registerAction({
             id: 'lappis-rundown-video',
-            name: 'Queue video from rundown',
+            name: 'Play/queue video from rundown',
             options: [indexOpt],
             handler: async opts => {
                 const item = this.rundownItemAt(
@@ -488,7 +491,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                 if (!item) return;
                 const video = this.api.getFileDatabase().get(item.data.clip);
                 if (!video) return;
-                this.video.queueVideo(video.id, item.data.options);
+                this.dispatchVideo(video.id, item.data.options);
             },
         });
 
