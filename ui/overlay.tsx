@@ -407,14 +407,30 @@ function SettingsPanel() {
 }
 
 const OverlayTest = () => (
-    <Box sx={{ maxWidth: 800, margin: '0 auto', padding: { xs: 2, md: 3 } }}>
+    <Box sx={{ maxWidth: 1600, margin: '0 auto', padding: { xs: 2, md: 3 } }}>
         <Box sx={{ mb: 2 }}>
             <ActiveRundownSelector />
         </Box>
-        <VideoQueue showSetCurrentRundown={false} />
-        <CaptionKitPanel />
-        <SettingsPanel />
-        <DiagnosticsPanel />
+        <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={3}
+            alignItems="flex-start"
+        >
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                <CaptionKitPanel />
+                <SettingsPanel />
+                <DiagnosticsPanel />
+            </Box>
+            <Box
+                sx={{
+                    flexBasis: 380,
+                    flexShrink: 0,
+                    width: { xs: '100%', md: 'auto' },
+                }}
+            >
+                <VideoQueue showSetCurrentRundown={false} />
+            </Box>
+        </Stack>
     </Box>
 );
 
