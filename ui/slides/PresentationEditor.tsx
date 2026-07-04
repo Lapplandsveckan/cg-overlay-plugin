@@ -24,6 +24,7 @@ import {
     Typography,
 } from '@mui/material';
 
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
@@ -71,7 +72,7 @@ import {
     fetchBibleSlides,
 } from './api';
 import { BOOKS, TRANSLATIONS } from './bible-api';
-import { slidesHomeUrl } from './urls';
+import { backTargetFromSearch, slidesHomeUrl } from './urls';
 
 const IMAGE_CODECS = new Set([
     'mjpeg',
@@ -275,6 +276,7 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
     const remote = usePresentation(id);
+    const backFrom = backTargetFromSearch(window.location.search);
     const backgroundUrl = useBackgroundImage();
 
     const [renameOpen, setRenameOpen] = useState(false);
@@ -329,7 +331,7 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                     <Typography variant="body1">
                         {t('presentationEditor.notFound')}
                     </Typography>
-                    <Link href={slidesHomeUrl()}>
+                    <Link href={backFrom ?? slidesHomeUrl()}>
                         {t('presentationEditor.home')}
                     </Link>
                 </Stack>
@@ -385,7 +387,7 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
             setError('Failed to delete presentation');
             return;
         }
-        window.location.assign(slidesHomeUrl());
+        window.location.assign(backFrom ?? slidesHomeUrl());
     };
 
     return (
@@ -393,6 +395,19 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
             sx={{ maxWidth: 1400, margin: '0 auto', padding: { xs: 2, md: 3 } }}
         >
             <Stack spacing={3}>
+                <Button
+                    variant="text"
+                    size="small"
+                    startIcon={<ArrowBackIcon />}
+                    onClick={() =>
+                        backFrom
+                            ? window.location.assign(backFrom)
+                            : window.history.back()
+                    }
+                    sx={{ alignSelf: 'flex-start', color: 'text.secondary' }}
+                >
+                    {t('presentationEditor.back')}
+                </Button>
                 <Stack direction="row" spacing={1.5} alignItems="center">
                     <Typography
                         variant="h2"

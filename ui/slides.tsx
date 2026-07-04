@@ -24,7 +24,7 @@ import {
     useImageThumbnails,
     usePresentations,
 } from './slides/api';
-import { slidesEditorUrl, slidesHomeUrl } from './slides/urls';
+import { currentPath, slidesEditorUrl, slidesHomeUrl } from './slides/urls';
 
 interface PresentationCardProps {
     presentation: Presentation;
@@ -50,13 +50,17 @@ const PresentationCard: React.FC<PresentationCardProps> = ({
                 })
             }
             onClick={() => {
-                window.location.assign(slidesEditorUrl(presentation.id));
+                window.location.assign(
+                    slidesEditorUrl(presentation.id, currentPath()),
+                );
             }}
             role="button"
             tabIndex={0}
             onKeyDown={e => {
                 if (e.key === 'Enter') {
-                    window.location.assign(slidesEditorUrl(presentation.id));
+                    window.location.assign(
+                        slidesEditorUrl(presentation.id, currentPath()),
+                    );
                 }
             }}
             sx={{
@@ -163,7 +167,7 @@ const SlidesTab: React.FC = () => {
             setCreating(false);
             return;
         }
-        window.location.assign(slidesEditorUrl(p!.id));
+        window.location.assign(slidesEditorUrl(p!.id, currentPath()));
     };
 
     return (

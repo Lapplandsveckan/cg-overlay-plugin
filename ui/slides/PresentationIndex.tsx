@@ -37,7 +37,7 @@ import {
     slideRef,
     slideText,
 } from './api';
-import { slidesEditorUrl } from './urls';
+import { currentPath, slidesEditorUrl } from './urls';
 import NameDialog from './NameDialog';
 import ImportPdfDialog from './ImportPdfDialog';
 
@@ -80,12 +80,12 @@ export const PresentationIndex: React.FC = () => {
             setCreating(false);
             return;
         }
-        window.location.assign(slidesEditorUrl(p!.id));
+        window.location.assign(slidesEditorUrl(p!.id, currentPath()));
     };
 
     const handleImportDone = (p: Presentation) => {
         setImportOpen(false);
-        window.location.assign(slidesEditorUrl(p.id));
+        window.location.assign(slidesEditorUrl(p.id, currentPath()));
     };
 
     const handleImportError = (msg: string) => {
@@ -285,7 +285,9 @@ const PresentationTile: React.FC<{
             label: t('contextMenu.open'),
             icon: <OpenInNewIcon sx={{ fontSize: 18 }} />,
             onClick: () =>
-                window.location.assign(slidesEditorUrl(presentation.id)),
+                window.location.assign(
+                    slidesEditorUrl(presentation.id, currentPath()),
+                ),
         },
         {
             label: t('contextMenu.duplicate'),
@@ -309,7 +311,7 @@ const PresentationTile: React.FC<{
             <Stack
                 spacing={1}
                 component="a"
-                href={slidesEditorUrl(presentation.id)}
+                href={slidesEditorUrl(presentation.id, currentPath())}
                 onContextMenu={menu.bind(menuItems)}
                 sx={{
                     textDecoration: 'none',

@@ -154,6 +154,7 @@
         "slideCount_other": "{{count}} slides"
     },
     "presentationEditor": {
+        "back": "Tillbaka",
         "loading": "Läser in…",
         "notFound": "Presentationen hittades inte.",
         "deleteButton": "Ta bort presentation",
@@ -187,7 +188,6 @@
         "deleteConfirmTitle": "Ta bort presentation?",
         "deleteConfirmBody": "\"{{title}}\" tas bort permanent. Rundown-inslag som refererar till den kommer att visa \"Presentation saknas\".",
         "delete": "Ta bort",
-        "back": "← Tillbaka",
         "home": "← Hem",
         "verseRequired": "Obligatoriskt",
         "verseFormat": "Format: 16 eller 16-17",

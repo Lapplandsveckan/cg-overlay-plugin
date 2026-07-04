@@ -14,7 +14,7 @@ import { noTry, noTryAsync } from 'no-try';
 import { RundownEditorActionBar, useSocket } from '@web-lib';
 import { useTranslation } from '../i18n';
 import { usePresentations, createPresentation } from './api';
-import { slidesEditorUrl } from './urls';
+import { currentPath, slidesEditorUrl } from './urls';
 
 interface RundownEntry {
     id: string;
@@ -190,7 +190,8 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
 function openPresentationEditor(id: string) {
     // Use an absolute URL — the rundown editor isn't mounted under the plugin
     // page, so relative paths would resolve against the rundown URL.
-    const url = slidesEditorUrl(id);
+    // Attach the current rundown path as `from` so the editor can show "Back".
+    const url = slidesEditorUrl(id, currentPath());
     const [err] = noTry(() => window.open(url, '_blank', 'noopener'));
     if (err) window.location.assign(url);
 }

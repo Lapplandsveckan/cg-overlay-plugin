@@ -154,6 +154,7 @@
         "slideCount_other": "{{count}} slides"
     },
     "presentationEditor": {
+        "back": "Back",
         "loading": "Loading…",
         "notFound": "Presentation not found.",
         "deleteButton": "Delete presentation",
@@ -187,8 +188,7 @@
         "deleteConfirmTitle": "Delete presentation?",
         "deleteConfirmBody": "\"{{title}}\" will be permanently removed. Any rundown entries that reference it will show \"Presentation missing\".",
         "delete": "Delete",
-        "back": "← Back",
-        "home": "← Home",
+        "home": "← Hem",
         "verseRequired": "Required",
         "verseFormat": "Format: 16 or 16-17",
         "verseInvalidStart": "Invalid start",
