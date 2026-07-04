@@ -19,6 +19,7 @@ export class AtemManager {
     private lastKnownAuxSources: Record<number, number> = {};
     private store: AtemStateStore;
     private logger: ReturnType<typeof getLogger>;
+    private enabled = !process.env.CASPAR_MOCK;
 
     constructor(plugin: PluginRef) {
         this.plugin = plugin;
@@ -34,6 +35,13 @@ export class AtemManager {
     }
 
     public connect(ip: string) {
+        if (!this.enabled) {
+            this.logger.info(
+                'ATEM disabled (CASPAR_MOCK) — switcher control skipped',
+            );
+            return;
+        }
+
         this.connection = new Atem();
         this.connection.on('info', msg => this.logger.info(String(msg)));
         this.connection.on('error', err => {
@@ -78,6 +86,7 @@ export class AtemManager {
     }
 
     public disconnect() {
+        if (!this.connection) return;
         this.connection.disconnect();
         this.connection.removeAllListeners();
         this.connection = null;
@@ -128,12 +137,27 @@ export class AtemManager {
         }
     }
 
+    // Guards every switcher-touching operation: a silent no-op in mock mode,
+    // an error report if genuinely disconnected, true once safe to proceed.
+    private ready(op: string): boolean {
+        if (!this.enabled) return false;
+        if (!this.connected) {
+            reportError(
+                this.plugin,
+                'atem',
+                `${op} called but ATEM is not connected`,
+            );
+            return false;
+        }
+        return true;
+    }
+
     // Best-effort graceful reset for plugin disable — restores only the
     // channels currently sitting on caspar's values, never touching a channel
     // an operator has since moved manually. Returns once all commands have
     // been sent (not necessarily acknowledged by the switcher).
     public async resetToNormal(): Promise<void> {
-        if (!this.connected) return;
+        if (!this.enabled || !this.connected) return;
 
         const pending: Promise<unknown>[] = [];
         const { programInput, previewInput } = this.state;
@@ -171,14 +195,7 @@ export class AtemManager {
     }
 
     public setVideoProgram() {
-        if (!this.connected) {
-            reportError(
-                this.plugin,
-                'atem',
-                'setVideoProgram called but ATEM is not connected',
-            );
-            return;
-        }
+        if (!this.ready('setVideoProgram')) return;
         if (config.atem.videoInput < 0) {
             reportError(
                 this.plugin,
@@ -196,14 +213,7 @@ export class AtemManager {
     }
 
     public returnToPreview() {
-        if (!this.connected) {
-            reportError(
-                this.plugin,
-                'atem',
-                'returnToPreview called but ATEM is not connected',
-            );
-            return;
-        }
+        if (!this.ready('returnToPreview')) return;
         const { programInput, previewInput } = this.state;
         if (programInput === config.atem.videoInput) {
             this.connection.changePreviewInput(programInput);
@@ -215,7 +225,8 @@ export class AtemManager {
     // Routes the projector aux outputs to their respective ME program buses.
     // Unlike the stage auxes, projectors are never restored on stop.
     public setProjectorsProgram() {
-        if (!this.connected || config.atem.projectorAuxes.length === 0) return;
+        if (!this.ready('setProjectorsProgram')) return;
+        if (config.atem.projectorAuxes.length === 0) return;
         for (const { aux, me } of config.atem.projectorAuxes) {
             const apiBus = aux - 1;
             this.connection
@@ -232,7 +243,7 @@ export class AtemManager {
     }
 
     public ensureVideoProgram() {
-        if (!this.connected) return;
+        if (!this.ready('ensureVideoProgram')) return;
         if (this.state.programInput !== config.atem.videoInput)
             this.setVideoProgram();
         else this.setStageCaspar();
