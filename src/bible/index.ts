@@ -120,7 +120,7 @@ function normalizeNotation(
     verseNumbers: number[],
 ): string {
     const books = loadBooks();
-    const bookAbbr = books[bookNum - 1].abbr.replace(/(\d)/g, '$1 ');
+    const bookName = books[bookNum - 1].name;
 
     const collapseRanges = (nums: number[]): string => {
         if (!nums.length) return '';
@@ -138,7 +138,7 @@ function normalizeNotation(
         return ranges.join(',');
     };
 
-    return `${bookAbbr} ${chapterNum}:${collapseRanges(verseNumbers)}`;
+    return `${bookName} ${chapterNum}:${collapseRanges(verseNumbers)}`;
 }
 
 function smartSplitText(
