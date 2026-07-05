@@ -81,3 +81,66 @@ export const BOOKS: Book[] = [
     { name: 'Judasbrevet', abbr: 'Jud' },
     { name: 'Uppenbarelseboken', abbr: 'Upp' },
 ];
+
+export function normalize(s: string): string {
+    return s
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '')
+        .toLowerCase();
+}
+
+export function matchBook(query: string): Book | null {
+    const q = normalize(query);
+    if (!q) return null;
+    return (
+        BOOKS.find(
+            b => normalize(b.name).startsWith(q) || normalize(b.abbr) === q,
+        ) ??
+        BOOKS.find(
+            b =>
+                normalize(b.name).includes(q) ||
+                normalize(b.abbr).startsWith(q),
+        ) ??
+        null
+    );
+}
+
+export interface ParsedReference {
+    book: string;
+    chapter: string;
+    verseRange: string;
+}
+
+export function parseReference(input: string): ParsedReference | null {
+    const trimmed = input.trim();
+    if (!trimmed) return null;
+
+    const colonIndex = trimmed.indexOf(':');
+    const bookAndChapterRaw =
+        colonIndex === -1 ? trimmed : trimmed.slice(0, colonIndex).trim();
+    const versesRaw =
+        colonIndex === -1 ? '*' : trimmed.slice(colonIndex + 1).trim();
+    if (!bookAndChapterRaw || !versesRaw) return null;
+
+    const parts = bookAndChapterRaw.split(' ').filter(Boolean);
+    const chapterRaw = parts.pop();
+    const chapter = Number(chapterRaw);
+    if (!parts.length || !Number.isFinite(chapter) || chapter <= 0) return null;
+
+    const book = matchBook(parts.join(' '));
+    if (!book) return null;
+
+    return { book: book.name, chapter: String(chapter), verseRange: versesRaw };
+}
+
+export function composeReference({
+    book,
+    chapter,
+    verseRange,
+}: ParsedReference): string {
+    const match = BOOKS.find(b => b.name === book);
+    const label = match?.abbr ?? book;
+    if (verseRange.trim() === '*') return `${label} ${chapter}`;
+    return `${label} ${chapter}:${verseRange}`;
+}

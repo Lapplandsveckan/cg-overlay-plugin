@@ -5,6 +5,7 @@ import {
     AccordionDetails,
     AccordionSummary,
     Alert,
+    Autocomplete,
     Box,
     Button,
     Chip,
@@ -73,7 +74,14 @@ import {
     useImageThumbnails,
     fetchBibleSlides,
 } from './api';
-import { BOOKS, TRANSLATIONS } from './bible-api';
+import {
+    BOOKS,
+    TRANSLATIONS,
+    composeReference,
+    normalize,
+    parseReference,
+    type Book,
+} from './bible-api';
 import { backTargetFromSearch, slidesHomeUrl } from './urls';
 
 const IMAGE_CODECS = new Set([
@@ -1129,6 +1137,12 @@ interface AddSlidesDialogProps {
     onAdd: (slides: Slide[]) => void;
 }
 
+const DEFAULT_BIBLE = {
+    book: 'Johannesevangeliet',
+    chapter: '3',
+    verseRange: '16',
+};
+
 const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
     open,
     onClose,
@@ -1142,9 +1156,10 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
 
     // Bible state
     const [translation, setTranslation] = useState(TRANSLATIONS[0].id);
-    const [book, setBook] = useState('Johannesevangeliet');
-    const [chapter, setChapter] = useState('3');
-    const [verseRange, setVerseRange] = useState('16');
+    const [book, setBook] = useState(DEFAULT_BIBLE.book);
+    const [chapter, setChapter] = useState(DEFAULT_BIBLE.chapter);
+    const [verseRange, setVerseRange] = useState(DEFAULT_BIBLE.verseRange);
+    const [reference, setReference] = useState(composeReference(DEFAULT_BIBLE));
     const [merge, setMerge] = useState(true);
     const [inlineNumbers, setInlineNumbers] = useState(true);
     const [loading, setLoading] = useState(false);
@@ -1153,16 +1168,49 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
     // Text state
     const [textContent, setTextContent] = useState('');
 
-    const { verseStart, verseEnd, rangeError } = useMemo(
+    const { verseStart, verseEnd, wholeChapter, rangeError } = useMemo(
         () => parseVerseRange(verseRange),
         [verseRange],
     );
     const parsedChapter = Number(chapter);
+    const referenceMismatch = !parseReference(reference);
     const bibleValid =
         book.trim() &&
         Number.isFinite(parsedChapter) &&
         parsedChapter > 0 &&
-        !rangeError;
+        !rangeError &&
+        !referenceMismatch;
+
+    // Updates the reference field to reflect an edit made via the
+    // book/chapter/verses controls, without touching the field while the
+    // user is typing a reference directly.
+    const setBibleControl = (
+        next: Partial<{ book: string; chapter: string; verseRange: string }>,
+    ) => {
+        const merged = { book, chapter, verseRange, ...next };
+        if (next.book !== undefined) setBook(next.book);
+        if (next.chapter !== undefined) setChapter(next.chapter);
+        if (next.verseRange !== undefined) setVerseRange(next.verseRange);
+        setReference(composeReference(merged));
+    };
+
+    const handleReferenceChange = (value: string) => {
+        setReference(value);
+        const parsed = parseReference(value);
+        if (parsed) {
+            setBook(parsed.book);
+            setChapter(parsed.chapter);
+            setVerseRange(parsed.verseRange);
+        }
+    };
+
+    const filterBooks = (options: Book[], inputValue: string): Book[] => {
+        const q = normalize(inputValue);
+        if (!q) return options;
+        return options.filter(
+            b => normalize(b.name).includes(q) || normalize(b.abbr).includes(q),
+        );
+    };
 
     const handleSubmitBible = async () => {
         if (!bibleValid) return;
@@ -1175,6 +1223,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                 chapter: parsedChapter,
                 verseStart,
                 verseEnd,
+                wholeChapter,
                 merge,
                 inlineNumbers,
             }),
@@ -1295,32 +1344,73 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                             </TextField>
 
                             <TextField
-                                select
-                                label={t('presentationEditor.bookLabel')}
-                                value={book}
-                                onChange={e => setBook(e.target.value)}
+                                label={t('presentationEditor.referenceLabel')}
+                                value={reference}
+                                onChange={e =>
+                                    handleReferenceChange(e.target.value)
+                                }
+                                placeholder={t(
+                                    'presentationEditor.referencePlaceholder',
+                                )}
+                                error={referenceMismatch}
+                                helperText={
+                                    referenceMismatch
+                                        ? t(
+                                              'presentationEditor.referenceUnknownBook',
+                                          )
+                                        : undefined
+                                }
                                 fullWidth
-                            >
-                                {BOOKS.map(b => (
-                                    <MenuItem key={b.abbr} value={b.name}>
+                            />
+
+                            <Autocomplete
+                                options={BOOKS}
+                                value={BOOKS.find(b => b.name === book) ?? null}
+                                onChange={(_, b) =>
+                                    b && setBibleControl({ book: b.name })
+                                }
+                                getOptionLabel={b => b.name}
+                                isOptionEqualToValue={(a, b) =>
+                                    a.abbr === b.abbr
+                                }
+                                filterOptions={(options, state) =>
+                                    filterBooks(options, state.inputValue)
+                                }
+                                renderOption={(props, b) => (
+                                    <Box component="li" {...props} key={b.abbr}>
                                         {b.name}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
+                                    </Box>
+                                )}
+                                renderInput={params => (
+                                    <TextField
+                                        {...params}
+                                        label={t(
+                                            'presentationEditor.bookLabel',
+                                        )}
+                                    />
+                                )}
+                                fullWidth
+                            />
 
                             <Stack direction="row" spacing={1}>
                                 <TextField
                                     label={t('presentationEditor.chapterLabel')}
                                     type="number"
                                     value={chapter}
-                                    onChange={e => setChapter(e.target.value)}
+                                    onChange={e =>
+                                        setBibleControl({
+                                            chapter: e.target.value,
+                                        })
+                                    }
                                     sx={{ flex: 1 }}
                                 />
                                 <TextField
                                     label={t('presentationEditor.versesLabel')}
                                     value={verseRange}
                                     onChange={e =>
-                                        setVerseRange(e.target.value)
+                                        setBibleControl({
+                                            verseRange: e.target.value,
+                                        })
                                     }
                                     placeholder={t(
                                         'presentationEditor.versesPlaceholder',
@@ -1329,15 +1419,19 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                                     helperText={
                                         rangeError
                                             ? t(rangeError)
-                                            : t(
-                                                  'presentationEditor.verseCount',
-                                                  {
-                                                      count:
-                                                          verseEnd -
-                                                          verseStart +
-                                                          1,
-                                                  },
-                                              )
+                                            : wholeChapter
+                                              ? t(
+                                                    'presentationEditor.wholeChapter',
+                                                )
+                                              : t(
+                                                    'presentationEditor.verseCount',
+                                                    {
+                                                        count:
+                                                            verseEnd -
+                                                            verseStart +
+                                                            1,
+                                                    },
+                                                )
                                     }
                                     sx={{ flex: 1 }}
                                 />
@@ -1365,7 +1459,9 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                                         variant="body2"
                                         color="text.secondary"
                                     >
-                                        {t('playVideo.additionalOptions')}
+                                        {t(
+                                            'presentationEditor.additionalOptions',
+                                        )}
                                     </Typography>
                                 </AccordionSummary>
                                 <AccordionDetails sx={{ paddingTop: 0 }}>
@@ -1622,6 +1718,7 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
 function parseVerseRange(input: string): {
     verseStart: number;
     verseEnd: number;
+    wholeChapter: boolean;
     rangeError: string | null;
 } {
     const trimmed = input.trim();
@@ -1629,7 +1726,16 @@ function parseVerseRange(input: string): {
         return {
             verseStart: 0,
             verseEnd: 0,
+            wholeChapter: false,
             rangeError: 'presentationEditor.verseRequired',
+        };
+
+    if (trimmed === '*')
+        return {
+            verseStart: 0,
+            verseEnd: 0,
+            wholeChapter: true,
+            rangeError: null,
         };
 
     const match = trimmed.match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);
@@ -1637,6 +1743,7 @@ function parseVerseRange(input: string): {
         return {
             verseStart: 0,
             verseEnd: 0,
+            wholeChapter: false,
             rangeError: 'presentationEditor.verseFormat',
         };
 
@@ -1647,22 +1754,30 @@ function parseVerseRange(input: string): {
         return {
             verseStart: 0,
             verseEnd: 0,
+            wholeChapter: false,
             rangeError: 'presentationEditor.verseInvalidStart',
         };
     if (!Number.isFinite(end) || end < start)
         return {
             verseStart: 0,
             verseEnd: 0,
+            wholeChapter: false,
             rangeError: 'presentationEditor.verseEndGte',
         };
     if (end - start > 50)
         return {
             verseStart: 0,
             verseEnd: 0,
+            wholeChapter: false,
             rangeError: 'presentationEditor.verseRangeLong',
         };
 
-    return { verseStart: start, verseEnd: end, rangeError: null };
+    return {
+        verseStart: start,
+        verseEnd: end,
+        wholeChapter: false,
+        rangeError: null,
+    };
 }
 
 export default PresentationEditor;

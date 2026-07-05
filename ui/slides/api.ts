@@ -264,6 +264,7 @@ export interface BibleLookup {
     chapter: number;
     verseStart: number;
     verseEnd: number;
+    wholeChapter?: boolean;
     merge: boolean;
     inlineNumbers: boolean;
 }

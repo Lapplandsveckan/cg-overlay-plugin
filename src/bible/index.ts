@@ -53,7 +53,7 @@ function loadTranslation(file: string): any {
 
 // ---------- core logic (ported from ../bible/index.js) ----------
 
-function parseNotation(notation: string): [number, number, number[]] {
+function parseNotation(notation: string): [number, number, number[] | 'all'] {
     const range = (start: number, end = start) =>
         Array.from({ length: end - start + 1 }, (_, i) => start + i);
 
@@ -71,6 +71,8 @@ function parseNotation(notation: string): [number, number, number[]] {
     );
     if (bookIndex < 0) throw new Error(`Book not found: "${bookName}"`);
 
+    if (versesRaw.trim() === '*') return [bookIndex + 1, chapter, 'all'];
+
     const verseSections = versesRaw.split(',').map(v => v.trim());
     const verseNumbers = verseSections.flatMap(section => {
         const [start, end] = section.split('-').map(Number);
@@ -84,7 +86,7 @@ function lookupVerses(
     translationFile: string,
     bookNum: number,
     chapterNum: number,
-    verseNums: number[],
+    verseNums: number[] | 'all',
 ): { text: string; verse: number }[] {
     const bible = loadTranslation(translationFile);
     const books = toArray(bible.bible.testament).flatMap((t: any) =>
@@ -104,8 +106,10 @@ function lookupVerses(
     );
     if (!chapter) throw new Error(`Chapter ${chapterNum} not found`);
 
-    const verses = toArray(chapter.verse).filter((v: any) =>
-        verseNums.includes(parseInt(String(v['@_number']))),
+    const verses = toArray(chapter.verse).filter(
+        (v: any) =>
+            verseNums === 'all' ||
+            verseNums.includes(parseInt(String(v['@_number']))),
     );
 
     return verses.map((v: any) => ({
@@ -193,6 +197,7 @@ export interface VerseLookup {
     chapter: number;
     verseStart: number;
     verseEnd: number;
+    wholeChapter?: boolean;
     merge: boolean;
     inlineNumbers: boolean;
 }
@@ -202,10 +207,11 @@ export function getVerseSlides(lookup: VerseLookup): VerseSlide[] {
     if (!translationFile)
         throw new Error(`Unknown translation: "${lookup.translation}"`);
 
-    const rangeStr =
-        lookup.verseStart === lookup.verseEnd
-            ? String(lookup.verseStart)
-            : `${lookup.verseStart}-${lookup.verseEnd}`;
+    const rangeStr = lookup.wholeChapter
+        ? '*'
+        : lookup.verseStart === lookup.verseEnd
+          ? String(lookup.verseStart)
+          : `${lookup.verseStart}-${lookup.verseEnd}`;
     const notation = `${lookup.book} ${lookup.chapter}:${rangeStr}`;
 
     const [bookNum, chapterNum, verseNumbers] = parseNotation(notation);
@@ -221,7 +227,11 @@ export function getVerseSlides(lookup: VerseLookup): VerseSlide[] {
         const mergedText = verses
             .map(v => (lookup.inlineNumbers ? `⟨${v.verse}⟩${v.text}` : v.text))
             .join(' ');
-        const ref = normalizeNotation(bookNum, chapterNum, verseNumbers);
+        const ref = normalizeNotation(
+            bookNum,
+            chapterNum,
+            verses.map(v => v.verse),
+        );
         return smartSplitText(mergedText, 100).map(chunk => ({
             text: chunk,
             reference: ref,
