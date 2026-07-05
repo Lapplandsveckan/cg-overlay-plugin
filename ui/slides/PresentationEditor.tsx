@@ -1,5 +1,5 @@
 /* eslint-disable max-lines */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Accordion,
     AccordionDetails,
@@ -31,11 +31,13 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import EditIcon from '@mui/icons-material/Edit';
 import {
     DndContext,
+    DragOverlay,
     PointerSensor,
     closestCenter,
     useSensor,
     useSensors,
     type DragEndEvent,
+    type DragStartEvent,
 } from '@dnd-kit/core';
 import {
     SortableContext,
@@ -283,10 +285,28 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
     const [addOpen, setAddOpen] = useState(false);
     const [editing, setEditing] = useState<Slide | null>(null);
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [orderedSlides, setOrderedSlides] = useState<Slide[]>(
         remote?.slides ?? [],
     );
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [anchorId, setAnchorId] = useState<string | null>(null);
+    const isPainting = useRef(false);
+    const paintedAny = useRef(false);
+    const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const dialogOpen =
+        renameOpen ||
+        addOpen ||
+        !!editing ||
+        confirmDelete ||
+        confirmBulkDelete;
+
+    const clearSelection = () => {
+        setSelectedIds(new Set());
+        setAnchorId(null);
+    };
+
     useEffect(() => {
         if (!remote) return;
         setOrderedSlides(prev =>
@@ -294,7 +314,56 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                 ? prev
                 : remote.slides,
         );
+        const validIds = new Set(remote.slides.map(s => s.id));
+        setSelectedIds(prev => {
+            const next = new Set([...prev].filter(id => validIds.has(id)));
+            return next.size === prev.size ? prev : next;
+        });
+        setAnchorId(prev => (prev && validIds.has(prev) ? prev : null));
     }, [remote?.slides]);
+
+    useEffect(() => {
+        if (selectedIds.size === 0) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setSelectedIds(new Set());
+                setAnchorId(null);
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [selectedIds.size]);
+
+    useEffect(() => {
+        if (dialogOpen) return;
+
+        const onDocMouseDown = (e: MouseEvent) => {
+            if (e.button !== 0) return;
+            const target = e.target as HTMLElement;
+            if (
+                target.closest?.(
+                    'button, a, input, textarea, select, [role="button"], [role="menu"], [role="menuitem"], [role="dialog"], [contenteditable], [data-slide-card]',
+                )
+            ) {
+                return;
+            }
+            e.preventDefault();
+            isPainting.current = true;
+            paintedAny.current = false;
+            setAnchorId(null);
+            const prevUserSelect = document.body.style.userSelect;
+            document.body.style.userSelect = 'none';
+            const onMouseUp = () => {
+                isPainting.current = false;
+                document.body.style.userSelect = prevUserSelect;
+                window.removeEventListener('mouseup', onMouseUp);
+                if (!paintedAny.current) clearSelection();
+            };
+            window.addEventListener('mouseup', onMouseUp);
+        };
+        document.addEventListener('mousedown', onDocMouseDown);
+        return () => document.removeEventListener('mousedown', onDocMouseDown);
+    }, [dialogOpen]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -366,12 +435,99 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
         persistSlides(remote.slides.filter(s => s.id !== slideId));
     };
 
+    const addToSelection = (slideId: string) => {
+        paintedAny.current = true;
+        setSelectedIds(prev =>
+            prev.has(slideId) ? prev : new Set(prev).add(slideId),
+        );
+    };
+
+    const handleSelectSlide = (slideId: string, e: React.MouseEvent) => {
+        if (e.shiftKey && anchorId) {
+            const anchorIdx = orderedSlides.findIndex(s => s.id === anchorId);
+            const targetIdx = orderedSlides.findIndex(s => s.id === slideId);
+            if (anchorIdx !== -1 && targetIdx !== -1) {
+                const [from, to] =
+                    anchorIdx < targetIdx
+                        ? [anchorIdx, targetIdx]
+                        : [targetIdx, anchorIdx];
+                setSelectedIds(
+                    new Set(orderedSlides.slice(from, to + 1).map(s => s.id)),
+                );
+                return;
+            }
+        }
+        if (e.metaKey || e.ctrlKey) {
+            setSelectedIds(prev => {
+                const next = new Set(prev);
+                if (next.has(slideId)) next.delete(slideId);
+                else next.add(slideId);
+                return next;
+            });
+            setAnchorId(slideId);
+            return;
+        }
+        setSelectedIds(new Set([slideId]));
+        setAnchorId(slideId);
+    };
+
+    const deleteSelected = () => {
+        if (selectedIds.size >= 2) {
+            setConfirmBulkDelete(true);
+            return;
+        }
+        persistSlides(remote.slides.filter(s => !selectedIds.has(s.id)));
+        clearSelection();
+    };
+
+    const confirmDeleteSelected = () => {
+        setConfirmBulkDelete(false);
+        persistSlides(remote.slides.filter(s => !selectedIds.has(s.id)));
+        clearSelection();
+    };
+
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveDragId(String(event.active.id));
+    };
+
+    const handleDragCancel = () => {
+        setActiveDragId(null);
+    };
+
     const handleDragEnd = (event: DragEndEvent) => {
+        setActiveDragId(null);
         const { active, over } = event;
         if (!over || active.id === over.id) return;
 
-        const oldIndex = orderedSlides.findIndex(s => s.id === active.id);
-        const newIndex = orderedSlides.findIndex(s => s.id === over.id);
+        const activeId = String(active.id);
+        const overId = String(over.id);
+
+        if (selectedIds.has(activeId) && selectedIds.size > 1) {
+            const activeIndex = orderedSlides.findIndex(s => s.id === activeId);
+            const overIndex = orderedSlides.findIndex(s => s.id === overId);
+            if (activeIndex === -1 || overIndex === -1) return;
+            const draggingUp = activeIndex > overIndex;
+            const moving = orderedSlides.filter(s => selectedIds.has(s.id));
+            const remaining = orderedSlides.filter(s => !selectedIds.has(s.id));
+            const insertBefore = remaining.findIndex(s => {
+                const idx = orderedSlides.indexOf(s);
+                return draggingUp ? idx >= overIndex : idx > overIndex;
+            });
+            const next =
+                insertBefore === -1
+                    ? [...remaining, ...moving]
+                    : [
+                          ...remaining.slice(0, insertBefore),
+                          ...moving,
+                          ...remaining.slice(insertBefore),
+                      ];
+            setOrderedSlides(next);
+            persistSlides(next);
+            return;
+        }
+
+        const oldIndex = orderedSlides.findIndex(s => s.id === activeId);
+        const newIndex = orderedSlides.findIndex(s => s.id === overId);
         if (oldIndex === -1 || newIndex === -1) return;
 
         const next = arrayMove(orderedSlides, oldIndex, newIndex);
@@ -389,6 +545,14 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
         }
         window.location.assign(backFrom ?? slidesHomeUrl());
     };
+
+    const isGroupDrag =
+        activeDragId !== null &&
+        selectedIds.has(activeDragId) &&
+        selectedIds.size > 1;
+    const activeSlide = activeDragId
+        ? orderedSlides.find(s => s.id === activeDragId)
+        : null;
 
     return (
         <Box
@@ -480,13 +644,54 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                     </Alert>
                 )}
 
+                <Stack
+                    direction="row"
+                    spacing={1.5}
+                    alignItems="center"
+                    sx={{
+                        padding: '6px 12px',
+                        borderRadius: 1,
+                        backgroundColor: 'rgba(255,255,255,0.06)',
+                    }}
+                >
+                    <Typography variant="body2">
+                        {t('presentationEditor.slidesSelected', {
+                            count: selectedIds.size,
+                        })}
+                    </Typography>
+                    <Box sx={{ flexGrow: 1 }} />
+                    <Button
+                        size="small"
+                        color="error"
+                        disabled={selectedIds.size === 0}
+                        startIcon={<DeleteIcon sx={{ fontSize: 16 }} />}
+                        onClick={deleteSelected}
+                    >
+                        {selectedIds.size === 1
+                            ? t('presentationEditor.deleteSlide')
+                            : t('presentationEditor.deleteNSlides', {
+                                  count: selectedIds.size,
+                              })}
+                    </Button>
+                    <Button
+                        size="small"
+                        disabled={selectedIds.size === 0}
+                        startIcon={<CloseIcon sx={{ fontSize: 16 }} />}
+                        onClick={clearSelection}
+                    >
+                        {t('presentationEditor.clearSelection')}
+                    </Button>
+                </Stack>
+
                 {orderedSlides.length === 0 ? (
                     <EmptyState onAdd={() => setAddOpen(true)} />
                 ) : (
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
+                        onDragStart={handleDragStart}
                         onDragEnd={handleDragEnd}
+                        onDragCancel={handleDragCancel}
                     >
                         <SortableContext
                             items={orderedSlides.map(s => s.id)}
@@ -510,14 +715,43 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                                         index={idx + 1}
                                         backgroundUrl={backgroundUrl}
                                         imageThumbnails={imageThumbnails}
+                                        selected={selectedIds.has(slide.id)}
+                                        selectionCount={selectedIds.size}
+                                        dimmed={
+                                            isGroupDrag &&
+                                            selectedIds.has(slide.id) &&
+                                            slide.id !== activeDragId
+                                        }
+                                        suppressTransform={
+                                            isGroupDrag &&
+                                            slide.id === activeDragId
+                                        }
+                                        onSelect={e =>
+                                            handleSelectSlide(slide.id, e)
+                                        }
+                                        onPaintEnter={() => {
+                                            if (isPainting.current)
+                                                addToSelection(slide.id);
+                                        }}
                                         onEdit={() => setEditing(slide)}
                                         onDelete={() =>
                                             handleDeleteSlide(slide.id)
                                         }
+                                        onDeleteSelected={deleteSelected}
                                     />
                                 ))}
                             </Box>
                         </SortableContext>
+                        <DragOverlay>
+                            {isGroupDrag && activeSlide ? (
+                                <GroupDragPreview
+                                    slide={activeSlide}
+                                    count={selectedIds.size}
+                                    backgroundUrl={backgroundUrl}
+                                    imageThumbnails={imageThumbnails}
+                                />
+                            ) : null}
+                        </DragOverlay>
                     </DndContext>
                 )}
             </Stack>
@@ -561,6 +795,34 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <Dialog
+                open={confirmBulkDelete}
+                onClose={() => setConfirmBulkDelete(false)}
+            >
+                <DialogTitle>
+                    {t('presentationEditor.deleteSlidesConfirmTitle')}
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2">
+                        {t('presentationEditor.deleteSlidesConfirmBody', {
+                            count: selectedIds.size,
+                        })}
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmBulkDelete(false)}>
+                        {t('panel.cancel')}
+                    </Button>
+                    <Button
+                        color="error"
+                        variant="contained"
+                        onClick={confirmDeleteSelected}
+                    >
+                        {t('presentationEditor.delete')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };
@@ -598,13 +860,95 @@ const EmptyState: React.FC<{ onAdd: () => void }> = ({ onAdd }) => {
     );
 };
 
+interface SlideContentProps {
+    slide: Slide;
+    backgroundUrl?: string | null;
+    imageThumbnails?: Record<string, string>;
+    selected?: boolean;
+    dimmed?: boolean;
+}
+
+const SlideContent: React.FC<SlideContentProps> = ({
+    slide,
+    backgroundUrl,
+    imageThumbnails,
+    selected,
+    dimmed,
+}) =>
+    slide.type === 'image' ? (
+        <SlidePreview
+            imageUrl={imageThumbnails?.[slide.mediaId] ?? null}
+            selected={selected}
+            dimmed={dimmed}
+        />
+    ) : (
+        <SlidePreview
+            text={slide.text}
+            reference={slide.type === 'bible' ? slide.reference : ''}
+            heading={slide.type === 'heading'}
+            backgroundUrl={backgroundUrl}
+            selected={selected}
+            dimmed={dimmed}
+        />
+    );
+
+interface GroupDragPreviewProps {
+    slide: Slide;
+    count: number;
+    backgroundUrl?: string | null;
+    imageThumbnails?: Record<string, string>;
+}
+
+const GroupDragPreview: React.FC<GroupDragPreviewProps> = ({
+    slide,
+    count,
+    backgroundUrl,
+    imageThumbnails,
+}) => (
+    <Box sx={{ position: 'relative' }}>
+        <SlideContent
+            slide={slide}
+            backgroundUrl={backgroundUrl}
+            imageThumbnails={imageThumbnails}
+            selected
+        />
+        <Box
+            sx={{
+                position: 'absolute',
+                top: -8,
+                right: -8,
+                minWidth: 22,
+                height: 22,
+                padding: '0 6px',
+                borderRadius: 11,
+                backgroundColor: '#4a90e2',
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+            }}
+        >
+            {count}
+        </Box>
+    </Box>
+);
+
 interface SlideCardProps {
     slide: Slide;
     index: number;
     backgroundUrl?: string | null;
     imageThumbnails?: Record<string, string>;
+    selected: boolean;
+    selectionCount: number;
+    dimmed?: boolean;
+    suppressTransform?: boolean;
+    onSelect: (e: React.MouseEvent) => void;
+    onPaintEnter: () => void;
     onEdit: () => void;
     onDelete: () => void;
+    onDeleteSelected: () => void;
 }
 
 const SlideCard: React.FC<SlideCardProps> = ({
@@ -612,8 +956,15 @@ const SlideCard: React.FC<SlideCardProps> = ({
     index,
     backgroundUrl,
     imageThumbnails,
+    selected,
+    selectionCount,
+    dimmed,
+    suppressTransform,
+    onSelect,
+    onPaintEnter,
     onEdit,
     onDelete,
+    onDeleteSelected,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const menu = useContextMenu();
@@ -626,57 +977,77 @@ const SlideCard: React.FC<SlideCardProps> = ({
         isDragging,
     } = useSortable({ id: slide.id });
 
-    const menuItems = [
-        {
-            label: t('presentationEditor.editSlide'),
-            icon: <EditIcon sx={{ fontSize: 16 }} />,
-            onClick: onEdit,
-        },
-        {
-            label: t('presentationEditor.deleteSlide'),
-            icon: <DeleteIcon sx={{ fontSize: 16 }} />,
-            danger: true,
-            divider: true,
-            onClick: onDelete,
-        },
-    ];
+    const menuItems =
+        selected && selectionCount > 1
+            ? [
+                  {
+                      label: t('presentationEditor.deleteNSlides', {
+                          count: selectionCount,
+                      }),
+                      icon: <DeleteIcon sx={{ fontSize: 16 }} />,
+                      danger: true,
+                      onClick: onDeleteSelected,
+                  },
+              ]
+            : [
+                  {
+                      label: t('presentationEditor.editSlide'),
+                      icon: <EditIcon sx={{ fontSize: 16 }} />,
+                      onClick: onEdit,
+                  },
+                  {
+                      label: t('presentationEditor.deleteSlide'),
+                      icon: <DeleteIcon sx={{ fontSize: 16 }} />,
+                      danger: true,
+                      divider: true,
+                      onClick: onDelete,
+                  },
+              ];
+
+    const handleContextMenu = (e: React.MouseEvent) => {
+        menu.bind(menuItems)(e);
+    };
 
     return (
         <Stack
             spacing={1}
             ref={setNodeRef}
-            onContextMenu={menu.bind(menuItems)}
+            data-slide-card=""
+            onMouseEnter={onPaintEnter}
+            onContextMenu={handleContextMenu}
             style={{
-                transform: CSS.Transform.toString(transform),
+                transform: suppressTransform
+                    ? undefined
+                    : CSS.Transform.toString(transform),
                 transition,
                 opacity: isDragging ? 0.4 : 1,
                 zIndex: isDragging ? 1 : 'auto',
             }}
         >
             <Box
+                onClick={onSelect}
+                onMouseDown={e => {
+                    if (e.shiftKey) e.preventDefault();
+                }}
                 sx={{
                     position: 'relative',
+                    cursor: 'pointer',
+                    userSelect: 'none',
                     '&:hover .slide-overlay': { opacity: 1 },
                 }}
             >
-                {slide.type === 'image' ? (
-                    <SlidePreview
-                        imageUrl={imageThumbnails?.[slide.mediaId] ?? null}
-                    />
-                ) : (
-                    <SlidePreview
-                        text={slide.text}
-                        reference={
-                            slide.type === 'bible' ? slide.reference : ''
-                        }
-                        heading={slide.type === 'heading'}
-                        backgroundUrl={backgroundUrl}
-                    />
-                )}
+                <SlideContent
+                    slide={slide}
+                    backgroundUrl={backgroundUrl}
+                    imageThumbnails={imageThumbnails}
+                    selected={selected}
+                    dimmed={dimmed}
+                />
                 <Stack
                     className="slide-overlay"
                     direction="row"
                     spacing={0.5}
+                    onClick={e => e.stopPropagation()}
                     sx={{
                         position: 'absolute',
                         top: 6,
