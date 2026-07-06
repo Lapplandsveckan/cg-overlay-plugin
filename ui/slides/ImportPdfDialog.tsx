@@ -16,21 +16,14 @@ import { noTryAsync } from 'no-try';
 import { useFileUpload } from '@web-lib';
 import { useTranslation } from '../i18n';
 
-import { type Presentation, createPresentation } from './api';
 import {
-    slugify,
-    makeSlideId,
-    mediaIdFromPath,
-    renderPdfToImages,
-    type RenderProgress,
-} from './import';
+    type Presentation,
+    getPresentation,
+    startImport,
+    useImportStatus,
+} from './api';
 
-type DialogPhase =
-    | 'idle'
-    | 'converting'
-    | 'rendering'
-    | 'uploading'
-    | 'creating';
+type DialogPhase = 'idle' | 'uploading' | 'processing';
 
 interface ImportPdfDialogProps {
     open: boolean;
@@ -44,104 +37,10 @@ interface ImportPdfDialogProps {
 const PPTX_MIME =
     'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 
+const IMPORTS_FOLDER = 'presentations/_imports';
+
 function isPptx(file: File): boolean {
     return file.name.toLowerCase().endsWith('.pptx') || file.type === PPTX_MIME;
-}
-
-interface ConvertProgress {
-    step?: 'upload' | 'convert' | 'export';
-    percent?: number;
-}
-
-/** Convert PPTX → PDF via CloudConvert (backend creates the job; browser uploads/downloads directly). */
-async function convertPptxToPdf(
-    file: File,
-    conn: any,
-    onProgress?: (p: ConvertProgress) => void,
-): Promise<File> {
-    // 1. Backend creates the CloudConvert job and returns a pre-signed upload form.
-    const [createErr, job] = await noTryAsync(() =>
-        conn.rawRequest(
-            '/api/plugin/lappis/presentations/convert/create',
-            'ACTION',
-            {
-                filename: file.name,
-            },
-        ),
-    );
-    if (createErr)
-        throw new Error(
-            `Failed to create conversion job: ${(createErr as Error).message}`,
-        );
-
-    const { jobId, upload } = (job as any)?.data as {
-        jobId: string;
-        upload: { url: string; parameters: Record<string, string> };
-    };
-
-    // 2. Browser uploads PPTX directly to CloudConvert via the pre-signed form.
-    onProgress?.({ step: 'upload' });
-    const form = new FormData();
-    for (const [k, v] of Object.entries(upload.parameters)) form.append(k, v);
-    form.append('file', file); // file field must be last
-
-    const [uploadErr, uploadRes] = await noTryAsync(() =>
-        fetch(upload.url, { method: 'POST', body: form }),
-    );
-    if (uploadErr || !uploadRes!.ok) {
-        throw new Error(
-            `PPTX upload to CloudConvert failed: ${uploadRes?.statusText ?? (uploadErr as Error).message}`,
-        );
-    }
-
-    // 3. Poll job status until finished or error.
-    let downloadUrl: string | undefined;
-    for (let attempts = 0; attempts < 120; attempts++) {
-        await new Promise(r => setTimeout(r, 1500));
-        const [pollErr, result] = await noTryAsync(() =>
-            conn.rawRequest(
-                '/api/plugin/lappis/presentations/convert/status',
-                'ACTION',
-                {
-                    jobId,
-                },
-            ),
-        );
-        if (pollErr)
-            throw new Error(`Polling failed: ${(pollErr as Error).message}`);
-        const {
-            status,
-            downloadUrl: url,
-            message,
-            step,
-            percent,
-        } = (result as any)?.data as {
-            status: string;
-            downloadUrl?: string;
-            message?: string;
-            step?: ConvertProgress['step'];
-            percent?: number;
-        };
-        if (status === 'error') throw new Error(message ?? 'Conversion failed');
-        onProgress?.({ step, percent });
-        if (status === 'finished') {
-            downloadUrl = url;
-            break;
-        }
-    }
-    if (!downloadUrl) throw new Error('Conversion timed out');
-
-    // 4. Browser fetches the resulting PDF directly from CloudConvert.
-    const [fetchErr, res] = await noTryAsync(() => fetch(downloadUrl!));
-    if (fetchErr || !res!.ok) {
-        throw new Error(
-            `PDF download failed: ${res?.statusText ?? (fetchErr as Error).message}`,
-        );
-    }
-    const blob = await res!.blob();
-    return new File([blob], file.name.replace(/\.pptx$/i, '.pdf'), {
-        type: 'application/pdf',
-    });
 }
 
 const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
@@ -154,26 +53,18 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const folderRef = useRef('');
-    const pendingRef = useRef<{ title: string; mediaIds: string[] } | null>(
-        null,
-    );
+    const pendingRef = useRef<{ filename: string; title: string } | null>(null);
 
     const [title, setTitle] = useState('');
     const [file, setFile] = useState<File | null>(null);
     const [phase, setPhase] = useState<DialogPhase>('idle');
-    const [convertProgress, setConvertProgress] = useState<ConvertProgress>({});
-    const [renderProgress, setRenderProgress] = useState<RenderProgress>({
-        done: 0,
-        total: 0,
-    });
+    const [jobId, setJobId] = useState<string | null>(null);
+
+    const job = useImportStatus(jobId);
 
     const fileUpload = useFileUpload({
         createUpload: (f: File) =>
-            (conn as any).caspar.uploadMedia(
-                `${folderRef.current}${f.name}`,
-                f,
-            ),
+            (conn as any).caspar.uploadMedia(`${IMPORTS_FOLDER}/${f.name}`, f),
     });
 
     const busy = phase !== 'idle';
@@ -182,30 +73,20 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
         setTitle('');
         setFile(null);
         setPhase('idle');
-        setConvertProgress({});
-        setRenderProgress({ done: 0, total: 0 });
+        setJobId(null);
         pendingRef.current = null;
-        folderRef.current = '';
         fileUpload.reset();
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    // Once uploads finish, create the presentation.
+    // Once the upload finishes, hand off to the server-side import job.
     useEffect(() => {
         if (phase !== 'uploading' || !pendingRef.current) return;
         if (fileUpload.state.phase === 'done') {
-            const { title: pTitle, mediaIds } = pendingRef.current;
-            setPhase('creating');
-            const slides = mediaIds.map(mediaId => ({
-                type: 'image' as const,
-                id: makeSlideId(),
-                mediaId,
-            }));
-            createPresentation(conn, { title: pTitle, slides })
-                .then(p => {
-                    reset();
-                    onDone(p);
-                })
+            const { filename, title: pTitle } = pendingRef.current;
+            setPhase('processing');
+            startImport(conn, { filename, title: pTitle })
+                .then(j => setJobId(j.id))
                 .catch((err: any) => {
                     reset();
                     onError(err?.message ?? t('presentationIndex.importError'));
@@ -216,7 +97,31 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
             reset();
             onError(msg);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fileUpload.state.phase]);
+
+    // Watch the import job through to completion.
+    useEffect(() => {
+        if (!job) return;
+        if (job.status === 'done' && job.presentationId) {
+            const id = job.presentationId;
+            getPresentation(conn, id)
+                .then(p => {
+                    reset();
+                    if (p) onDone(p);
+                    else onError(t('presentationIndex.importError'));
+                })
+                .catch((err: any) => {
+                    reset();
+                    onError(err?.message ?? t('presentationIndex.importError'));
+                });
+        } else if (job.status === 'error') {
+            const msg = job.error ?? t('presentationIndex.importError');
+            reset();
+            onError(msg);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [job?.status]);
 
     const handleClose = () => {
         if (busy) return;
@@ -233,33 +138,16 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
     const handleImport = async () => {
         if (!file || !title.trim()) return;
 
-        let pdfFile = file;
-
-        if (isPptx(file)) {
-            if (!pptxEnabled) {
-                onError(t('presentationIndex.importPptxDisabled'));
-                return;
-            }
-            setPhase('converting');
-            setConvertProgress({});
-            const [err, converted] = await noTryAsync(() =>
-                convertPptxToPdf(file, conn, p => setConvertProgress(p)),
-            );
-            if (err) {
-                reset();
-                onError(
-                    (err as any)?.message ?? t('presentationIndex.importError'),
-                );
-                return;
-            }
-            pdfFile = converted!;
+        if (isPptx(file) && !pptxEnabled) {
+            onError(t('presentationIndex.importPptxDisabled'));
+            return;
         }
 
-        setPhase('rendering');
-        setRenderProgress({ done: 0, total: 0 });
+        setPhase('uploading');
+        pendingRef.current = { filename: file.name, title: title.trim() };
 
-        const [err, blobs] = await noTryAsync(() =>
-            renderPdfToImages(pdfFile, p => setRenderProgress(p)),
+        const [err] = await noTryAsync(() =>
+            (conn as any).caspar.createFolder(IMPORTS_FOLDER),
         );
         if (err) {
             reset();
@@ -269,67 +157,41 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
             return;
         }
 
-        const folder = `presentations/${slugify(title.trim())}/`;
-        folderRef.current = folder;
-
-        const uploadFiles = blobs!.map((blob, i) => {
-            const pad = String(i + 1).padStart(2, '0');
-            return new File([blob], `page-${pad}.png`, { type: 'image/png' });
-        });
-
-        pendingRef.current = {
-            title: title.trim(),
-            mediaIds: uploadFiles.map(f =>
-                mediaIdFromPath(`${folder}${f.name}`),
-            ),
-        };
-
-        // Ensure the destination folder exists before uploading.
-        await (conn as any).caspar.createFolder(folder.replace(/\/$/, ''));
-
-        setPhase('uploading');
-        fileUpload.start(uploadFiles);
+        fileUpload.start([file]);
         fileUpload.confirm(); // skip review phase — start immediately
     };
 
     const progressLabel = (() => {
-        if (phase === 'converting') {
-            const pct =
-                convertProgress.percent !== undefined
-                    ? ` ${Math.round(convertProgress.percent)}%`
-                    : '';
-            return `${t('presentationIndex.importConverting')}${pct}`;
+        if (phase === 'uploading')
+            return t('presentationIndex.importUploading');
+        if (phase === 'processing' && job) {
+            if (job.status === 'converting') {
+                const pct =
+                    job.percent !== undefined
+                        ? ` ${Math.round(job.percent)}%`
+                        : '';
+                return `${t('presentationIndex.importConverting')}${pct}`;
+            }
+            if (job.status === 'rendering') {
+                return job.pageTotal
+                    ? t('presentationIndex.importRendering', {
+                          done: job.pageDone ?? 0,
+                          total: job.pageTotal,
+                      })
+                    : t('presentationIndex.importRenderingStart');
+            }
+            if (job.status === 'creating')
+                return t('presentationIndex.importCreating');
         }
-        if (phase === 'rendering') {
-            return renderProgress.total > 0
-                ? t('presentationIndex.importRendering', {
-                      done: renderProgress.done,
-                      total: renderProgress.total,
-                  })
-                : t('presentationIndex.importRenderingStart');
-        }
-        if (phase === 'uploading') {
-            const { currentIndex, queue } = fileUpload.state;
-            return t('presentationIndex.importUploading', {
-                done: currentIndex + 1,
-                total: queue.length,
-            });
-        }
-        if (phase === 'creating') return t('presentationIndex.importCreating');
         return '';
     })();
 
     const progressValue = (() => {
-        if (phase === 'converting' && convertProgress.percent !== undefined)
-            return convertProgress.percent;
-        if (phase === 'rendering' && renderProgress.total > 0)
-            return (renderProgress.done / renderProgress.total) * 100;
-        if (phase === 'uploading') {
-            const { currentIndex, queue, currentProgress } = fileUpload.state;
-            if (!queue.length) return undefined;
-            return (
-                ((currentIndex + currentProgress / 100) / queue.length) * 100
-            );
+        if (phase === 'processing' && job) {
+            if (job.status === 'converting' && job.percent !== undefined)
+                return job.percent;
+            if (job.status === 'rendering' && job.pageTotal)
+                return ((job.pageDone ?? 0) / job.pageTotal) * 100;
         }
         return undefined;
     })();
@@ -405,16 +267,6 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
                             >
                                 {progressLabel}
                             </Typography>
-                            {phase === 'converting' && (
-                                <Typography
-                                    variant="caption"
-                                    color="text.disabled"
-                                >
-                                    {t(
-                                        'presentationIndex.importConvertingHint',
-                                    )}
-                                </Typography>
-                            )}
                         </Stack>
                     )}
                 </Stack>

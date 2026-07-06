@@ -15,8 +15,8 @@ module.exports = {
                         '@babel/preset-typescript',
                         '@babel/preset-react',
                         '@babel/preset-env',
-                    ]
-                }
+                    ],
+                },
             },
         ],
     },
@@ -26,13 +26,15 @@ module.exports = {
     output: {
         filename: 'index.js',
         path: path.resolve(__dirname, 'dist'),
-        libraryTarget: 'commonjs2'
+        libraryTarget: 'commonjs2',
+        environment: { dynamicImport: true },
     },
     externals: {
-        'dmxnet': 'commonjs dmxnet',
+        dmxnet: 'commonjs dmxnet',
         'atem-connection': 'commonjs atem-connection',
-        'i18next': 'i18n',
+        i18next: 'i18n',
         'react-i18next': 'ReactI18next',
+        'pdfjs-dist/legacy/build/pdf.mjs': 'import pdfjs-dist/legacy/build/pdf.mjs',
     },
     plugins: [
         new CopyPlugin({
@@ -40,6 +42,26 @@ module.exports = {
                 {
                     from: path.resolve(__dirname, 'src', 'bible', 'data'),
                     to: path.resolve(__dirname, 'dist', 'bible', 'data'),
+                },
+                {
+                    from: path.resolve(
+                        __dirname,
+                        'node_modules',
+                        'pdfjs-dist',
+                        'legacy',
+                        'build',
+                        'pdf.worker.mjs',
+                    ),
+                    to: path.resolve(__dirname, 'dist', 'pdf.worker.mjs'),
+                },
+                {
+                    from: path.resolve(
+                        __dirname,
+                        'node_modules',
+                        'pdfjs-dist',
+                        'standard_fonts',
+                    ),
+                    to: path.resolve(__dirname, 'dist', 'standard_fonts'),
                 },
             ],
         }),

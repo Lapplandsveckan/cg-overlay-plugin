@@ -239,7 +239,6 @@
         "importPickFile": "Välj PDF- eller PPTX-fil…",
         "importPickFilePdf": "Välj PDF-fil…",
         "importConverting": "Konverterar till PDF…",
-        "importConvertingHint": "Det kan ta en minut för stora filer.",
         "importPptxDisabled": "PowerPoint-import är inte tillgänglig (ingen CloudConvert-API-nyckel konfigurerad)",
         "importTitleLabel": "Presentationstitel",
         "importConfirm": "Importera",
@@ -247,7 +246,7 @@
         "importImporting": "Importerar…",
         "importRenderingStart": "Renderar sidor…",
         "importRendering": "Renderar sida {{done}} / {{total}}…",
-        "importUploading": "Laddar upp {{done}} / {{total}}…",
+        "importUploading": "Laddar upp fil…",
         "importCreating": "Skapar presentation…",
         "importError": "Det gick inte att importera PDF:en"
     },

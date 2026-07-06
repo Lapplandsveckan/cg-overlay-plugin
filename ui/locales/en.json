@@ -239,7 +239,6 @@
         "importPickFile": "Choose PDF or PPTX file…",
         "importPickFilePdf": "Choose PDF file…",
         "importConverting": "Converting to PDF…",
-        "importConvertingHint": "This can take a minute for large files.",
         "importPptxDisabled": "PowerPoint import is not available (no CloudConvert API key configured)",
         "importTitleLabel": "Presentation title",
         "importConfirm": "Import",
@@ -247,7 +246,7 @@
         "importImporting": "Importing…",
         "importRenderingStart": "Rendering pages…",
         "importRendering": "Rendering page {{done}} / {{total}}…",
-        "importUploading": "Uploading {{done}} / {{total}}…",
+        "importUploading": "Uploading file…",
         "importCreating": "Creating presentation…",
         "importError": "Failed to import PDF"
     },

@@ -46,12 +46,9 @@ import { AtemManager } from './atem';
 import { config } from './config';
 import { NamnskyltPresetStore } from './namnskylt-presets';
 import { PresentationStore } from './presentations';
+import { PresentationImportManager } from './presentation-import';
 import { buildBackgroundData, readImageData } from './assets';
-import {
-    createConversionJob,
-    getConversionResult,
-    isConversionEnabled,
-} from './cloudconvert';
+import { isConversionEnabled } from './cloudconvert';
 import { getEvents, reportWarn } from './diagnostics';
 import { HealthMonitor } from './healthcheck';
 import { ActiveRundownStore } from './active-rundown';
@@ -66,6 +63,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public atem: AtemManager;
     public namnskyltPresets: NamnskyltPresetStore;
     public presentations: PresentationStore;
+    public presentationImports: PresentationImportManager;
     public activeRundown: ActiveRundownStore;
     public captionkit: CaptionKitStore;
     public settings: SettingsStore;
@@ -127,6 +125,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
         this.atem = new AtemManager(this);
         this.namnskyltPresets = new NamnskyltPresetStore(this);
         this.presentations = new PresentationStore(this);
+        this.presentationImports = new PresentationImportManager(this);
         this.activeRundown = new ActiveRundownStore(this);
         this.captionkit = new CaptionKitStore(this);
         this.settings = new SettingsStore(this);
@@ -1109,27 +1108,36 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             'DELETE',
         );
 
-        // PPTX conversion via CloudConvert — browser uploads/downloads directly;
-        // backend only performs the key-protected job-create and status steps.
+        // Server-side PDF/PPTX import: the browser uploads the raw file to
+        // presentations/_imports/ and hands off the filename here; conversion,
+        // rendering, and presentation creation all happen on the backend.
         this.api.registerRoute(
-            'presentations/convert/create',
+            'presentations/import',
             async req => {
-                const filename =
-                    (req.data as any)?.filename ?? 'presentation.pptx';
-                return createConversionJob(filename);
+                const { filename, title } = (req.data as any) ?? {};
+                if (!filename || !title) {
+                    reportWarn(
+                        this,
+                        'route',
+                        'presentations/import: missing filename/title',
+                    );
+                    return { status: 'error', error: 'Missing parameters' };
+                }
+                return this.presentationImports.start({ filename, title });
             },
             'ACTION',
         );
 
         this.api.registerRoute(
-            'presentations/convert/status',
-            async req => {
-                const jobId = (req.data as any)?.jobId;
-                if (!jobId)
-                    return { status: 'error', message: 'Missing jobId' };
-                return getConversionResult(jobId);
-            },
-            'ACTION',
+            'presentation-imports',
+            async () => this.presentationImports.list(),
+            'GET',
+        );
+
+        this.api.registerRoute(
+            'presentation-imports/:id',
+            async req => this.presentationImports.get(req.params.id),
+            'GET',
         );
     }
 }
