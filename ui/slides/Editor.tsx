@@ -52,6 +52,9 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
         () => presentations?.find(p => p.id === presentationId) ?? null,
         [presentations, presentationId],
     );
+    // Set by a rundown drag-and-drop drop, before the import job has finished
+    // creating the presentation — the id exists but isn't in the list yet.
+    const importPending = !!presentationId && !selected;
 
     const handleSelect = (id: string) => {
         setPresentationId(id);
@@ -109,16 +112,23 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
                     value={presentationId}
                     onChange={e => handleSelect(e.target.value)}
                     helperText={
-                        empty
-                            ? t('slides.noPresentationsCreate')
-                            : selected
-                              ? t('slides.slideCount', {
-                                    count: selected.slides.length,
-                                })
-                              : t('slides.selectHelper')
+                        importPending
+                            ? t('slides.importPreparing')
+                            : empty
+                              ? t('slides.noPresentationsCreate')
+                              : selected
+                                ? t('slides.slideCount', {
+                                      count: selected.slides.length,
+                                  })
+                                : t('slides.selectHelper')
                     }
                     fullWidth
                 >
+                    {importPending && (
+                        <MenuItem value={presentationId} disabled>
+                            {t('slides.importPreparing')}
+                        </MenuItem>
+                    )}
                     {(presentations ?? []).map(p => (
                         <MenuItem key={p.id} value={p.id}>
                             <Stack
@@ -178,7 +188,9 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
                 onSave={() => {
                     updateEntry({
                         ...entry,
-                        data: { presentationId },
+                        // Preserve other data fields (e.g. importJobId, set by
+                        // a rundown drag-and-drop) rather than clobbering them.
+                        data: { ...entry.data, presentationId },
                         title,
                     });
                 }}

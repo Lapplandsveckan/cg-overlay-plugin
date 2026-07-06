@@ -148,6 +148,8 @@
         "noPresentation": "No presentation",
         "loading": "Loading…",
         "presentationMissing": "Presentation missing",
+        "importPreparing": "Preparing…",
+        "importFailed": "Import failed",
         "live": "Live",
         "slideCount_one": "{{count}} slide",
         "slideCount_other": "{{count}} slides"

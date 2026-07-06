@@ -148,6 +148,8 @@
         "noPresentation": "Ingen presentation",
         "loading": "Läser in…",
         "presentationMissing": "Presentation saknas",
+        "importPreparing": "Förbereder…",
+        "importFailed": "Import misslyckades",
         "live": "Live",
         "slideCount_one": "{{count}} slide",
         "slideCount_other": "{{count}} slides"

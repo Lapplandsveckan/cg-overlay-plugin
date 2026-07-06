@@ -49,7 +49,7 @@ export interface Presentation {
     updatedAt: number;
 }
 
-function makeId(): string {
+export function makePresentationId(): string {
     return `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
@@ -107,11 +107,18 @@ export class PresentationStore {
     }
 
     public async create(
-        input?: Partial<Pick<Presentation, 'title' | 'slides'>>,
+        input?: Partial<Pick<Presentation, 'id' | 'title' | 'slides'>>,
     ): Promise<Presentation> {
+        const id =
+            typeof input?.id === 'string' && input.id.trim()
+                ? input.id.trim()
+                : makePresentationId();
+        if (this.presentations.some(p => p.id === id))
+            throw new Error(`Presentation "${id}" already exists`);
+
         const now = Date.now();
         const presentation: Presentation = {
-            id: makeId(),
+            id,
             title:
                 typeof input?.title === 'string' && input.title.trim()
                     ? input.title.trim()

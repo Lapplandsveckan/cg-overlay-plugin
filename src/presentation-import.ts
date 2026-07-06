@@ -28,6 +28,17 @@ export interface ImportJob {
     createdAt: number;
 }
 
+export const PPTX_MIME =
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+export function isPptx(filename: string): boolean {
+    return filename.toLowerCase().endsWith('.pptx');
+}
+
+export function isPdf(filename: string): boolean {
+    return filename.toLowerCase().endsWith('.pdf');
+}
+
 /** Lowercase, dashes, strip anything not alphanumeric or dash/underscore. */
 function slugify(title: string): string {
     return (
@@ -56,9 +67,12 @@ function mediaIdFromPath(uploadPath: string): string {
 export interface StartImportInput {
     filename: string;
     title: string;
+    /** Pre-assigned presentation id (e.g. for a rundown drop, fixed at drop time
+     *  so the rundown entry can reference it before the import finishes). */
+    presentationId?: string;
 }
 
-const IMPORTS_FOLDER = 'presentations/_imports';
+export const IMPORTS_FOLDER = 'presentations/_imports';
 const MEDIA_INDEX_TIMEOUT_MS = 30_000;
 const MEDIA_INDEX_POLL_MS = 250;
 const RAW_READ_RETRIES = 5;
@@ -88,6 +102,7 @@ export class PresentationImportManager {
             id: makeJobId(),
             title: input.title.trim() || 'Untitled',
             status: 'pending',
+            presentationId: input.presentationId,
             createdAt: Date.now(),
         };
         this.jobs.set(job.id, job);
@@ -232,6 +247,7 @@ export class PresentationImportManager {
             mediaId,
         }));
         return this.plugin.presentations.create({
+            id: job.presentationId,
             title: job.title,
             slides,
         });
@@ -246,8 +262,4 @@ export class PresentationImportManager {
         }
         throw new Error('Timed out waiting for uploaded pages to be indexed');
     }
-}
-
-function isPptx(filename: string): boolean {
-    return filename.toLowerCase().endsWith('.pptx');
 }

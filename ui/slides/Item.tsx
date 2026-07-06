@@ -1,14 +1,16 @@
 import React, { useCallback, useState } from 'react';
-import { Chip, Stack, Typography } from '@mui/material';
+import { Chip, CircularProgress, Stack, Typography } from '@mui/material';
 import { useSocket } from '@web-lib';
 import { useTranslation } from '../i18n';
 
 import {
     type ArmEvent,
+    importJobLabel,
     playSlide,
     slideRef,
     stopPlayback,
     useArmEvents,
+    useImportStatus,
     usePlaybackState,
     usePresentation,
 } from './api';
@@ -32,6 +34,8 @@ export const SlidesRundownItem: React.FC<SlidesRundownItemProps> = ({
     const conn = useSocket();
     const presentationId: string | null = entry.data?.presentationId ?? null;
     const presentation = usePresentation(presentationId);
+    const importJobId: string | null = entry.data?.importJobId ?? null;
+    const importJob = useImportStatus(importJobId);
     const playback = usePlaybackState();
     const [armed, setArmed] = useState(false);
 
@@ -66,6 +70,27 @@ export const SlidesRundownItem: React.FC<SlidesRundownItemProps> = ({
                 <Typography variant="caption" color="text.secondary">
                     {t('slides.loading')}
                 </Typography>
+            );
+        }
+        if (presentation === null && importJobId) {
+            if (importJob?.status === 'error') {
+                return (
+                    <Chip
+                        label={t('slides.importFailed')}
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                    />
+                );
+            }
+            return (
+                <Stack direction="row" spacing={1} alignItems="center">
+                    <CircularProgress size={12} />
+                    <Typography variant="caption" color="text.secondary">
+                        {importJobLabel(importJob, t) ||
+                            t('slides.importPreparing')}
+                    </Typography>
+                </Stack>
             );
         }
         if (presentation === null) {

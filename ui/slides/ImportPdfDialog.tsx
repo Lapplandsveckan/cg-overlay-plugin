@@ -19,6 +19,7 @@ import { useTranslation } from '../i18n';
 import {
     type Presentation,
     getPresentation,
+    importJobLabel,
     startImport,
     useImportStatus,
 } from './api';
@@ -164,25 +165,7 @@ const ImportPdfDialog: React.FC<ImportPdfDialogProps> = ({
     const progressLabel = (() => {
         if (phase === 'uploading')
             return t('presentationIndex.importUploading');
-        if (phase === 'processing' && job) {
-            if (job.status === 'converting') {
-                const pct =
-                    job.percent !== undefined
-                        ? ` ${Math.round(job.percent)}%`
-                        : '';
-                return `${t('presentationIndex.importConverting')}${pct}`;
-            }
-            if (job.status === 'rendering') {
-                return job.pageTotal
-                    ? t('presentationIndex.importRendering', {
-                          done: job.pageDone ?? 0,
-                          total: job.pageTotal,
-                      })
-                    : t('presentationIndex.importRenderingStart');
-            }
-            if (job.status === 'creating')
-                return t('presentationIndex.importCreating');
-        }
+        if (phase === 'processing' && job) return importJobLabel(job, t);
         return '';
     })();
 

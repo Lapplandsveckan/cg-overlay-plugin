@@ -1,5 +1,6 @@
 /* eslint-disable max-lines */
 import path from 'path';
+import * as fs from 'fs/promises';
 import { noTry } from 'no-try';
 import {
     CasparPlugin,
@@ -45,8 +46,14 @@ import { getVerseSlides, type VerseLookup } from './bible';
 import { AtemManager } from './atem';
 import { config } from './config';
 import { NamnskyltPresetStore } from './namnskylt-presets';
-import { PresentationStore } from './presentations';
-import { PresentationImportManager } from './presentation-import';
+import { PresentationStore, makePresentationId } from './presentations';
+import {
+    PresentationImportManager,
+    IMPORTS_FOLDER,
+    PPTX_MIME,
+    isPdf,
+    isPptx,
+} from './presentation-import';
 import { buildBackgroundData, readImageData } from './assets';
 import { isConversionEnabled } from './cloudconvert';
 import { getEvents, reportWarn } from './diagnostics';
@@ -445,7 +452,47 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                 // Playback itself is triggered by the UI when the operator clicks a slide.
                 this.overlay.broadcastArmEvent(presentationId, rundown.id);
             },
-            { stop: () => this.overlay.stopPlayback() },
+            {
+                stop: () => this.overlay.stopPlayback(),
+                accepts: {
+                    fileTypes: ['application/pdf', '.pdf', PPTX_MIME, '.pptx'],
+                    destination: `${IMPORTS_FOLDER}/`,
+                    match: file => {
+                        const accepted =
+                            isPdf(file.name) ||
+                            isPptx(file.name) ||
+                            file.type === 'application/pdf' ||
+                            file.type === PPTX_MIME;
+                        if (!accepted) {
+                            // fileTypes is only a client-side hint, so a
+                            // declined file may already have been uploaded —
+                            // clean it up rather than leaving it orphaned.
+                            fs.unlink(
+                                path.join(this.api.getMediaRoot(), file.path),
+                            ).catch(() => {});
+                            return null;
+                        }
+
+                        const title = stripExt(file.name);
+                        // Assigning the id up front (rather than waiting for
+                        // the async import job to finish) lets this rundown
+                        // entry point at its presentation immediately —
+                        // playback just sees "not found" until the import
+                        // job broadcasts the finished presentation.
+                        const presentationId = makePresentationId();
+                        const job = this.presentationImports.start({
+                            filename: file.name,
+                            title,
+                            presentationId,
+                        });
+                        return {
+                            type: 'slides',
+                            title,
+                            data: { presentationId, importJobId: job.id },
+                        };
+                    },
+                },
+            },
         );
     }
 
