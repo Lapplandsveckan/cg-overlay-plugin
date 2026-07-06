@@ -25,7 +25,8 @@ import { noTryAsync } from 'no-try';
 import { useSocket, useContextMenu } from '@web-lib';
 import { useTranslation } from '../i18n';
 
-import SlidePreview from './SlidePreview';
+import PresentationCover from './PresentationCover';
+import CreateTile from './CreateTile';
 import {
     type Presentation,
     createPresentation,
@@ -33,9 +34,6 @@ import {
     duplicatePresentation,
     usePresentations,
     useBackgroundImage,
-    useImageThumbnails,
-    slideRef,
-    slideText,
 } from './api';
 import { currentPath, slidesEditorUrl } from './urls';
 import NameDialog from './NameDialog';
@@ -210,61 +208,6 @@ export const PresentationIndex: React.FC = () => {
     );
 };
 
-const CreateTile: React.FC<{ onClick: () => void; disabled: boolean }> = ({
-    onClick,
-    disabled,
-}) => {
-    const { t } = useTranslation('cg-overlay-plugin');
-    return (
-        <Box
-            onClick={disabled ? undefined : onClick}
-            role="button"
-            tabIndex={disabled ? -1 : 0}
-            onKeyDown={e => {
-                if (disabled) return;
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onClick();
-                }
-            }}
-            sx={{
-                cursor: disabled ? 'progress' : 'pointer',
-                outline: 'none',
-                aspectRatio: '16/9',
-                borderRadius: 1.5,
-                border: '1px dashed rgba(255,255,255,0.2)',
-                backgroundColor: 'rgba(255,255,255,0.02)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 1,
-                color: 'text.secondary',
-                transition: 'border-color 120ms, background-color 120ms',
-                '&:hover, &:focus-visible': disabled
-                    ? {}
-                    : {
-                          borderColor: '#4a90e2',
-                          backgroundColor: 'rgba(74,144,226,0.06)',
-                          color: 'text.primary',
-                      },
-            }}
-        >
-            <Box
-                component="span"
-                sx={{ fontSize: 36, lineHeight: 1, fontWeight: 300 }}
-            >
-                +
-            </Box>
-            <Typography variant="body2">
-                {disabled
-                    ? t('panel.creating')
-                    : t('presentationIndex.newPresentation')}
-            </Typography>
-        </Box>
-    );
-};
-
 const PresentationTile: React.FC<{
     presentation: Presentation;
     backgroundUrl?: string | null;
@@ -274,11 +217,6 @@ const PresentationTile: React.FC<{
     const { t } = useTranslation('cg-overlay-plugin');
     const menu = useContextMenu();
     const [confirmDelete, setConfirmDelete] = useState(false);
-
-    const firstSlide = presentation.slides[0];
-    const coverMediaIds =
-        firstSlide?.type === 'image' ? [firstSlide.mediaId] : [];
-    const coverThumbs = useImageThumbnails(coverMediaIds);
 
     const menuItems = [
         {
@@ -330,36 +268,10 @@ const PresentationTile: React.FC<{
                         overflow: 'hidden',
                     }}
                 >
-                    {firstSlide ? (
-                        firstSlide.type === 'image' ? (
-                            <SlidePreview
-                                imageUrl={
-                                    coverThumbs[firstSlide.mediaId] ?? null
-                                }
-                            />
-                        ) : (
-                            <SlidePreview
-                                text={slideText(firstSlide)}
-                                reference={slideRef(firstSlide)}
-                                backgroundUrl={backgroundUrl}
-                            />
-                        )
-                    ) : (
-                        <Box
-                            sx={{
-                                aspectRatio: '16/9',
-                                backgroundColor: '#000',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: 'rgba(255,255,255,0.35)',
-                                fontSize: 14,
-                                fontStyle: 'italic',
-                            }}
-                        >
-                            {t('presentationIndex.empty')}
-                        </Box>
-                    )}
+                    <PresentationCover
+                        presentation={presentation}
+                        backgroundUrl={backgroundUrl}
+                    />
                 </Box>
                 <Stack
                     direction="row"

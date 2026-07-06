@@ -1,20 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import {
-    Alert,
-    Box,
-    Button,
-    Chip,
-    MenuItem,
-    Stack,
-    TextField,
-    Typography,
-} from '@mui/material';
+import { Button, Chip, Stack, Typography, TextField } from '@mui/material';
 
-import { noTry, noTryAsync } from 'no-try';
-import { RundownEditorActionBar, useSocket } from '@web-lib';
+import { noTry } from 'no-try';
+import { RundownEditorActionBar } from '@web-lib';
 import { useTranslation } from '../i18n';
-import { usePresentations, createPresentation } from './api';
+import { usePresentations, useBackgroundImage } from './api';
 import { currentPath, slidesEditorUrl } from './urls';
+import PresentationCover from './PresentationCover';
+import PresentationPickerDialog from './PresentationPickerDialog';
 
 interface RundownEntry {
     id: string;
@@ -37,16 +30,15 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
     creating,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
-    const conn = useSocket();
     const { presentations } = usePresentations();
+    const backgroundUrl = useBackgroundImage();
 
     const [presentationId, setPresentationId] = useState<string>(
         entry?.data?.presentationId ?? '',
     );
     const [title, setTitle] = useState<string>(entry?.title ?? '');
     const [titleTouched, setTitleTouched] = useState<boolean>(!!entry?.title);
-    const [creatingNew, setCreatingNew] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [pickerOpen, setPickerOpen] = useState(false);
 
     const selected = useMemo(
         () => presentations?.find(p => p.id === presentationId) ?? null,
@@ -58,32 +50,13 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
 
     const handleSelect = (id: string) => {
         setPresentationId(id);
+        setPickerOpen(false);
         // Auto-fill the rundown entry title from the presentation, unless the user has typed their own.
         const p = presentations?.find(x => x.id === id);
         if (p && !titleTouched) setTitle(p.title);
     };
 
-    const handleCreateNew = async () => {
-        setCreatingNew(true);
-        setError(null);
-        const [err, created] = await noTryAsync(() =>
-            createPresentation(conn, {
-                title: t('presentationEditor.untitled'),
-                slides: [],
-            }),
-        );
-        if (err) {
-            console.error(err);
-            setError((err as any)?.message ?? 'Failed to create presentation');
-        } else {
-            handleSelect(created!.id);
-            openPresentationEditor(created!.id);
-        }
-        setCreatingNew(false);
-    };
-
     const loading = presentations === null;
-    const empty = !loading && presentations.length === 0;
 
     return (
         <Stack spacing={2}>
@@ -106,81 +79,72 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
             )}
 
             {!loading && (
-                <TextField
-                    select
-                    label={t('slides.presentationLabel')}
-                    value={presentationId}
-                    onChange={e => handleSelect(e.target.value)}
-                    helperText={
-                        importPending
-                            ? t('slides.importPreparing')
-                            : empty
-                              ? t('slides.noPresentationsCreate')
-                              : selected
-                                ? t('slides.slideCount', {
-                                      count: selected.slides.length,
-                                  })
-                                : t('slides.selectHelper')
-                    }
-                    fullWidth
-                >
-                    {importPending && (
-                        <MenuItem value={presentationId} disabled>
+                <Stack spacing={1}>
+                    {importPending ? (
+                        <Typography variant="body2" color="text.secondary">
                             {t('slides.importPreparing')}
-                        </MenuItem>
-                    )}
-                    {(presentations ?? []).map(p => (
-                        <MenuItem key={p.id} value={p.id}>
+                        </Typography>
+                    ) : selected ? (
+                        <Stack
+                            spacing={1}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => openPresentationEditor(selected.id)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    openPresentationEditor(selected.id);
+                                }
+                            }}
+                            sx={{ cursor: 'pointer', outline: 'none' }}
+                        >
+                            <PresentationCover
+                                presentation={selected}
+                                backgroundUrl={backgroundUrl}
+                            />
                             <Stack
                                 direction="row"
                                 spacing={1}
                                 alignItems="center"
-                                sx={{ width: '100%' }}
                             >
-                                <Box
+                                <Typography
+                                    variant="body2"
                                     sx={{
                                         flexGrow: 1,
                                         minWidth: 0,
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
                                     }}
                                 >
-                                    {p.title}
-                                </Box>
+                                    {selected.title}
+                                </Typography>
                                 <Chip
                                     size="small"
                                     variant="outlined"
-                                    label={`${p.slides.length}`}
+                                    label={t('slides.slideCount', {
+                                        count: selected.slides.length,
+                                    })}
                                 />
                             </Stack>
-                        </MenuItem>
-                    ))}
-                </TextField>
-            )}
+                        </Stack>
+                    ) : (
+                        <Typography variant="body2" color="text.secondary">
+                            {t('slides.noPresentationChosen')}
+                        </Typography>
+                    )}
 
-            <Stack direction="row" spacing={1}>
-                <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={handleCreateNew}
-                    disabled={creatingNew}
-                >
-                    {creatingNew
-                        ? t('panel.creating')
-                        : t('slides.newPresentation')}
-                </Button>
-                {selected && (
                     <Button
                         variant="outlined"
                         size="small"
-                        onClick={() => openPresentationEditor(selected.id)}
+                        onClick={() => setPickerOpen(true)}
                     >
-                        {t('slides.editSelected')}
+                        {selected
+                            ? t('slides.changePresentation')
+                            : t('slides.choosePresentation')}
                     </Button>
-                )}
-            </Stack>
-
-            {error && <Alert severity="error">{error}</Alert>}
+                </Stack>
+            )}
 
             <RundownEditorActionBar
                 exists={!creating}
@@ -194,6 +158,13 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
                         title,
                     });
                 }}
+            />
+
+            <PresentationPickerDialog
+                open={pickerOpen}
+                selectedId={presentationId}
+                onClose={() => setPickerOpen(false)}
+                onSelect={handleSelect}
             />
         </Stack>
     );
