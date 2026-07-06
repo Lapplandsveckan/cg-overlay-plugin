@@ -126,7 +126,7 @@
         "slidesTab": "Presentationer",
         "mediaHint": "Dra ett klipp till rundown · Klicka för att spela",
         "namnskyltarHint": "Dra till rundown · Klicka för att redigera · Högerklicka för alternativ",
-        "slidesHint": "Dra för att lägga till i rundown · Klicka för att redigera",
+        "slidesHint": "Dra för att lägga till i rundown · Klicka för att spela eller redigera · Högerklicka för alternativ",
         "openAll": "Öppna alla",
         "newPresentation": "+ Ny",
         "creating": "Skapar…",

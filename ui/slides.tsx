@@ -2,6 +2,10 @@ import React, { useMemo, useState } from 'react';
 import {
     Box,
     Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     IconButton,
     InputAdornment,
     Stack,
@@ -9,29 +13,50 @@ import {
     Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 
 import { noTryAsync } from 'no-try';
-import { useSocket } from '@web-lib';
+import { useContextMenu, useRundownLive, useSocket } from '@web-lib';
 import { useTranslation } from './i18n';
 import { setRundownDragPayload } from './drag';
 import SlidePreview from './slides/SlidePreview';
+import RunModal from './slides/RunModal';
 import {
     createPresentation,
+    deletePresentation,
+    duplicatePresentation,
+    playSlide,
+    stopPlayback,
     type Presentation,
     slideRef,
     slideText,
     useBackgroundImage,
     useImageThumbnails,
+    usePlaybackState,
+    usePresentation,
     usePresentations,
 } from './slides/api';
 import { currentPath, slidesEditorUrl, slidesHomeUrl } from './slides/urls';
 
 interface PresentationCardProps {
     presentation: Presentation;
+    isLive: boolean;
+    onRun: () => void;
+    onEdit: () => void;
+    onDuplicate: () => void;
+    onDelete: () => void;
 }
 
 const PresentationCard: React.FC<PresentationCardProps> = ({
     presentation,
+    isLive,
+    onRun,
+    onEdit,
+    onDuplicate,
+    onDelete,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const firstSlide = presentation.slides[0];
@@ -39,6 +64,34 @@ const PresentationCard: React.FC<PresentationCardProps> = ({
     const coverMediaIds =
         firstSlide?.type === 'image' ? [firstSlide.mediaId] : [];
     const coverThumbs = useImageThumbnails(coverMediaIds);
+    const menu = useContextMenu();
+    const activate = () => (isLive ? onRun() : onEdit());
+
+    const menuItems = [
+        {
+            label: t('contextMenu.playNow'),
+            icon: <PlayArrowIcon sx={{ fontSize: 18 }} />,
+            onClick: onRun,
+        },
+        {
+            label: t('contextMenu.open'),
+            icon: <EditIcon sx={{ fontSize: 18 }} />,
+            onClick: onEdit,
+        },
+        {
+            label: t('contextMenu.duplicate'),
+            icon: <ContentCopyIcon sx={{ fontSize: 18 }} />,
+            onClick: onDuplicate,
+        },
+        {
+            label: t('contextMenu.delete'),
+            icon: <DeleteIcon sx={{ fontSize: 18 }} />,
+            danger: true,
+            divider: true,
+            onClick: onDelete,
+        },
+    ];
+
     return (
         <Box
             draggable
@@ -49,19 +102,12 @@ const PresentationCard: React.FC<PresentationCardProps> = ({
                     title: presentation.title,
                 })
             }
-            onClick={() => {
-                window.location.assign(
-                    slidesEditorUrl(presentation.id, currentPath()),
-                );
-            }}
+            onClick={activate}
+            onContextMenu={menu.bind(menuItems)}
             role="button"
             tabIndex={0}
             onKeyDown={e => {
-                if (e.key === 'Enter') {
-                    window.location.assign(
-                        slidesEditorUrl(presentation.id, currentPath()),
-                    );
-                }
+                if (e.key === 'Enter') activate();
             }}
             sx={{
                 cursor: 'grab',
@@ -145,9 +191,14 @@ const PresentationCard: React.FC<PresentationCardProps> = ({
 const SlidesTab: React.FC = () => {
     const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
+    const isLive = useRundownLive();
+    const playback = usePlaybackState();
     const { presentations } = usePresentations();
     const [creating, setCreating] = useState(false);
     const [query, setQuery] = useState('');
+    const [runningId, setRunningId] = useState<string | null>(null);
+    const running = usePresentation(runningId);
+    const [deleting, setDeleting] = useState<Presentation | null>(null);
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -168,6 +219,15 @@ const SlidesTab: React.FC = () => {
             return;
         }
         window.location.assign(slidesEditorUrl(p!.id, currentPath()));
+    };
+
+    const handleDelete = async () => {
+        if (!deleting) return;
+        const [err] = await noTryAsync(() =>
+            deletePresentation(conn, deleting.id),
+        );
+        if (err) console.error(err);
+        setDeleting(null);
     };
 
     return (
@@ -260,11 +320,66 @@ const SlidesTab: React.FC = () => {
                         }}
                     >
                         {filtered.map(p => (
-                            <PresentationCard key={p.id} presentation={p} />
+                            <PresentationCard
+                                key={p.id}
+                                presentation={p}
+                                isLive={isLive}
+                                onRun={() => setRunningId(p.id)}
+                                onEdit={() =>
+                                    window.location.assign(
+                                        slidesEditorUrl(p.id, currentPath()),
+                                    )
+                                }
+                                onDuplicate={() =>
+                                    duplicatePresentation(conn, p.id).catch(
+                                        console.error,
+                                    )
+                                }
+                                onDelete={() => setDeleting(p)}
+                            />
                         ))}
                     </Box>
                 )}
             </Box>
+
+            <RunModal
+                open={!!runningId}
+                presentation={running ?? null}
+                playback={playback}
+                onClose={() => setRunningId(null)}
+                onClear={() => stopPlayback(conn).catch(console.error)}
+                onPlay={(slideId, grabAttention) =>
+                    runningId &&
+                    playSlide(conn, runningId, slideId, grabAttention).catch(
+                        console.error,
+                    )
+                }
+            />
+
+            <Dialog open={!!deleting} onClose={() => setDeleting(null)}>
+                <DialogTitle>
+                    {t('presentationEditor.deleteConfirmTitle')}
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2">
+                        {t('presentationEditor.deleteConfirmBody', {
+                            title: deleting?.title,
+                        })}
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleting(null)}>
+                        {t('panel.cancel')}
+                    </Button>
+                    <Button
+                        color="error"
+                        variant="contained"
+                        onClick={handleDelete}
+                    >
+                        {t('presentationEditor.delete')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Stack>
     );
 };
