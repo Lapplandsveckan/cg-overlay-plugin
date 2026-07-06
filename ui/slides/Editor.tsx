@@ -137,6 +137,7 @@ export const SlidesEditor: React.FC<SlidesEditorProps> = ({
                     <Button
                         variant="outlined"
                         size="small"
+                        color="inherit"
                         onClick={() => setPickerOpen(true)}
                     >
                         {selected
