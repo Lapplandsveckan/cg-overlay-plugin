@@ -219,7 +219,8 @@
         "next": "Next (→ / Space)",
         "noSlides": "No slides to play.",
         "startFromHere": "Start from here",
-        "grabAttentionHint": "Auto-cut the switcher to the slide when it changes. Hold Shift to invert for one advance."
+        "grabAttentionHint": "Auto-cut the switcher to the slide when it changes (Press A to toggle). Hold Shift to skip the cut for one advance.",
+        "grabAttentionShiftHint": "Shift held — next advance will NOT cut to the slide"
     },
     "presentationIndex": {
         "heading": "Presentations",

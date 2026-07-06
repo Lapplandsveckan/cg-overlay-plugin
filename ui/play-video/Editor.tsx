@@ -60,10 +60,7 @@ interface VideoPickerProps {
     clearLabel: string;
 }
 
-const VideoPicker: React.FC<VideoPickerProps> = ({
-    clip,
-    onChange,
-}) => (
+const VideoPicker: React.FC<VideoPickerProps> = ({ clip, onChange }) => (
     <Stack direction="row" spacing={1} alignItems="stretch">
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
             <MediaSelect clip={clip} onClipSelect={onChange} />

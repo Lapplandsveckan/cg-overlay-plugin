@@ -75,6 +75,7 @@ export const RunModal: React.FC<RunModalProps> = ({
     const slides = presentation?.slides ?? [];
     const backgroundUrl = useBackgroundImage();
     const [grabAttention, setGrabAttention] = useState(true);
+    const [shiftPressed, setShiftPressed] = useState(false);
     const imageMediaIds = slides
         .filter((s): s is ImageSlide => s.type === 'image')
         .map(s => s.mediaId);
@@ -98,7 +99,7 @@ export const RunModal: React.FC<RunModalProps> = ({
     const atEnd = currentIndex < 0 || currentIndex >= slides.length - 1;
 
     const play = (slideId: string, shiftHeld = false) => {
-        onPlay(slideId, shiftHeld ? !grabAttention : grabAttention);
+        onPlay(slideId, shiftHeld ? false : grabAttention);
     };
 
     const handleNext = (shiftHeld = false) => {
@@ -136,6 +137,12 @@ export const RunModal: React.FC<RunModalProps> = ({
                 return;
             }
 
+            if (e.key.toLowerCase() === 'a') {
+                e.preventDefault();
+                setGrabAttention(g => !g);
+                return;
+            }
+
             if (!playingHere) return;
 
             if (
@@ -151,8 +158,18 @@ export const RunModal: React.FC<RunModalProps> = ({
             }
         };
 
+        const shiftHandler = (e: KeyboardEvent) => {
+            setShiftPressed(e.shiftKey);
+        };
+
         window.addEventListener('keydown', handler);
-        return () => window.removeEventListener('keydown', handler);
+        window.addEventListener('keyup', shiftHandler);
+        window.addEventListener('keydown', shiftHandler);
+        return () => {
+            window.removeEventListener('keydown', handler);
+            window.removeEventListener('keyup', shiftHandler);
+            window.removeEventListener('keydown', shiftHandler);
+        };
     }, [open, playingHere, atStart, atEnd, currentIndex, grabAttention]);
 
     const thumbnailRef = useThumbnailScroll(
@@ -214,23 +231,62 @@ export const RunModal: React.FC<RunModalProps> = ({
                                 </IconButton>
                             </Tooltip>
                         )}
-                        <Tooltip title={t('runModal.grabAttentionHint')}>
-                            <IconButton
-                                size="small"
-                                onClick={() => setGrabAttention(g => !g)}
-                                color={grabAttention ? 'warning' : 'default'}
-                                sx={{
-                                    opacity: grabAttention ? 1 : 0.5,
-                                    position: 'relative',
-                                    top: -2,
-                                }}
-                            >
-                                {grabAttention ? (
-                                    <LiveTvIcon sx={{ fontSize: 20 }} />
-                                ) : (
-                                    <TvOffIcon sx={{ fontSize: 20 }} />
+                        <Tooltip
+                            title={
+                                shiftPressed
+                                    ? t('runModal.grabAttentionShiftHint')
+                                    : t('runModal.grabAttentionHint')
+                            }
+                        >
+                            <Box sx={{ position: 'relative', display: 'flex' }}>
+                                <IconButton
+                                    size="small"
+                                    onClick={() => setGrabAttention(g => !g)}
+                                    color={
+                                        shiftPressed
+                                            ? 'default'
+                                            : grabAttention
+                                              ? 'warning'
+                                              : 'default'
+                                    }
+                                    sx={{
+                                        opacity:
+                                            shiftPressed || grabAttention
+                                                ? 1
+                                                : 0.5,
+                                        position: 'relative',
+                                        top: -2,
+                                        transition: 'all 100ms ease-in-out',
+                                    }}
+                                >
+                                    {shiftPressed ? (
+                                        <TvOffIcon sx={{ fontSize: 20 }} />
+                                    ) : grabAttention ? (
+                                        <LiveTvIcon sx={{ fontSize: 20 }} />
+                                    ) : (
+                                        <TvOffIcon sx={{ fontSize: 20 }} />
+                                    )}
+                                </IconButton>
+                                {shiftPressed && (
+                                    <Box
+                                        sx={{
+                                            position: 'absolute',
+                                            bottom: -4,
+                                            right: 0,
+                                            width: 6,
+                                            height: 6,
+                                            borderRadius: '50%',
+                                            backgroundColor: '#ff9800',
+                                            animation:
+                                                'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                                            '@keyframes pulse': {
+                                                '0%, 100%': { opacity: 1 },
+                                                '50%': { opacity: 0.5 },
+                                            },
+                                        }}
+                                    />
                                 )}
-                            </IconButton>
+                            </Box>
                         </Tooltip>
                         <Tooltip
                             title={

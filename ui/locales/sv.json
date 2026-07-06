@@ -219,7 +219,8 @@
         "next": "Nästa (→ / Mellanslag)",
         "noSlides": "Inga slides att spela.",
         "startFromHere": "Starta härifrån",
-        "grabAttentionHint": "Byt automatiskt till sliden i mixern vid byte. Håll Shift för att invertera för ett enda steg."
+        "grabAttentionHint": "Byt automatiskt till sliden i mixern vid byte (Tryck A för att växla). Håll Shift för att hoppa över bytet för ett enda steg.",
+        "grabAttentionShiftHint": "Shift är nedtryckt — nästa steg byter INTE i mixern"
     },
     "presentationIndex": {
         "heading": "Presentationer",
