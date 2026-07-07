@@ -2,7 +2,10 @@ const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
-    entry: path.resolve(__dirname, 'src', 'index.ts'),
+    entry: {
+        index: path.resolve(__dirname, 'src', 'index.ts'),
+        'pdf-render-worker': path.resolve(__dirname, 'src', 'pdf-render-worker.ts'),
+    },
     module: {
         rules: [
             {
@@ -24,7 +27,7 @@ module.exports = {
         extensions: ['.ts', '.tsx', '.js'],
     },
     output: {
-        filename: 'index.js',
+        filename: '[name].js',
         path: path.resolve(__dirname, 'dist'),
         libraryTarget: 'commonjs2',
         environment: { dynamicImport: true },

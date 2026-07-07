@@ -145,13 +145,18 @@ export class PresentationImportManager {
         // write-flush lag right after the client's upload call resolves.
         const mediaRoot = this.api.getMediaRoot();
         const rawPath = path.join(mediaRoot, IMPORTS_FOLDER, input.filename);
-        const raw = await this.readFileWithRetry(rawPath);
 
         try {
-            let pdfBuffer = raw;
-            if (isPptx(input.filename)) {
+            let pdfSource: string | Buffer;
+            if (isPdf(input.filename)) {
+                // For PDFs, pass the file path directly to avoid Buffer I/O
+                await this.readFileWithRetry(rawPath);
+                pdfSource = rawPath;
+            } else {
+                // For PPTX, convert to PDF buffer (requires the buffer conversion)
+                const raw = await this.readFileWithRetry(rawPath);
                 this.update(job.id, { status: 'converting' });
-                pdfBuffer = await convertPptxToPdf(raw, input.filename, p =>
+                pdfSource = await convertPptxToPdf(raw, input.filename, p =>
                     this.update(job.id, { step: p.step, percent: p.percent }),
                 );
             }
@@ -163,7 +168,7 @@ export class PresentationImportManager {
                 pageDone: 0,
                 pageTotal: 0,
             });
-            const pages = await renderPdfToImages(pdfBuffer, (done, total) =>
+            const pages = await renderPdfToImages(pdfSource, (done, total) =>
                 this.update(job.id, { pageDone: done, pageTotal: total }),
             );
 
