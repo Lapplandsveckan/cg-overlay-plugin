@@ -5,8 +5,10 @@ import { XMLParser } from 'fast-xml-parser';
 const DATA_DIR = path.join(__dirname, 'bible', 'data');
 
 const TRANSLATION_MAP: Record<string, string> = {
-    sfb: 'SFB15',
+    sfb15: 'SFB15',
+    sfb98: 'SFB98',
     b2000: 'B2000',
+    niv: 'NIV',
 };
 
 export interface VerseSlide {

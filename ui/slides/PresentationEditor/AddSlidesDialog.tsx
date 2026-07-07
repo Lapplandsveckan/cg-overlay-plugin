@@ -49,7 +49,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
     );
 
     // Bible state
-    const [translation, setTranslation] = useState('sfb');
+    const [translation, setTranslation] = useState('sfb15');
     const [book, setBook] = useState(DEFAULT_BIBLE.book);
     const [chapter, setChapter] = useState(DEFAULT_BIBLE.chapter);
     const [verseRange, setVerseRange] = useState(DEFAULT_BIBLE.verseRange);

@@ -4,8 +4,10 @@ export interface Translation {
 }
 
 export const TRANSLATIONS: Translation[] = [
-    { id: 'sfb', label: 'Svenska Folkbibeln' },
+    { id: 'sfb15', label: 'Svenska Folkbibeln 2015' },
+    { id: 'sfb98', label: 'Svenska Folkbibeln 1998' },
     { id: 'b2000', label: 'Bibel 2000' },
+    { id: 'niv', label: 'NIV' },
 ];
 
 export interface Book {
