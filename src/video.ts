@@ -1,25 +1,46 @@
 import { noTry, noTryAsync } from 'no-try';
-import { type Effect } from '@lappis/cg-manager';
 import { type VideoEffect } from './effects/misc/video';
 import type LappisOverlayPlugin from './index';
-import { type WallVideoEffect } from './effects/misc/wall_video';
+import {
+    CHANNELS,
+    VideoSessionStoppedError,
+    type VideoIntroMode,
+    type VideoOutroMode,
+} from './overlay';
 
 interface VideoInfo {
     id: string;
 
     metadata: {
         queueId: string;
-        secondaryVideo?: string;
+        clipDuration?: number;
         loop?: boolean;
+        intro?: VideoIntroMode;
+        outro?: VideoOutroMode;
+        inPoint?: number;
+        outPoint?: number;
+        volume?: number;
+
+        // Deprecated, kept only so entries saved before intro/outro existed
+        // still resolve to a sensible mode — see normalizeIntroOutro().
         skipIntro?: boolean;
+        fast?: boolean;
     };
 }
 
 interface PlayingVideo {
     video: VideoInfo;
     effect: VideoEffect;
+}
 
-    extraEffects?: Effect[];
+function normalizeIntroOutro(metadata: VideoInfo['metadata']): {
+    intro: VideoIntroMode;
+    outro: VideoOutroMode;
+} {
+    const intro =
+        metadata.intro ??
+        (metadata.skipIntro ? 'cut' : metadata.fast ? 'fast' : 'regular');
+    return { intro, outro: metadata.outro ?? 'cut' };
 }
 
 export default class VideoManager {
@@ -33,51 +54,49 @@ export default class VideoManager {
 
     public stopVideo(clearQueue = false) {
         if (clearQueue) this.queue = [];
-        if (this.playing) {
-            if (this.playing.extraEffects)
-                this.playing.extraEffects.forEach(effect =>
-                    effect.deactivate(),
-                );
+        if (this.playing) this.playing.effect.cancel();
+    }
 
-            this.playing.effect.cancel();
-        }
+    private makeVideoInfo(
+        id: string,
+        options: Omit<VideoInfo['metadata'], 'queueId' | 'clipDuration'> = {},
+    ): VideoInfo {
+        const fullDuration = this.plugin['api'].getFileDatabase().get(id)
+            ?.mediainfo?.format?.duration;
+        const clipDuration =
+            fullDuration === undefined
+                ? undefined
+                : Math.max(
+                      0,
+                      Math.min(options.outPoint ?? fullDuration, fullDuration) -
+                          (options.inPoint ?? 0),
+                  );
+
+        return {
+            id,
+            metadata: {
+                ...options,
+                queueId: Math.random().toString(36).substring(7),
+                clipDuration,
+            },
+        };
     }
 
     public queueVideo(
         video: string,
-        options?: Omit<VideoInfo['metadata'], 'queueId'>,
+        options?: Omit<VideoInfo['metadata'], 'queueId' | 'clipDuration'>,
     ) {
-        options = options || {};
-
-        this.queue.push({
-            id: video,
-            metadata: {
-                ...options,
-                queueId: Math.random().toString(36).substring(7),
-            },
-        });
+        this.queue.push(this.makeVideoInfo(video, options));
         if (this.playing) return this.plugin.sendVideoInformation();
-
         this.playNext();
     }
 
     public playVideo(
         video: string,
-        options?: Omit<VideoInfo['metadata'], 'queueId'>,
+        options?: Omit<VideoInfo['metadata'], 'queueId' | 'clipDuration'>,
     ) {
-        options = options || {};
-
-        this.queue = [
-            {
-                id: video,
-                metadata: {
-                    ...options,
-                    queueId: Math.random().toString(36).substring(7),
-                },
-            },
-        ];
+        this.queue = [this.makeVideoInfo(video, options)];
         if (this.playing) return this.stopVideo();
-
         this.playNext();
     }
 
@@ -88,107 +107,75 @@ export default class VideoManager {
         if (!video) {
             if (this.playing) {
                 this.playing.effect.deactivate();
-                if (this.playing.extraEffects)
-                    this.playing.extraEffects.forEach(effect =>
-                        effect.deactivate(),
-                    );
-
-                this.plugin.getOverlayManager().stopVideoSession(true);
+                const { outro } = normalizeIntroOutro(
+                    this.playing.video.metadata,
+                );
+                const [stopErr] = await noTryAsync(() =>
+                    this.plugin
+                        .getOverlayManager()
+                        .stopVideoSession(true, outro),
+                );
+                if (stopErr) {
+                    this.plugin
+                        .getLogger()
+                        .error(`Failed to stop video session: ${stopErr}`);
+                }
             }
 
             this.playing = null;
             this.plugin.sendVideoInformation();
+            this.plugin.getOverlayManager().resumeCaption();
             return;
         }
 
+        const { loop, inPoint, outPoint, volume } = video.metadata;
+        const { intro } = normalizeIntroOutro(video.metadata);
         const [err, effect] = noTry(() =>
-            this.plugin
-                .getOverlayManager()
-                .playVideo(video.id, video.metadata.loop),
+            this.plugin.getOverlayManager().playVideo(video.id, {
+                loop,
+                seekSec: inPoint,
+                lengthSec:
+                    outPoint !== undefined
+                        ? outPoint - (inPoint ?? 0)
+                        : undefined,
+                volume,
+            }),
         );
         if (err) {
             this.plugin.getLogger().error(`Failed to play video: ${err}`);
             return;
         }
 
-        const extraEffects: WallVideoEffect[] = [];
-        if (video.metadata.secondaryVideo) {
-            const [err, effect] = noTry(() =>
-                this.plugin
-                    .getOverlayManager()
-                    .playWallVideo(
-                        video.metadata.secondaryVideo,
-                        video.metadata.loop,
-                    ),
-            );
-
-            if (err)
-                this.plugin
-                    .getLogger()
-                    .error(`Failed to play wall video: ${err}`);
-            else extraEffects.push(effect);
-        }
-
-        this.playing = { video, effect, extraEffects };
+        this.playing = { video, effect };
+        this.plugin.getOverlayManager().suspendCaption();
 
         const [error] = await noTryAsync(() =>
-            this.plugin
-                .getOverlayManager()
-                .startVideoSession(true, video.metadata.skipIntro),
+            this.plugin.getOverlayManager().startVideoSession(true, intro),
         );
         if (error) {
-            this.plugin
-                .getLogger()
-                .error(`Failed to start video session: ${error}`);
+            // VideoSessionStoppedError is a normal stop — not a real failure.
+            if (!(error instanceof VideoSessionStoppedError)) {
+                this.plugin
+                    .getLogger()
+                    .error(`Failed to start video session: ${error}`);
+            }
+            this.plugin.getOverlayManager().resumeCaption();
             return;
         }
 
         this.plugin.sendVideoInformation();
 
-        const session = this.plugin.overlay.getVideoSession();
-        if (!video.metadata.secondaryVideo && !session.wall.active)
-            session.wall
-                .activate()
-                .catch(err =>
-                    this.plugin
-                        .getLogger()
-                        .error(`Failed to activate wall: ${err}`),
-                );
-
-        if (video.metadata.secondaryVideo && session.wall.active)
-            session.wall
-                .deactivate()
-                .catch(err =>
-                    this.plugin
-                        .getLogger()
-                        .error(`Failed to deactivate wall: ${err}`),
-                );
-
         const [playErr] = await noTryAsync(async () => {
-            const promises: Promise<any>[] = [effect.play()];
-            for (const extraEffect of extraEffects)
-                promises.push(extraEffect.play());
-
-            await Promise.all(promises);
+            await effect.play();
             await effect.waitForFinish();
         });
         if (playErr) {
             this.plugin.getLogger().error(`Failed to play video: ${playErr}`);
-
-            if (extraEffects)
-                extraEffects.forEach(effect => effect.deactivate());
-
             effect.deactivate();
         }
 
-        if (this.queue.length && effect.active) {
-            setTimeout(() => {
-                if (extraEffects)
-                    extraEffects.forEach(effect => effect.deactivate());
-
-                effect.deactivate();
-            }, 250);
-        }
+        if (this.queue.length && effect.active)
+            setTimeout(() => effect.deactivate(), 250);
 
         this.playNext();
     }
@@ -200,11 +187,15 @@ export default class VideoManager {
         const media = videos.map(video => ({
             id: video.metadata.queueId,
             data: this.plugin['api'].getFileDatabase().get(video.id),
+            options: video.metadata,
         }));
 
         const data = {
             current: null,
             queue: media,
+            channelFps: this.plugin
+                .getOverlayManager()
+                .getChannelFps(CHANNELS.VIDEO),
         };
 
         if (this.playing) {
@@ -217,6 +208,18 @@ export default class VideoManager {
         }
 
         return data;
+    }
+
+    public getQueueStatus() {
+        const queued = this.queue.reduce(
+            (sum, v) => sum + (v.metadata.clipDuration ?? 0),
+            0,
+        );
+        const current = this.playing?.effect.getRemainingTime() ?? 0;
+        return {
+            active: this.playing !== null || this.queue.length > 0,
+            remaining: queued + current,
+        };
     }
 
     public clearQueue() {

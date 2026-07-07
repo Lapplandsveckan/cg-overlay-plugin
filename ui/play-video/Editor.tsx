@@ -1,21 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Accordion,
     AccordionDetails,
     AccordionSummary,
     Box,
     Button,
-    Checkbox,
-    FormControlLabel,
-    FormGroup,
     Stack,
     TextField,
     Typography,
 } from '@mui/material';
 
+import ContentCutIcon from '@mui/icons-material/ContentCut';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import FastForwardIcon from '@mui/icons-material/FastForward';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
+import GradientIcon from '@mui/icons-material/Gradient';
+import LooksOneIcon from '@mui/icons-material/LooksOne';
+import LoopIcon from '@mui/icons-material/Loop';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import QueueMusicIcon from '@mui/icons-material/QueueMusic';
 import { useSocket, MediaSelect, RundownEditorActionBar } from '@web-lib';
 import { useTranslation } from '../i18n';
+import { formatTime } from '../format';
+import {
+    DEFAULT_FPS,
+    fullDurationOf,
+    isTrimmed,
+    normalizeIntro,
+    normalizeOutro,
+    normalizeVideoPayload,
+    type IntroMode,
+    type OutroMode,
+} from '../video-utils';
+import { useBroadcast } from '../hooks';
+import { ModeRow, type ModeOption } from '../mode-row';
+import { type VideoInspectorValue } from './VideoInspector';
+import VideoInspectorModal from './VideoInspectorModal';
 
 interface RundownEntry {
     id: string;
@@ -40,26 +60,16 @@ interface VideoPickerProps {
     clearLabel: string;
 }
 
-const VideoPicker: React.FC<VideoPickerProps> = ({
-    clip,
-    onChange,
-    clearLabel,
-}) => (
+const VideoPicker: React.FC<VideoPickerProps> = ({ clip, onChange }) => (
     <Stack direction="row" spacing={1} alignItems="stretch">
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
             <MediaSelect clip={clip} onClipSelect={onChange} />
         </Box>
-        {clip && (
-            <Button
-                variant="outlined"
-                onClick={() => onChange(null)}
-                sx={{ flexShrink: 0 }}
-            >
-                {clearLabel}
-            </Button>
-        )}
     </Stack>
 );
+
+type PlaybackMode = 'once' | 'loop';
+type WhenMode = 'queue' | 'now';
 
 export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
     entry,
@@ -72,16 +82,22 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
     const socket = useSocket();
 
     const [media, setMedia] = useState<any | null>(null);
-    const [secondaryMedia, setSecondaryMedia] = useState<any | null>(null);
     const [title, setTitle] = useState(entry.title);
 
-    const [skipIntro, setSkipIntro] = useState(
-        entry.data?.options?.skipIntro ?? false,
+    const opts = entry.data?.options;
+    const [intro, setIntro] = useState<IntroMode>(normalizeIntro(opts));
+    const [outro, setOutro] = useState<OutroMode>(normalizeOutro(opts));
+    const [playback, setPlayback] = useState<PlaybackMode>(
+        opts?.loop ? 'loop' : 'once',
     );
-    const [loop, setLoop] = useState(entry.data?.options?.loop ?? false);
-    const [playNow, setPlayNow] = useState(
-        entry.data?.options?.playNow ?? false,
-    );
+    const [when, setWhen] = useState<WhenMode>(opts?.playNow ? 'now' : 'queue');
+    const [inspectorOpen, setInspectorOpen] = useState(false);
+    const [channelFps, setChannelFps] = useState(DEFAULT_FPS);
+    const [trim, setTrim] = useState<VideoInspectorValue>({
+        inPoint: opts?.inPoint ?? 0,
+        outPoint: opts?.outPoint ?? 0,
+        volume: opts?.volume ?? 1,
+    });
 
     useEffect(() => {
         if (!entry.data?.clip) return;
@@ -101,18 +117,140 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
     }, [entry.data?.clip]);
 
     useEffect(() => {
-        if (!entry.data?.options?.secondaryVideo) return;
-        socket.caspar
-            .getMedia()
-            .then(media =>
-                setSecondaryMedia(
-                    media.get(entry.data.options.secondaryVideo) || null,
-                ),
-            );
-    }, [entry.data?.options?.secondaryVideo]);
+        socket
+            .rawRequest(`/api/plugin/lappis/videos`, 'GET', {})
+            .then(res =>
+                setChannelFps(normalizeVideoPayload(res.data).channelFps),
+            )
+            .catch(() => {});
+    }, [socket]);
+    useBroadcast(
+        socket,
+        'plugin/lappis/videos',
+        'UPDATE',
+        useCallback(
+            (req: { data?: any }) =>
+                setChannelFps(normalizeVideoPayload(req.data).channelFps),
+            [],
+        ),
+    );
+
+    const fullDuration = fullDurationOf(media);
+
+    // Reset trim when the clip is swapped, but not on the initial async media load.
+    const lastClipId = useRef<string | null>(entry.data?.clip ?? null);
+    const hydrated = useRef(!entry.data?.clip);
+    const outPointReady = useRef(opts?.outPoint !== undefined);
+    useEffect(() => {
+        const clipId = media?.id ?? null;
+
+        if (!hydrated.current) {
+            if (clipId === lastClipId.current) hydrated.current = true;
+            return;
+        }
+
+        if (clipId === lastClipId.current) return;
+
+        lastClipId.current = clipId;
+        outPointReady.current = false;
+        setTrim({ inPoint: 0, outPoint: 0, volume: 1 });
+    }, [media?.id]);
+
+    useEffect(() => {
+        if (outPointReady.current || !fullDuration) return;
+
+        outPointReady.current = true;
+        setTrim(prev => ({ ...prev, outPoint: fullDuration }));
+    }, [fullDuration]);
+
+    // Ignore the outPoint=0 placeholder to avoid a one-frame "trimmed" flash.
+    const trimmed = outPointReady.current && isTrimmed(trim, fullDuration);
+    const volumeChanged = trim.volume !== 1;
+    const trimActive = trimmed || volumeChanged;
+    const trimRangeValid = trim.outPoint > trim.inPoint;
+
+    const inspectorSummary = [
+        trimmed &&
+            t('playVideo.trimmedChip', {
+                in: formatTime(trim.inPoint),
+                out: formatTime(trim.outPoint),
+            }),
+        volumeChanged &&
+            t('playVideo.volumeChip', {
+                volume: Math.round(trim.volume * 100),
+            }),
+    ]
+        .filter(Boolean)
+        .join(' · ');
 
     const additionalOptionsActive =
-        playNow || skipIntro || loop || !!secondaryMedia;
+        intro !== 'regular' ||
+        outro !== 'cut' ||
+        playback !== 'once' ||
+        when !== 'queue' ||
+        trimActive;
+
+    const introOptions: ModeOption[] = [
+        {
+            value: 'regular',
+            label: t('transition.introRegular'),
+            icon: <PlayCircleOutlineIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'fast',
+            label: t('transition.introFast'),
+            icon: <FastForwardIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'fade',
+            label: t('transition.introFade'),
+            icon: <GradientIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'cut',
+            label: t('transition.introCut'),
+            icon: <ContentCutIcon sx={{ fontSize: 16 }} />,
+        },
+    ];
+
+    const outroOptions: ModeOption[] = [
+        {
+            value: 'fade',
+            label: t('transition.outroFade'),
+            icon: <GradientIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'cut',
+            label: t('transition.outroCut'),
+            icon: <ContentCutIcon sx={{ fontSize: 16 }} />,
+        },
+    ];
+
+    const playbackOptions: ModeOption[] = [
+        {
+            value: 'once',
+            label: t('playVideo.playbackOnce'),
+            icon: <LooksOneIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'loop',
+            label: t('playVideo.playbackLoop'),
+            icon: <LoopIcon sx={{ fontSize: 16 }} />,
+        },
+    ];
+
+    const whenOptions: ModeOption[] = [
+        {
+            value: 'queue',
+            label: t('playVideo.whenQueue'),
+            icon: <QueueMusicIcon sx={{ fontSize: 16 }} />,
+        },
+        {
+            value: 'now',
+            label: t('playVideo.whenNow'),
+            icon: <FlashOnIcon sx={{ fontSize: 16 }} />,
+        },
+    ];
 
     return (
         <Stack spacing={2.5}>
@@ -155,71 +293,76 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                     }}
                 >
                     <Typography variant="body2">
-                        {t('playVideo.additionalOptions')}
+                        {t('transition.additionalOptions')}
                         {additionalOptionsActive && ' •'}
                     </Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                    <Stack spacing={2}>
-                        <Box>
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ display: 'block', marginBottom: 0.5 }}
+                    <Stack spacing={1.5}>
+                        <ModeRow
+                            label={t('transition.introLabel')}
+                            value={intro}
+                            onChange={v => setIntro(v as IntroMode)}
+                            options={introOptions}
+                        />
+                        <ModeRow
+                            label={t('transition.outroLabel')}
+                            value={outro}
+                            onChange={v => setOutro(v as OutroMode)}
+                            options={outroOptions}
+                        />
+                        <ModeRow
+                            label={t('playVideo.playbackLabel')}
+                            value={playback}
+                            onChange={v => setPlayback(v as PlaybackMode)}
+                            options={playbackOptions}
+                        />
+                        <ModeRow
+                            label={t('playVideo.whenLabel')}
+                            value={when}
+                            onChange={v => setWhen(v as WhenMode)}
+                            options={whenOptions}
+                        />
+                        {media && (
+                            <Stack
+                                direction="row"
+                                alignItems="center"
+                                spacing={1.5}
+                                sx={{ pt: 1 }}
                             >
-                                {t('playVideo.secondaryVideoLabel')}
-                            </Typography>
-                            <VideoPicker
-                                clip={secondaryMedia}
-                                onChange={setSecondaryMedia}
-                                clearLabel={t('playVideo.clearButton')}
-                            />
-                        </Box>
-
-                        <FormGroup row sx={{ gap: 2 }}>
-                            <FormControlLabel
-                                label={t('playVideo.playNowLabel')}
-                                title={t('playVideo.playNowTitle')}
-                                control={
-                                    <Checkbox
-                                        size="small"
-                                        checked={playNow}
-                                        onChange={e =>
-                                            setPlayNow(e.target['checked'])
-                                        }
-                                    />
-                                }
-                            />
-                            <FormControlLabel
-                                label={t('playVideo.skipIntroLabel')}
-                                title={t('playVideo.skipIntroTitle')}
-                                control={
-                                    <Checkbox
-                                        size="small"
-                                        checked={skipIntro}
-                                        onChange={e =>
-                                            setSkipIntro(e.target['checked'])
-                                        }
-                                    />
-                                }
-                            />
-                            <FormControlLabel
-                                label={t('playVideo.loopLabel')}
-                                title={t('playVideo.loopTitle')}
-                                control={
-                                    <Checkbox
-                                        size="small"
-                                        checked={loop}
-                                        onChange={e =>
-                                            setLoop(e.target['checked'])
-                                        }
-                                    />
-                                }
-                            />
-                        </FormGroup>
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ flexGrow: 1, minWidth: 0 }}
+                                    noWrap
+                                >
+                                    {inspectorSummary || t('playVideo.noTrim')}
+                                </Typography>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={
+                                        <ContentCutIcon sx={{ fontSize: 16 }} />
+                                    }
+                                    onClick={() => setInspectorOpen(true)}
+                                    sx={{ flexShrink: 0 }}
+                                >
+                                    {t('playVideo.openInspector')}
+                                </Button>
+                            </Stack>
+                        )}
                     </Stack>
                 </AccordionDetails>
             </Accordion>
+
+            <VideoInspectorModal
+                open={inspectorOpen}
+                onClose={() => setInspectorOpen(false)}
+                clip={media}
+                value={trim}
+                onChange={setTrim}
+                fps={channelFps}
+            />
 
             <RundownEditorActionBar
                 exists={!creating}
@@ -230,11 +373,21 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
                         data: {
                             clip: media?.id,
                             options: {
-                                loop,
-                                skipIntro,
-                                playNow,
-
-                                secondaryVideo: secondaryMedia?.id,
+                                intro,
+                                outro,
+                                loop: playback === 'loop',
+                                playNow: when === 'now',
+                                ...(trimActive
+                                    ? {
+                                          ...(trimmed && trimRangeValid
+                                              ? {
+                                                    inPoint: trim.inPoint,
+                                                    outPoint: trim.outPoint,
+                                                }
+                                              : {}),
+                                          volume: trim.volume,
+                                      }
+                                    : {}),
                             },
                         },
                         ...(instant ? {} : { title }),

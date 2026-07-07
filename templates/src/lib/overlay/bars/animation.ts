@@ -6,6 +6,9 @@ export function handleState(
 ) {
     if (state === 0) handleHide(tl, styles);
     if (state === 1) handleShow(tl, styles);
+    // Force playback from the start so the newly-built tween always animates,
+    // even if the timeline was sitting completed/suspended since mount.
+    tl.restart();
 }
 
 function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {

@@ -5,15 +5,28 @@
 
     width: 100vw;
     height: 100vh;
+    overflow: hidden;
 
-    /* background: #D1FAE5; */
-    background-image: url(/images/banner1.png);
-    background-size: 100vw;
-    background-repeat: no-repeat;
+    background: var(--c-orange);
 
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.bubble {
+    top: 12.5%;
+    width: 28vw;
+    opacity: 0.25;
+    transform: translateY(-50%);
+}
+
+.bubble--left {
+    left: calc(-6vw + 10px);
+}
+
+.bubble--right {
+    right: calc(-6vw + 10px);
 }
 
 .namnskylt__main__name {
@@ -36,6 +49,5 @@
     text-align: center;
     text-transform: uppercase;
 
-    /* color: #1F7A4D; */
     color: white;
 }

@@ -1,83 +1,54 @@
-/* eslint-disable max-lines */
 import path from 'path';
-import fs from 'fs';
-import { noTry } from 'no-try';
-import {
-    CasparPlugin,
-    type RundownActionMetadata,
-    UI_INJECTION_ZONE,
-} from '@lappis/cg-manager';
-import { type RundownItem } from '@lappis/cg-manager/dist/types/rundown';
+import { CasparPlugin, UI_INJECTION_ZONE } from '@lappis/cg-manager';
 import { Templates } from './templates';
-import {
-    SwishOverlayEffect,
-    type SwishOverlayEffectOptions,
-} from './effects/overlay/swish';
-import {
-    NamnskyltOverlayEffect,
-    type NamnskyltOverlayEffectOptions,
-} from './effects/overlay/namnskylt';
-import {
-    VideoTransitionOverlayEffect,
-    type VideoTransitionOverlayEffectOptions,
-} from './effects/overlay/videotransition';
-import {
-    SwishWallEffect,
-    type SwishWallEffectOptions,
-} from './effects/wall/swish';
-import {
-    NamnskyltWallEffect,
-    type NamnskyltWallEffectOptions,
-} from './effects/wall/namnskylt';
-import {
-    VideoTransitionWallEffect,
-    type VideoTransitionWallEffectOptions,
-} from './effects/wall/videotransition';
-import {
-    BarsOverlayEffect,
-    type BarsOverlayEffectOptions,
-} from './effects/overlay/bars';
-import {
-    InsamlingOverlayEffect,
-    type InsamlingOverlayEffectOptions,
-} from './effects/overlay/insamling';
-import {
-    PresentationOverlayEffect,
-    type PresentationOverlayEffectOptions,
-} from './effects/overlay/presentation';
-import { VideoEffect, type VideoEffectOptions } from './effects/misc/video';
 import VideoManager from './video';
-import { RouteEffect, type RouteEffectOptions } from './effects/misc/route';
-import OverlayManager, { CHANNELS, getGroup, GROUPS } from './overlay';
-import { MotionEffect, type MotionEffectOptions } from './effects/misc/motion';
-import MotionManager from './motion';
-import { getVerseSlides, type VerseLookup } from './bible';
+import OverlayManager from './overlay';
 import { AtemManager } from './atem';
 import { config } from './config';
-import {
-    TextWallEffect,
-    type TextWallEffectOptions,
-} from './effects/wall/text';
-import {
-    WallVideoEffect,
-    type WallVideoEffectOptions,
-} from './effects/misc/wall_video';
 import { NamnskyltPresetStore } from './namnskylt-presets';
 import { PresentationStore } from './presentations';
+import { PresentationImportManager } from './presentation-import';
+import { HealthMonitor } from './healthcheck';
+import { ActiveRundownStore } from './active-rundown';
+import { CaptionKitStore } from './captionkit';
+import { SettingsStore } from './settings';
+import { registerEffects, registerEffectGroups } from './effects';
+import { registerRundownActions } from './rundown-actions';
+import { registerCompanion } from './companion';
+import { registerRoutes } from './routes';
 
 export default class LappisOverlayPlugin extends CasparPlugin {
     public templates: Templates;
     public video: VideoManager;
-    public motion: MotionManager;
     public overlay: OverlayManager;
     public atem: AtemManager;
     public namnskyltPresets: NamnskyltPresetStore;
     public presentations: PresentationStore;
+    public presentationImports: PresentationImportManager;
+    public activeRundown: ActiveRundownStore;
+    public captionkit: CaptionKitStore;
+    public settings: SettingsStore;
+    public health: HealthMonitor;
 
     private reconnectHandler: () => void;
+    private companionDispose: (() => void) | null = null;
 
     public getLogger() {
         return this.logger;
+    }
+
+    public getApi() {
+        return this.api;
+    }
+
+    public getLoggerRef() {
+        return this.logger;
+    }
+
+    // Narrow broadcast wrapper so diagnostics.ts / effects can surface errors
+    // to the UI without importing the full PluginAPI type.
+    public broadcast(target: string, method: string, data: unknown) {
+        this.api.broadcast(target, method as any, data);
     }
 
     public getOverlayManager() {
@@ -89,7 +60,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     public static get minChannels() {
-        return 3;
+        return 4;
     }
 
     public getInjectionZone(zone: UI_INJECTION_ZONE, key: string) {
@@ -99,28 +70,50 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     public sendVideoInformation() {
         const data = this.video.getInformation();
         this.api.broadcast('videos', 'UPDATE', data);
+        this.api.invalidateFeedback('lappis-rundown-video');
+        this.api.invalidateFeedback('lappis-video-queue-state');
     }
 
     protected onEnable() {
-        this.templates = new Templates(() => this.overlay.initialize());
+        this.health = new HealthMonitor(this);
+
+        // Only send CG ADD commands once both the local template HTTP server is
+        // up AND CasparCG is connected. awaitConnection() resolves immediately
+        // if already connected, so this is a no-op on reconnect paths.
+        this.templates = new Templates(
+            async () => {
+                await this.api.awaitConnection();
+                if (this.overlay) this.overlay.initialize();
+            },
+            (hcId, phase) => this.health?.ack(hcId, phase),
+        );
         this.video = new VideoManager(this);
         this.overlay = new OverlayManager(this);
-        this.motion = new MotionManager(this);
-        this.atem = new AtemManager();
+        this.health.onUnhealthy = type => this.overlay.handleUnhealthy(type);
+        this.health.onHealthy = type => this.overlay.handleHealthy(type);
+        this.atem = new AtemManager(this);
         this.namnskyltPresets = new NamnskyltPresetStore(this);
         this.presentations = new PresentationStore(this);
+        this.presentationImports = new PresentationImportManager(this);
+        this.activeRundown = new ActiveRundownStore(this);
+        this.captionkit = new CaptionKitStore(this);
+        this.settings = new SettingsStore(this);
 
         if (config.atem.ip) {
             this.atem.connect(config.atem.ip);
         }
 
-        this.registerEffectGroups();
-        this.registerEffects();
-        this.registerRoutes();
+        registerEffectGroups(this);
+        registerEffects(this);
+        registerRoutes(this);
 
         this.api.registerUI(
             UI_INJECTION_ZONE.PLUGIN_PAGE,
             path.join(__dirname, 'ui', 'overlay'),
+        );
+        this.api.registerUI(
+            `${UI_INJECTION_ZONE.NAVBAR_PAGE}.slides` as UI_INJECTION_ZONE,
+            path.join(__dirname, 'ui', 'presentations'),
         );
         this.api.registerUI(
             UI_INJECTION_ZONE.RUNDOWN_SIDE,
@@ -139,580 +132,46 @@ export default class LappisOverlayPlugin extends CasparPlugin {
             `${PANEL}.cg-overlay-plugin:panel.slidesTab` as UI_INJECTION_ZONE,
             path.join(__dirname, 'ui', 'slides'),
         );
-        this.api.registerUI(
-            `${PANEL}.cg-overlay-plugin:panel.motionTab` as UI_INJECTION_ZONE,
-            path.join(__dirname, 'ui', 'motion-tab'),
-        );
 
-        this.registerRundownActions();
+        registerRundownActions(this);
+        this.companionDispose = registerCompanion(this);
 
         this.reconnectHandler = () => {
             this.logger.info(
                 'Server reconnected — restoring effect groups and persistent effects',
             );
-            this.registerEffectGroups();
+            registerEffectGroups(this);
             this.overlay.initialize();
         };
         this.api.onReconnect(this.reconnectHandler);
     }
 
-    protected onDisable() {
+    protected async onDisable() {
         if (this.reconnectHandler) {
             this.api.offReconnect(this.reconnectHandler);
             this.reconnectHandler = null;
         }
+
+        if (this.companionDispose !== null) {
+            this.companionDispose();
+            this.companionDispose = null;
+        }
+
+        this.health?.dispose();
+        this.health = null;
 
         this.overlay.dispose();
         this.overlay = null;
 
         this.templates.dispose();
         this.templates = null;
-    }
 
-    private registerEffects() {
-        // TODO: sanitize options input, verify that the options are valid
-        this.api.registerEffect(
-            'overlay-swish',
-            (group, options) =>
-                new SwishOverlayEffect(
-                    group,
-                    options as SwishOverlayEffectOptions,
-                    this.templates.getFilePath('overlay/swish'),
-                ),
-        );
-
-        this.api.registerEffect(
-            'overlay-namnskylt',
-            (group, options) =>
-                new NamnskyltOverlayEffect(
-                    group,
-                    options as NamnskyltOverlayEffectOptions,
-                    this.templates.getFilePath('overlay/namnskylt'),
-                ),
-        );
-
-        this.api.registerEffect(
-            'overlay-videotransition',
-            (group, options) =>
-                new VideoTransitionOverlayEffect(
-                    group,
-                    options as VideoTransitionOverlayEffectOptions,
-                    this.templates.getFilePath('overlay/videotransition'),
-                ),
-        );
-
-        this.api.registerEffect(
-            'overlay-bars',
-            (group, options) =>
-                new BarsOverlayEffect(
-                    group,
-                    options as BarsOverlayEffectOptions,
-                    this.templates.getFilePath('overlay/bars'),
-                ),
-        );
-
-        this.api.registerEffect(
-            'overlay-insamling',
-            (group, options) =>
-                new InsamlingOverlayEffect(
-                    group,
-                    options as InsamlingOverlayEffectOptions,
-                    this.templates.getFilePath('overlay/insamling'),
-                ),
-        );
-
-        this.api.registerEffect(
-            'overlay-presentation',
-            (group, options) =>
-                new PresentationOverlayEffect(
-                    group,
-                    options as PresentationOverlayEffectOptions,
-                    this.templates.getFilePath('overlay/presentation'),
-                ),
-        );
-
-        this.api.registerEffect(
-            'wall-swish',
-            (group, options) =>
-                new SwishWallEffect(
-                    group,
-                    options as SwishWallEffectOptions,
-                    this.templates.getFilePath('wall/swish'),
-                ),
-        );
-
-        this.api.registerEffect(
-            'wall-namnskylt',
-            (group, options) =>
-                new NamnskyltWallEffect(
-                    group,
-                    options as NamnskyltWallEffectOptions,
-                    this.templates.getFilePath('wall/namnskylt'),
-                ),
-        );
-
-        this.api.registerEffect(
-            'wall-videotransition',
-            (group, options) =>
-                new VideoTransitionWallEffect(
-                    group,
-                    options as VideoTransitionWallEffectOptions,
-                    this.templates.getFilePath('wall/videotransition'),
-                ),
-        );
-
-        this.api.registerEffect(
-            'wall-text',
-            (group, options) =>
-                new TextWallEffect(
-                    group,
-                    options as TextWallEffectOptions,
-                    this.templates.getFilePath('wall/text'),
-                ),
-        );
-
-        this.api.registerEffect(
-            'lappis-video',
-            (group, options) =>
-                new VideoEffect(group, options as VideoEffectOptions),
-        );
-
-        this.api.registerEffect(
-            'lappis-wall-video',
-            (group, options) =>
-                new WallVideoEffect(group, options as WallVideoEffectOptions),
-        );
-
-        this.api.registerEffect(
-            'lappis-route',
-            (group, options) =>
-                new RouteEffect(group, options as RouteEffectOptions),
-        );
-
-        this.api.registerEffect(
-            'motion',
-            (group, options) =>
-                new MotionEffect(group, options as MotionEffectOptions),
-        );
-    }
-
-    protected registerRundownActions() {
-        const registerRundownAction = (
-            key: string,
-            action: (rundown: RundownItem) => void,
-            metadata?: RundownActionMetadata,
-        ) => {
-            this.api.registerUI(
-                this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_ITEM, key),
-                path.join(__dirname, 'ui', key, 'Item'),
-            );
-            this.api.registerUI(
-                this.getInjectionZone(UI_INJECTION_ZONE.RUNDOWN_EDITOR, key),
-                path.join(__dirname, 'ui', key, 'Editor'),
-            );
-
-            this.api.registerRundownAction(key, action, metadata);
-        };
-
-        registerRundownAction(
-            'play-video',
-            async rundown => {
-                const video = this.api.getFileDatabase().get(rundown.data.clip);
-                if (!video) return null; // throw new WebError('Clip not found', 404);
-
-                if (rundown.data.options?.playNow)
-                    this.video.playVideo(video.id, rundown.data.options);
-                else this.video.queueVideo(video.id, rundown.data.options);
-            },
-            {
-                accepts: {
-                    fileTypes: ['video/*'],
-                    match: file => {
-                        if (!file.type.startsWith('video/')) return null;
-                        return {
-                            type: 'play-video',
-                            title: stripExt(file.name),
-                            data: {
-                                clip: (file as unknown as { mediaId: string })
-                                    .mediaId,
-                            },
-                        };
-                    },
-                },
-                stop: () => this.video.stopVideo(),
-            },
-        );
-
-        registerRundownAction(
-            'namnskylt',
-            async rundown => {
-                const name = rundown.data.name;
-                if (!name) return null; // throw new WebError('No name provided', 400);
-
-                this.overlay.showNamnskylt(name);
-            },
-            { stop: () => this.overlay.hideNamnskylt() },
-        );
-
-        registerRundownAction('swish', async rundown => {
-            const { number, labels, skipFirst } = rundown.data;
-            this.overlay.toggleSwish(number, labels, skipFirst);
-        });
-
-        registerRundownAction('bars', async () => {
-            this.overlay.toggleBars();
-        });
-
-        registerRundownAction('presentation', async rundown => {
-            this.overlay.togglePresentationMode(rundown.data.atem ?? false);
-        });
-
-        registerRundownAction('insamling', async rundown => {
-            this.overlay.toggleInsamling(rundown.data);
-        });
-
-        registerRundownAction('text', async rundown => {
-            this.overlay.setText(rundown.data.text);
-        });
-
-        registerRundownAction(
-            'slides',
-            async rundown => {
-                const presentationId = rundown.data?.presentationId;
-                if (typeof presentationId !== 'string' || !presentationId) {
-                    this.logger.warn(
-                        'slides rundown action: no presentationId on entry',
-                    );
-                    return;
-                }
-
-                await this.presentations.ready;
-                if (!this.presentations.get(presentationId)) {
-                    this.logger.warn(
-                        `slides rundown action: presentation ${presentationId} not found`,
-                    );
-                    return;
-                }
-
-                // Single broadcast — the UI opens the run modal in response.
-                // Playback itself is triggered by the UI when the operator clicks a slide.
-                this.overlay.broadcastArmEvent(presentationId, rundown.id);
-            },
-            { stop: () => this.overlay.stopPlayback() },
-        );
-    }
-
-    public registerEffectGroups() {
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.VIDEO)); // main video
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.BARS)); // main video
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.OVERLAY)); // main overlay
-        this.api.getEffectGroup(getGroup(CHANNELS.MAIN, GROUPS.PRESENTATION)); // main presentation
-
-        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.MOTION)); // wall motion
-        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.PRESENTATION)); // wall presentation
-        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.VIDEO)); // wall video
-        this.api.getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.OVERLAY)); // wall overlay
-
-        this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.VIDEO)); // video-out
-        this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY)); // video-out
-        this.api.getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION)); // video-out slides
-    }
-
-    public registerRoutes() {
-        const bgPath = path.join(
-            __dirname,
-            'templates',
-            'images',
-            'banner1.png',
-        );
-        let bgCache: string | null = null;
-        this.api.registerRoute(
-            'assets/background',
-            async () => {
-                bgCache ??= fs.readFileSync(bgPath).toString('base64');
-                return { data: bgCache, mimeType: 'image/png' };
-            },
-            'GET',
-        );
-
-        this.api.registerRoute(
-            'bars',
-            async () => {
-                this.overlay.toggleBars();
-            },
-            'ACTION',
-        );
-
-        this.api.registerRoute(
-            'presentation',
-            async req => {
-                this.overlay.togglePresentationMode(
-                    typeof req.data === 'object' ? req.data['atem'] : false,
-                );
-            },
-            'ACTION',
-        );
-
-        this.api.registerRoute(
-            'swish',
-            async req => {
-                this.overlay.toggleSwish(
-                    typeof req.data === 'object' && req.data['number'],
-                );
-            },
-            'ACTION',
-        );
-
-        this.api.registerRoute(
-            'insamling',
-            async req => {
-                if (!req.data || typeof req.data !== 'object') return null; // throw new WebError('Invalid request', 400);
-
-                const { now, goal } = req.data as any;
-                this.overlay.toggleInsamling({ now, goal });
-            },
-            'ACTION',
-        );
-
-        this.api.registerRoute(
-            'motion/clip',
-            async req => {
-                if (!req.data) return null; // throw new WebError('Invalid request', 400);
-
-                const { clip } = req.data as { clip: string };
-                this.motion.setMotion(clip);
-            },
-            'ACTION',
-        );
-
-        this.api.registerRoute(
-            'motion/color',
-            async req => {
-                if (!req.data) return null; // throw new WebError('Invalid request', 400);
-
-                const { color } = req.data as { color: string };
-                this.motion.setColor(color);
-            },
-            'ACTION',
-        );
-
-        this.api.registerRoute(
-            'videos',
-            async () => this.video.getInformation(),
-            'GET',
-        );
-        this.api.registerRoute(
-            'videos/:id',
-            async req => this.video.removeItem(req.params.id),
-            'DELETE',
-        );
-
-        this.api.registerRoute(
-            'videos',
-            async () => this.video.clearQueue(),
-            'DELETE',
-        );
-        this.api.registerRoute(
-            'video',
-            async req =>
-                this.video.stopVideo(
-                    typeof req.data === 'object' && req.data['clear'],
-                ),
-            'DELETE',
-        );
-
-        this.api.registerRoute(
-            'video/play',
-            async req => {
-                const { clip, options } = req.data as any;
-                const video = this.api.getFileDatabase().get(clip);
-                if (!video) return null;
-                this.video.playVideo(video.id, options);
-            },
-            'ACTION',
-        );
-
-        this.api.registerRoute(
-            'namnskylt-presets',
-            async () => {
-                await this.namnskyltPresets.ready;
-                return this.namnskyltPresets.get();
-            },
-            'GET',
-        );
-
-        this.api.registerRoute(
-            'namnskylt-presets',
-            async req => {
-                await this.namnskyltPresets.ready;
-                return this.namnskyltPresets.replace(req.data);
-            },
-            'UPDATE',
-        );
-
-        this.api.registerRoute(
-            'slides',
-            async () => this.overlay.getPresentationState(),
-            'GET',
-        );
-
-        this.api.registerRoute(
-            'bible',
-            async req => {
-                const [err, result] = noTry(() =>
-                    getVerseSlides(req.data as VerseLookup),
-                );
-                if (err)
-                    return {
-                        error: (err as any)?.message ?? 'Bible lookup failed',
-                    };
-                return result;
-            },
-            'ACTION',
-        );
-
-        this.api.registerRoute(
-            'slides',
-            async req => {
-                if (!req.data || typeof req.data !== 'object') return null;
-
-                const data = req.data as {
-                    action: string;
-                    presentationId?: string;
-                    slideId?: string;
-                };
-                switch (data.action) {
-                    case 'play': {
-                        if (!data.presentationId || !data.slideId) return null;
-                        await this.presentations.ready;
-                        const presentation = this.presentations.get(
-                            data.presentationId,
-                        );
-                        if (!presentation) return null;
-                        const slide = presentation.slides.find(
-                            s => s.id === data.slideId,
-                        );
-                        if (!slide) return null;
-                        if (slide.type === 'image') {
-                            this.overlay.playSlide(
-                                presentation.id,
-                                slide.id,
-                                { kind: 'image', mediaId: slide.mediaId },
-                            );
-                        } else {
-                            this.overlay.playSlide(
-                                presentation.id,
-                                slide.id,
-                                {
-                                    kind: 'text',
-                                    text: slide.text,
-                                    reference:
-                                        slide.type === 'bible'
-                                            ? slide.reference
-                                            : '',
-                                },
-                            );
-                        }
-                        break;
-                    }
-                    case 'stop':
-                        this.overlay.stopPlayback();
-                        break;
-                }
-
-                return this.overlay.getPresentationState();
-            },
-            'ACTION',
-        );
-
-        // Presentations CRUD
-        this.api.registerRoute(
-            'presentations',
-            async () => {
-                await this.presentations.ready;
-                return this.presentations.list();
-            },
-            'GET',
-        );
-
-        this.api.registerRoute(
-            'presentations/:id',
-            async req => {
-                await this.presentations.ready;
-                return this.presentations.get(req.params.id);
-            },
-            'GET',
-        );
-
-        this.api.registerRoute(
-            'presentations',
-            async req => {
-                await this.presentations.ready;
-                const input =
-                    req.data && typeof req.data === 'object'
-                        ? (req.data as any)
-                        : {};
-                const created = await this.presentations.create(input);
-                this.api.broadcast(
-                    'presentations',
-                    'UPDATE',
-                    this.presentations.list(),
-                );
-                return created;
-            },
-            'ACTION',
-        );
-
-        this.api.registerRoute(
-            'presentations/:id',
-            async req => {
-                await this.presentations.ready;
-                const patch =
-                    req.data && typeof req.data === 'object'
-                        ? (req.data as any)
-                        : {};
-                const updated = await this.presentations.update(
-                    req.params.id,
-                    patch,
-                );
-                if (updated)
-                    this.api.broadcast(
-                        'presentations',
-                        'UPDATE',
-                        this.presentations.list(),
-                    );
-                return updated;
-            },
-            'UPDATE',
-        );
-
-        this.api.registerRoute(
-            'presentations/:id',
-            async req => {
-                await this.presentations.ready;
-                const ok = await this.presentations.remove(req.params.id);
-                if (ok) {
-                    // If the deleted presentation is currently playing, stop the overlay.
-                    const state = this.overlay.getPresentationState();
-                    if (
-                        state.playing &&
-                        state.presentationId === req.params.id
-                    ) {
-                        this.overlay.stopPlayback();
-                    }
-                    this.api.broadcast(
-                        'presentations',
-                        'UPDATE',
-                        this.presentations.list(),
-                    );
-                }
-                return ok;
-            },
-            'DELETE',
-        );
+        if (this.atem) {
+            await this.atem.resetToNormal().catch(() => {});
+            await this.atem.disconnect();
+            this.atem = null;
+        }
     }
 }
 
-function stripExt(name: string): string {
-    return name.replace(/\.[^.]+$/, '');
-}
+export type { LappisOverlayPlugin };

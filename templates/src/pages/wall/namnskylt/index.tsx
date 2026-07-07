@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './style.module.css';
 import { register } from '../../../lib/wall/namnskylt/cg';
 import { handleState } from '../../../lib/wall/namnskylt/animation';

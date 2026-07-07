@@ -27,13 +27,33 @@ export interface TextSlide {
     text: string;
 }
 
+export interface HeadingSlide {
+    type: 'heading';
+    id: string;
+    text: string;
+}
+
 export interface ImageSlide {
     type: 'image';
     id: string;
     mediaId: string;
 }
 
-export type Slide = BibleSlide | TextSlide | ImageSlide;
+export interface VideoSlide {
+    type: 'video';
+    id: string;
+    mediaId: string;
+    inPoint?: number;
+    outPoint?: number;
+    volume?: number;
+}
+
+export type Slide =
+    | BibleSlide
+    | TextSlide
+    | HeadingSlide
+    | ImageSlide
+    | VideoSlide;
 
 export interface Presentation {
     id: string;
@@ -43,7 +63,7 @@ export interface Presentation {
     updatedAt: number;
 }
 
-function makeId(): string {
+export function makePresentationId(): string {
     return `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
@@ -70,7 +90,15 @@ export class PresentationStore {
                     );
             return;
         }
-        const [, parsed] = noTry(() => JSON.parse(raw!));
+        const [parseErr, parsed] = noTry(() => JSON.parse(raw!));
+        if (parseErr) {
+            this.plugin
+                .getLogger()
+                .warn(
+                    `Failed to parse presentations JSON: ${(parseErr as any).message}`,
+                );
+            return;
+        }
         if (parsed) this.presentations = sanitize(parsed);
     }
 
@@ -93,11 +121,18 @@ export class PresentationStore {
     }
 
     public async create(
-        input?: Partial<Pick<Presentation, 'title' | 'slides'>>,
+        input?: Partial<Pick<Presentation, 'id' | 'title' | 'slides'>>,
     ): Promise<Presentation> {
+        const id =
+            typeof input?.id === 'string' && input.id.trim()
+                ? input.id.trim()
+                : makePresentationId();
+        if (this.presentations.some(p => p.id === id))
+            throw new Error(`Presentation "${id}" already exists`);
+
         const now = Date.now();
         const presentation: Presentation = {
-            id: makeId(),
+            id,
             title:
                 typeof input?.title === 'string' && input.title.trim()
                     ? input.title.trim()
@@ -201,9 +236,28 @@ function sanitizeSlide(raw: any): Slide | null {
             text: typeof raw.text === 'string' ? raw.text : '',
         };
     }
+    if (type === 'heading') {
+        return {
+            type: 'heading',
+            id: raw.id,
+            text: typeof raw.text === 'string' ? raw.text : '',
+        };
+    }
     if (type === 'image') {
         if (typeof raw.mediaId !== 'string' || !raw.mediaId) return null;
         return { type: 'image', id: raw.id, mediaId: raw.mediaId };
+    }
+    if (type === 'video') {
+        if (typeof raw.mediaId !== 'string' || !raw.mediaId) return null;
+        const slide: VideoSlide = {
+            type: 'video',
+            id: raw.id,
+            mediaId: raw.mediaId,
+        };
+        if (Number.isFinite(raw.inPoint)) slide.inPoint = raw.inPoint;
+        if (Number.isFinite(raw.outPoint)) slide.outPoint = raw.outPoint;
+        if (Number.isFinite(raw.volume)) slide.volume = raw.volume;
+        return slide;
     }
     return null;
 }

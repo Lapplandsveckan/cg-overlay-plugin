@@ -1,13 +1,24 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import TrimmedVideo from './TrimmedVideo';
 
 export interface SlidePreviewProps {
     text?: string;
     reference?: string;
+    heading?: boolean;
 
     backgroundUrl?: string | null;
-    /** For image slides: thumbnail from CasparCG media, overrides backgroundUrl and hides text. */
+    /** For image/video slides: thumbnail from CasparCG media, overrides backgroundUrl and hides text. */
     imageUrl?: string | null;
+    /** Shows a play-icon badge over the thumbnail to mark it as a video slide. */
+    isVideo?: boolean;
+    /** For video slides: raw clip URL, rendered as a real <video> instead of the thumbnail + play-icon. */
+    videoUrl?: string | null;
+    /** Playback is clamped to [inPoint, outPoint]; defaults span the full clip. */
+    inPoint?: number;
+    outPoint?: number;
+    volume?: number;
     aspectRatio?: string;
     minWidth?: number | string;
     selected?: boolean;
@@ -60,8 +71,14 @@ function renderText(text: string): React.ReactNode {
 export const SlidePreview: React.FC<SlidePreviewProps> = ({
     text = '',
     reference = '',
+    heading = false,
     backgroundUrl,
     imageUrl,
+    isVideo,
+    videoUrl,
+    inPoint = 0,
+    outPoint,
+    volume = 1,
     aspectRatio = '16/9',
     minWidth,
     selected,
@@ -74,11 +91,14 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
             width: '100%',
             minWidth,
             backgroundColor: '#1a1c22',
-            backgroundImage: imageUrl
-                ? `url(${imageUrl})`
-                : backgroundUrl
-                  ? `url(${backgroundUrl})`
-                  : undefined,
+            backgroundImage:
+                isVideo && videoUrl
+                    ? undefined
+                    : imageUrl
+                      ? `url(${imageUrl})`
+                      : backgroundUrl
+                        ? `url(${backgroundUrl})`
+                        : undefined,
             backgroundSize: 'cover',
             borderRadius: 1,
             overflow: 'hidden',
@@ -90,7 +110,7 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
             containerType: 'size',
         }}
     >
-        {!imageUrl && (
+        {!imageUrl && !(isVideo && videoUrl) && (
             <>
                 <Box
                     sx={{
@@ -105,9 +125,9 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
                         sx={{
                             maxWidth: '78cqw',
                             fontFamily: `'Alright Sans', sans-serif`,
-                            fontSize: '7.6cqh',
+                            fontSize: heading ? '11.5cqh' : '7.6cqh',
                             lineHeight: 1.3,
-                            fontWeight: 400,
+                            fontWeight: heading ? 700 : 400,
                             textAlign: 'center',
                             textWrap: 'balance',
                             color: '#fff',
@@ -135,6 +155,38 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
                     </Box>
                 )}
             </>
+        )}
+        {isVideo && videoUrl ? (
+            <TrimmedVideo
+                videoUrl={videoUrl}
+                imageUrl={imageUrl}
+                inPoint={inPoint}
+                outPoint={outPoint}
+                volume={volume}
+            />
+        ) : (
+            imageUrl &&
+            isVideo && (
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'rgba(0,0,0,0.25)',
+                        pointerEvents: 'none',
+                    }}
+                >
+                    <PlayArrowIcon
+                        sx={{
+                            fontSize: '18cqh',
+                            color: 'rgba(255,255,255,0.85)',
+                            filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.6))',
+                        }}
+                    />
+                </Box>
+            )
         )}
     </Box>
 );

@@ -1,16 +1,17 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './style.module.css';
 import { register } from '../../../lib/wall/videotransition/cg';
 import { handleState } from '../../../lib/wall/videotransition/animation';
 import { getStylesProxy } from '../../../lib/animation';
 import { CG } from '../../../components/CG';
 
-export const VideoTransitionAnimation: React.FC<{ state: number }> = ({
-    state,
-}) => (
+export const VideoTransitionAnimation: React.FC<{
+    state: number;
+    mode: string;
+}> = ({ state, mode }) => (
     <CG
         state={state}
-        handle={handleState}
+        handle={(tl, s, p, st) => handleState(tl, s, p, st, mode)}
         labels={['start', 'mid', 'end']}
         styles={getStylesProxy(styles)}
     >
@@ -31,9 +32,10 @@ export const VideoTransitionAnimation: React.FC<{ state: number }> = ({
 
 const Page = () => {
     const [state, setState] = useState(0);
-    useEffect(() => register(setState), []);
+    const [mode, setMode] = useState('regular');
+    useEffect(() => register(setState, setMode), []);
 
-    return <VideoTransitionAnimation state={state} />;
+    return <VideoTransitionAnimation state={state} mode={mode} />;
 };
 
 export default Page;

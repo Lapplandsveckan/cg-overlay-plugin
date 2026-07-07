@@ -1,4 +1,4 @@
-import { offCGEvent, onCGEvent } from '../../cg';
+import { offCGEvent, onCGEvent, readyCG } from '../../cg';
 
 // state
 // 0: hidden
@@ -15,6 +15,8 @@ export function register(
 
     onCGEvent('stop', states[0]);
     onCGEvent('play', states[1]);
+
+    readyCG();
 
     return () => {
         offCGEvent('update', name);

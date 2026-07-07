@@ -6,16 +6,19 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    InputAdornment,
     IconButton,
     Stack,
     TextField,
-    Tooltip,
     Typography,
 } from '@mui/material';
 
 import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { noTryAsync } from 'no-try';
-import { useSocket } from '@web-lib';
+import { useSocket, useContextMenu } from '@web-lib';
 import { useTranslation } from './i18n';
 import { setRundownDragPayload } from './drag';
 
@@ -44,11 +47,39 @@ const DragHandleIcon: React.FC = () => (
 
 interface NamnskyltCardProps {
     name: string;
+    onEdit: () => void;
     onDelete: () => void;
+    onPlay: () => void;
 }
 
-const NamnskyltCard: React.FC<NamnskyltCardProps> = ({ name, onDelete }) => {
+const NamnskyltCard: React.FC<NamnskyltCardProps> = ({
+    name,
+    onEdit,
+    onDelete,
+    onPlay,
+}) => {
     const { t } = useTranslation('cg-overlay-plugin');
+    const menu = useContextMenu();
+
+    const menuItems = [
+        {
+            label: t('panel.playPreset'),
+            icon: <PlayArrowIcon sx={{ fontSize: 18 }} />,
+            onClick: onPlay,
+        },
+        {
+            label: t('panel.editPreset'),
+            icon: <EditIcon sx={{ fontSize: 18 }} />,
+            onClick: onEdit,
+        },
+        {
+            label: t('panel.deletePreset'),
+            icon: <DeleteIcon sx={{ fontSize: 18 }} />,
+            danger: true,
+            divider: true,
+            onClick: onDelete,
+        },
+    ];
 
     return (
         <Stack
@@ -63,6 +94,8 @@ const NamnskyltCard: React.FC<NamnskyltCardProps> = ({ name, onDelete }) => {
                     title: name,
                 })
             }
+            onClick={onEdit}
+            onContextMenu={menu.bind(menuItems)}
             sx={{
                 padding: '10px 12px',
                 borderRadius: 1,
@@ -76,7 +109,6 @@ const NamnskyltCard: React.FC<NamnskyltCardProps> = ({ name, onDelete }) => {
                     borderColor: '#4a90e2',
                     backgroundColor: '#2a2d35',
                     '& svg': { color: 'rgba(232,234,237,0.85)' },
-                    '& .delete-btn': { opacity: 1 },
                 },
                 '&:active': { cursor: 'grabbing' },
             }}
@@ -88,29 +120,6 @@ const NamnskyltCard: React.FC<NamnskyltCardProps> = ({ name, onDelete }) => {
             >
                 {name}
             </Typography>
-            <Tooltip title={t('panel.removePreset')}>
-                <IconButton
-                    className="delete-btn"
-                    size="small"
-                    onMouseDown={e => e.stopPropagation()}
-                    onClick={e => {
-                        e.stopPropagation();
-                        onDelete();
-                    }}
-                    sx={{
-                        opacity: 0,
-                        transition: 'opacity 80ms',
-                        color: 'rgba(232,234,237,0.65)',
-                        padding: 0.25,
-                        '&:hover': {
-                            color: '#e88c8c',
-                            backgroundColor: 'rgba(232,140,140,0.08)',
-                        },
-                    }}
-                >
-                    <CloseIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-            </Tooltip>
         </Stack>
     );
 };
@@ -123,6 +132,8 @@ const NamnskyltarTab: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [draftName, setDraftName] = useState('');
+    const [editingName, setEditingName] = useState<string | null>(null);
+    const [query, setQuery] = useState('');
 
     useEffect(() => {
         conn.rawRequest('/api/plugin/lappis/namnskylt-presets', 'GET', {})
@@ -133,20 +144,59 @@ const NamnskyltarTab: React.FC = () => {
             .finally(() => setLoaded(true));
     }, []);
 
-    const sorted = useMemo(
-        () => [...presets].sort((a, b) => a.localeCompare(b)),
-        [presets],
-    );
+    const filtered = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        return [...presets]
+            .filter(name => !q || name.toLowerCase().includes(q))
+            .sort((a, b) => a.localeCompare(b));
+    }, [presets, query]);
 
-    const handleAdd = async () => {
+    const openAdd = () => {
+        setEditingName(null);
+        setDraftName('');
+        setDialogOpen(true);
+    };
+
+    const openEdit = (name: string) => {
+        setEditingName(name);
+        setDraftName(name);
+        setDialogOpen(true);
+    };
+
+    const closeDialog = () => {
+        setDialogOpen(false);
+        setDraftName('');
+        setEditingName(null);
+    };
+
+    const handleSave = async () => {
         const name = draftName.trim();
-        if (!name || presets.includes(name)) {
-            setDialogOpen(false);
-            setDraftName('');
+        if (!name) {
+            closeDialog();
             return;
         }
 
-        const next = [...presets, name];
+        let next: string[];
+        if (editingName === null) {
+            // Add mode
+            if (presets.includes(name)) {
+                closeDialog();
+                return;
+            }
+            next = [...presets, name];
+        } else {
+            // Edit mode — no-op if unchanged or conflicts with existing
+            if (name === editingName) {
+                closeDialog();
+                return;
+            }
+            if (presets.includes(name)) {
+                closeDialog();
+                return;
+            }
+            next = presets.map(p => (p === editingName ? name : p));
+        }
+
         setSaving(true);
         const [err, res] = await noTryAsync<any>(() =>
             conn.rawRequest(
@@ -158,8 +208,7 @@ const NamnskyltarTab: React.FC = () => {
         if (err) console.error(err);
         else setPresets(Array.isArray(res?.data) ? res.data : next);
         setSaving(false);
-        setDialogOpen(false);
-        setDraftName('');
+        closeDialog();
     };
 
     const handleDelete = async (name: string) => {
@@ -179,6 +228,12 @@ const NamnskyltarTab: React.FC = () => {
         }
     };
 
+    const handlePlay = (name: string) => {
+        conn.rawRequest('/api/plugin/lappis/namnskylt-presets/play', 'ACTION', {
+            name,
+        }).catch(console.error);
+    };
+
     return (
         <Stack
             spacing={1.5}
@@ -188,33 +243,60 @@ const NamnskyltarTab: React.FC = () => {
                 direction="row"
                 alignItems="center"
                 justifyContent="space-between"
+                gap={1}
             >
                 <Typography
                     variant="body2"
                     color="text.secondary"
-                    sx={{ minWidth: 0 }}
+                    sx={{ minWidth: 0, flexShrink: 1 }}
                     noWrap
                 >
                     {t('panel.namnskyltarHint')}
                 </Typography>
-                <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => setDialogOpen(true)}
+                <Stack
+                    direction="row"
+                    alignItems="center"
+                    gap={1}
+                    flexShrink={0}
                 >
-                    {t('panel.addPreset')}
-                </Button>
+                    <TextField
+                        size="small"
+                        placeholder={t('panel.searchNamnskyltar')}
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
+                        sx={{ width: 200 }}
+                        InputProps={{
+                            endAdornment: query ? (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => setQuery('')}
+                                    >
+                                        <CloseIcon sx={{ fontSize: 14 }} />
+                                    </IconButton>
+                                </InputAdornment>
+                            ) : null,
+                        }}
+                    />
+                    <Button variant="outlined" size="small" onClick={openAdd}>
+                        {t('panel.addPreset')}
+                    </Button>
+                </Stack>
             </Stack>
 
             <Box sx={{ flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>
-                {!loaded ? null : sorted.length === 0 ? (
+                {!loaded ? null : filtered.length === 0 ? (
                     <Stack
                         alignItems="center"
                         justifyContent="center"
                         sx={{ height: '100%', color: 'text.secondary' }}
                     >
                         <Typography variant="body2">
-                            {t('panel.noPresets')}
+                            {t(
+                                query.trim()
+                                    ? 'panel.noNamnskyltarResults'
+                                    : 'panel.noPresets',
+                            )}
                         </Typography>
                     </Stack>
                 ) : (
@@ -226,11 +308,13 @@ const NamnskyltarTab: React.FC = () => {
                             gap: 1,
                         }}
                     >
-                        {sorted.map(name => (
+                        {filtered.map(name => (
                             <NamnskyltCard
                                 key={name}
                                 name={name}
+                                onEdit={() => openEdit(name)}
                                 onDelete={() => handleDelete(name)}
+                                onPlay={() => handlePlay(name)}
                             />
                         ))}
                     </Box>
@@ -239,11 +323,15 @@ const NamnskyltarTab: React.FC = () => {
 
             <Dialog
                 open={dialogOpen}
-                onClose={() => setDialogOpen(false)}
+                onClose={closeDialog}
                 fullWidth
                 maxWidth="xs"
             >
-                <DialogTitle>{t('panel.addPresetTitle')}</DialogTitle>
+                <DialogTitle>
+                    {editingName !== null
+                        ? t('panel.editPresetTitle')
+                        : t('panel.addPresetTitle')}
+                </DialogTitle>
                 <DialogContent>
                     <TextField
                         autoFocus
@@ -251,23 +339,24 @@ const NamnskyltarTab: React.FC = () => {
                         label={t('panel.nameLabel')}
                         value={draftName}
                         onChange={e => setDraftName(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                        onKeyDown={e => e.key === 'Enter' && handleSave()}
                         sx={{ marginTop: 1 }}
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button
-                        onClick={() => setDialogOpen(false)}
-                        disabled={saving}
-                    >
+                    <Button onClick={closeDialog} disabled={saving}>
                         {t('panel.cancel')}
                     </Button>
                     <Button
                         variant="contained"
-                        onClick={handleAdd}
+                        onClick={handleSave}
                         disabled={!draftName.trim() || saving}
                     >
-                        {saving ? t('panel.saving') : t('panel.add')}
+                        {saving
+                            ? t('panel.saving')
+                            : editingName !== null
+                              ? t('panel.save')
+                              : t('panel.add')}
                     </Button>
                 </DialogActions>
             </Dialog>

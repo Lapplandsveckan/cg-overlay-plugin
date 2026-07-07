@@ -1,8 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Chip, Stack, Typography } from '@mui/material';
+import { Box, Chip, LinearProgress, Stack, Typography } from '@mui/material';
 
+import ContentCutIcon from '@mui/icons-material/ContentCut';
 import { useSocket, MediaCard } from '@web-lib';
 import { useTranslation } from '../i18n';
+import { buildThumbnailUrl } from '../thumbnail';
+import { formatTime } from '../format';
+import {
+    fullDurationOf,
+    isTrimmed,
+    playbackProgress,
+    type VideoOptions,
+} from '../video-utils';
+import { LiveChip, useVideoPlayback } from '../overlay-state';
+import { TransitionChips } from '../transition-chips';
 
 interface RundownEntry {
     id: string;
@@ -19,16 +30,12 @@ interface PlayVideoRundownItemProps {
 function useMediaCardData(clip: any) {
     return useMemo(() => {
         if (!clip) return null;
-        const background = clip._attachments?.['thumb.png'];
-        let url = 'https://via.placeholder.com/1920x1080';
-        if (background) {
-            const data = btoa(String.fromCharCode(...background.data.data));
-            url = `data:${background.content_type};base64,${data}`;
-        }
         return {
             name: clip.id,
-            duration: clip.mediainfo?.format?.duration,
-            backgroundUrl: url,
+            duration: fullDurationOf(clip),
+            backgroundUrl:
+                buildThumbnailUrl(clip) ??
+                'https://via.placeholder.com/1920x1080',
         };
     }, [clip]);
 }
@@ -39,29 +46,53 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
     const { t } = useTranslation('cg-overlay-plugin');
     const socket = useSocket();
     const [clip, setClip] = useState<any | null>(null);
-    const [wallClip, setWallClip] = useState<any | null>(null);
+    const { currentClip, queued, current } = useVideoPlayback();
+    const [playTime, setPlayTime] = useState(0);
 
     const data = useMediaCardData(clip);
-    const wallData = useMediaCardData(wallClip);
-    const playNow = entry.data?.options?.playNow;
+    const opts: VideoOptions = entry.data?.options ?? {};
+    const playNow = opts.playNow;
+    const clipId: string | undefined = entry.data?.clip;
+
+    const fullDuration = fullDurationOf(clip);
+    const trimmed = isTrimmed(opts, fullDuration);
+
+    const isLive = !!clipId && currentClip === clipId;
+    const isQueued = !isLive && !!clipId && queued.has(clipId);
 
     useEffect(() => {
         if (!entry.data?.clip) return;
+        const clip = entry.data.clip as string;
+
         socket.caspar
             .getMedia()
-            .then(media => setClip(media.get(entry.data.clip) || null));
+            .then(media => setClip(media.get(clip) || null));
+
+        const onMedia = (key: string, value: any) => {
+            if (key === clip && value) setClip(value);
+        };
+        socket.caspar.on('media', onMedia);
+        return () => {
+            socket.caspar.off('media', onMedia);
+        };
     }, [entry.data?.clip]);
 
     useEffect(() => {
-        if (!entry.data?.options?.secondaryVideo) return;
-        socket.caspar
-            .getMedia()
-            .then(media =>
-                setWallClip(
-                    media.get(entry.data.options.secondaryVideo) || null,
-                ),
-            );
-    }, [entry.data?.options?.secondaryVideo]);
+        if (!isLive || !current) return;
+        setPlayTime(current.elapsedSec * 1000);
+        const interval = setInterval(
+            () => setPlayTime(prev => prev + 100),
+            100,
+        );
+        return () => clearInterval(interval);
+    }, [isLive, current]);
+
+    const progress = playbackProgress(
+        playTime / 1000,
+        current?.durationSec ?? 0,
+        { loop: current?.loop, active: isLive },
+    );
+    const showProgress = progress.active && !current?.loop;
 
     return (
         <Stack spacing={1}>
@@ -74,13 +105,20 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
                         color="warning"
                     />
                 )}
-                {wallData && (
+                {trimmed && (
                     <Chip
-                        label={t('playVideo.wallChip')}
+                        icon={<ContentCutIcon sx={{ fontSize: 14 }} />}
+                        label={t('playVideo.trimmedChip', {
+                            in: formatTime(opts.inPoint ?? 0),
+                            out: formatTime(opts.outPoint ?? fullDuration),
+                        })}
                         size="small"
                         variant="outlined"
                     />
                 )}
+                <TransitionChips options={opts} />
+                {isLive && <LiveChip variant="live" />}
+                {isQueued && <LiveChip variant="queued" />}
             </Stack>
             {data ? (
                 <MediaCard {...data} columns={1} />
@@ -97,7 +135,28 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
                     </Typography>
                 </Box>
             )}
-            {wallData && <MediaCard {...wallData} columns={1} />}
+            {isLive && (
+                <Stack spacing={0.5}>
+                    <Typography variant="caption" color="text.secondary">
+                        {current?.loop
+                            ? t('video.remainingLooping')
+                            : t('video.timeProgress', {
+                                  elapsed: formatTime(progress.elapsed),
+                                  duration: formatTime(
+                                      current?.durationSec ?? 0,
+                                  ),
+                                  timeLeft: formatTime(progress.timeLeft),
+                              })}
+                    </Typography>
+                    {showProgress && (
+                        <LinearProgress
+                            variant="determinate"
+                            value={progress.percent}
+                            sx={{ height: 4, borderRadius: 2 }}
+                        />
+                    )}
+                </Stack>
+            )}
         </Stack>
     );
 };

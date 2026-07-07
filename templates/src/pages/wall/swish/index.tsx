@@ -92,7 +92,6 @@ export const SwishAnimation: React.FC<SwishAnimationProps> = ({
 
 const Page = () => {
     const [state, setState] = useState(0);
-    // const [number, setNumber] = useState('123 456 78 90');
     const [number, setNumber] = useState('123 456 78 90');
     const [labels, setLabels] = useState('');
     useEffect(() => register(setState, setNumber, setLabels), []);

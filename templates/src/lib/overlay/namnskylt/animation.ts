@@ -20,7 +20,6 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
         'start',
     );
 
-    // Move the text
     tl.set(
         styles.namnskylt__main__name,
         {
@@ -29,6 +28,10 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
         },
         'start',
     );
+
+    tl.set(styles.bubble, { top: '12.5%', width: '28vw' }, 'start');
+    tl.set(styles['bubble--left'], { left: 'calc(-6vw + 10px)' }, 'start');
+    tl.set(styles['bubble--right'], { right: 'calc(-6vw + 10px)' }, 'start');
 
     // Move entire container
     tl.to(
@@ -60,13 +63,20 @@ function handleMinimize(
             'start',
         );
 
-        // Move the text
         tl.set(
             styles.namnskylt__main__name,
             {
                 top: '5%',
                 scale: 0.5,
             },
+            'start',
+        );
+
+        tl.set(styles.bubble, { top: '5%', width: '14vw' }, 'start');
+        tl.set(styles['bubble--left'], { left: 'calc(-3vw + 10px)' }, 'start');
+        tl.set(
+            styles['bubble--right'],
+            { right: 'calc(-3vw + 10px)' },
             'start',
         );
     }
@@ -81,7 +91,6 @@ function handleMinimize(
         'mid',
     );
 
-    // Move the text
     tl.to(
         styles.namnskylt__main__name,
         {
@@ -89,6 +98,18 @@ function handleMinimize(
             scale: 0.5,
             duration,
         },
+        'mid',
+    );
+
+    tl.to(styles.bubble, { top: '5%', width: '14vw', duration }, 'mid');
+    tl.to(
+        styles['bubble--left'],
+        { left: 'calc(-3vw + 10px)', duration },
+        'mid',
+    );
+    tl.to(
+        styles['bubble--right'],
+        { right: 'calc(-3vw + 10px)', duration },
         'mid',
     );
 }

@@ -1,637 +1,470 @@
-/* eslint-disable max-lines */
-import { BasicChannel, type Logger, type PluginAPI } from '@lappis/cg-manager';
-import { type SwishOverlayEffect } from './effects/overlay/swish';
-import { type SwishWallEffect } from './effects/wall/swish';
-import { type VideoTransitionWallEffect } from './effects/wall/videotransition';
-import { type BarsOverlayEffect } from './effects/overlay/bars';
-import { type NamnskyltOverlayEffect } from './effects/overlay/namnskylt';
-import { type NamnskyltWallEffect } from './effects/wall/namnskylt';
-import {
-    type InsamlingOverlayEffect,
-    type InsamlingOverlayEffectOptions,
-} from './effects/overlay/insamling';
-import { type VideoEffect } from './effects/misc/video';
-import { type RouteEffect } from './effects/misc/route';
+import { type Logger, type PluginAPI } from '@lappis/cg-manager';
 import type LappisOverlayPlugin from './index';
-import { type TextWallEffect } from './effects/wall/text';
-import { type WallVideoEffect } from './effects/misc/wall_video';
-import { type PresentationOverlayEffect } from './effects/overlay/presentation';
+import { reportWarn } from './diagnostics';
+import PresentationManager from './presentation-manager';
+import VideoSessionManager, {
+    VideoSessionStoppedError,
+} from './video-session-manager';
+import BarsManager from './effects/bars-manager';
+import SwishManager from './effects/swish-manager';
+import NamnskyltManager from './effects/namnskylt-manager';
+import CaptionManager from './effects/caption-manager';
+import VideoTransitionManager from './effects/video-transition-manager';
+import WallMirrorManager from './effects/wall-mirror-manager';
+import {
+    IDLE_RECYCLE_MS,
+    IDLE_SWEEP_INTERVAL_MS,
+    LOAD_DELAY,
+    MAX_RECOVERY,
+    type WALL_VIDEO_TRANSFORM,
+    delay,
+} from './overlay-constants';
+import {
+    type PresentationPlaybackState,
+    type Recyclable,
+    type VideoIntroMode,
+    type VideoOutroMode,
+    type VideoPlayoutOptions,
+} from './overlay-types';
 
 // Re-export the canonical slide type from the store; OverlayManager
 // stays narrow and only cares about (presentationId, slideId).
 export type { Slide } from './presentations';
-
-export interface PresentationPlaybackState {
-    playing: boolean;
-    presentationId: string | null;
-    slideId: string | null;
-}
-
-export interface PresentationArmEvent {
-    presentationId: string;
-    rundownId: string | null;
-    ts: number;
-}
-
-type SlideRender =
-    | { kind: 'text'; text: string; reference: string }
-    | { kind: 'image'; mediaId: string };
-
-export const CHANNELS = {
-    MAIN: 1,
-    WALL: 2,
-    VIDEO: 3,
-};
-
-export const GROUPS = {
-    BARS: 'bars',
-    OVERLAY: 'overlay',
-    VIDEO: 'video',
-    PRESENTATION: 'presentation',
-    MOTION: 'motion',
-};
-
-export const getGroup = (channel: number, group: string) =>
-    `${channel}:${group}`;
+export type {
+    PresentationPlaybackState,
+    VideoIntroMode,
+    VideoOutroMode,
+    VideoPlayoutOptions,
+} from './overlay-types';
+export {
+    CHANNELS,
+    GROUPS,
+    getGroup,
+    LOAD_DELAY,
+    ATEM_CUT_DELAY,
+    VIDEO_TRANSITION_CUT_DELAY,
+    FAST_TRANSITION_CUT_DELAY,
+    IDLE_RECYCLE_MS,
+} from './overlay-constants';
+export { VideoSessionStoppedError };
 
 export default class OverlayManager {
     private api: PluginAPI;
     private logger: Logger;
     private plugin: LappisOverlayPlugin;
 
+    public presentation: PresentationManager;
+    public videoSession: VideoSessionManager;
+
+    private bars: BarsManager;
+    private swish: SwishManager;
+    private namnskylt: NamnskyltManager;
+    private caption: CaptionManager;
+    private videoTransition: VideoTransitionManager;
+    private wallMirror: WallMirrorManager;
+
+    private recyclables = new Map<string, Recyclable>();
+    private idleSweepInterval: ReturnType<typeof setInterval> | null = null;
+
     constructor(instance: LappisOverlayPlugin) {
         this.plugin = instance;
         this.api = instance['api'];
         this.logger = instance['logger'];
+
+        this.wallMirror = new WallMirrorManager(instance);
+
+        this.presentation = new PresentationManager(instance, {
+            touchRecyclable: (base: string) => this.touchRecyclable(base),
+            startWallMirror: () => this.wallMirror.start(),
+            stopWallMirror: () => this.wallMirror.stop(),
+        });
+        this.videoSession = new VideoSessionManager(instance, {
+            onToggleVideoTransition: (mode?: VideoIntroMode) =>
+                this.toggleVideoTransition(mode),
+            getVideoTransitionState: () => this.videoTransition.getState(),
+            broadcastOverlay: () => this.broadcastOverlay(),
+            touchRecyclable: (base: string) => this.touchRecyclable(base),
+            startWallMirror: (
+                mode?: VideoIntroMode,
+                transform?: typeof WALL_VIDEO_TRANSFORM,
+            ) => this.wallMirror.start(mode, transform),
+            stopWallMirror: () => this.wallMirror.stop(),
+        });
+
+        this.bars = new BarsManager(this, instance);
+        this.swish = new SwishManager(this, instance);
+        this.namnskylt = new NamnskyltManager(this, instance);
+        this.caption = new CaptionManager(this, instance);
+        this.videoTransition = new VideoTransitionManager(this, instance);
     }
 
-    private swish: { overlay: SwishOverlayEffect; wall: SwishWallEffect } =
-        null;
-    private swishState = -1;
+    public getChannelFps(channel: number): number {
+        return this.presentation.getChannelFps(channel);
+    }
 
-    private bars: BarsOverlayEffect = null;
-    private barsState = 0;
+    public touchRecyclable(base: string) {
+        const r = this.recyclables.get(base);
+        if (r) r.lastUsed = Date.now();
+    }
 
-    private namnskylt: {
-        overlay: NamnskyltOverlayEffect;
-        wall: NamnskyltWallEffect;
-    } = null;
+    public broadcastOverlay() {
+        this.api.broadcast('overlay-state', 'UPDATE', this.getOverlayState());
+        this.api.invalidateFeedback('lappis-rundown-namnskylt');
+        this.api.invalidateFeedback('lappis-swish-state');
+        this.api.invalidateFeedback('lappis-bars-state');
+        this.api.invalidateFeedback('lappis-insamling-state');
+    }
 
-    private insamling: InsamlingOverlayEffect = null;
-    private insamlingState = 0;
+    private buildInsamling() {
+        this.videoSession.buildInsamling();
+    }
 
-    private videoTransition: VideoTransitionWallEffect = null;
-    private videoTransitionState = 0;
+    private getInsamlingState(): number {
+        return this.videoSession.getInsamlingState();
+    }
 
-    private textEffect: TextWallEffect = null;
-    private textState = 0;
+    private getInsamlingEffect() {
+        return this.videoSession.getInsamlingEffect();
+    }
 
-    private presentationEffect: PresentationOverlayEffect = null;
-    private presentationImageEffect: VideoEffect = null;
-    private presentationWallRoute: RouteEffect = null;
-    private presentationKind: 'text' | 'image' | null = null;
-    private presentationState: PresentationPlaybackState = {
-        playing: false,
-        presentationId: null,
-        slideId: null,
-    };
+    private buildRecyclables() {
+        const now = Date.now();
+        this.recyclables = new Map<string, Recyclable>([
+            [
+                'bars',
+                {
+                    base: 'bars',
+                    rebuild: () => this.bars.rebuild(),
+                    isOnAir: () => this.bars.isOnAir(),
+                    replay: () => this.bars.replay(),
+                    lastUsed: now,
+                    attempts: 0,
+                    recycling: false,
+                },
+            ],
+            [
+                'swish',
+                {
+                    base: 'swish',
+                    rebuild: () => this.swish.rebuild(),
+                    isOnAir: () => this.swish.isOnAir(),
+                    replay: () => this.swish.replay(),
+                    lastUsed: now,
+                    attempts: 0,
+                    recycling: false,
+                },
+            ],
+            [
+                'caption',
+                {
+                    base: 'caption',
+                    rebuild: () => this.caption.rebuildEffect(),
+                    isOnAir: () => this.caption.isOnAir(),
+                    replay: () => this.caption.replay(),
+                    lastUsed: now,
+                    attempts: 0,
+                    recycling: false,
+                },
+            ],
+            [
+                'videotransition',
+                {
+                    base: 'videotransition',
+                    rebuild: () => this.videoTransition.rebuild(),
+                    isOnAir: () => this.videoTransition.isOnAir(),
+                    replay: () => this.videoTransition.replay(),
+                    lastUsed: now,
+                    attempts: 0,
+                    recycling: false,
+                },
+            ],
+            [
+                'wall-videotransition',
+                {
+                    base: 'wall-videotransition',
+                    rebuild: () => this.wallMirror.rebuild(),
+                    isOnAir: () => this.wallMirror.isOnAir(),
+                    replay: () => this.wallMirror.replay(),
+                    lastUsed: now,
+                    attempts: 0,
+                    recycling: false,
+                },
+            ],
+            [
+                'insamling',
+                {
+                    base: 'insamling',
+                    rebuild: () => this.buildInsamling(),
+                    isOnAir: () => this.getInsamlingState() === 1,
+                    replay: () => this.getInsamlingEffect().activate(),
+                    lastUsed: now,
+                    attempts: 0,
+                    recycling: false,
+                },
+            ],
+            [
+                'presentation',
+                {
+                    base: 'presentation',
+                    rebuild: () => this.presentation.buildPresentation(),
+                    isOnAir: () => this.presentation.isPresentationPlaying(),
+                    replay: () => {
+                        const lastRender =
+                            this.presentation.getLastTextRender();
+                        const effect =
+                            this.presentation.getPresentationEffect();
+                        if (lastRender && effect) effect.update(lastRender);
+                        if (effect) effect.activate();
+                    },
+                    lastUsed: now,
+                    attempts: 0,
+                    recycling: false,
+                },
+            ],
+        ]);
+    }
+
+    private idleSweep() {
+        const now = Date.now();
+        for (const r of this.recyclables.values()) {
+            if (r.recycling || r.isOnAir()) continue;
+            if (now - r.lastUsed > IDLE_RECYCLE_MS) {
+                r.rebuild();
+                r.lastUsed = now;
+                this.logger.info(`Idle-recycled overlay: ${r.base}`);
+            }
+        }
+    }
+
+    private async doRecycle(r: Recyclable, withReplay: boolean) {
+        r.recycling = true;
+        r.rebuild();
+        if (withReplay) {
+            await delay(LOAD_DELAY);
+            if (r.isOnAir()) r.replay();
+        }
+        r.recycling = false;
+    }
+
+    // Called by HealthMonitor when a template fails to play or paint.
+    public handleUnhealthy(type: string) {
+        const base = type.replace(/-(left|right)$/, '');
+        const r = this.recyclables.get(base);
+        if (!r || r.recycling) return;
+
+        const onAir = r.isOnAir();
+        if (onAir) {
+            if (r.attempts >= MAX_RECOVERY) {
+                reportWarn(
+                    this.plugin,
+                    'overlay',
+                    `Gave up auto-replay for "${base}" after ${MAX_RECOVERY} attempts — re-armed fresh, manual retrigger needed`,
+                );
+                r.attempts = 0;
+                this.doRecycle(r, false);
+                return;
+            }
+
+            r.attempts++;
+            this.logger.warn(
+                `Auto-recovering "${base}" (attempt ${r.attempts}/${MAX_RECOVERY})`,
+            );
+        }
+
+        this.doRecycle(r, onAir);
+    }
+
+    // Called by HealthMonitor when both play + painted acks are confirmed.
+    public handleHealthy(type: string) {
+        const base = type.replace(/-(left|right)$/, '');
+        const r = this.recyclables.get(base);
+        if (!r) return;
+        r.attempts = 0;
+        r.lastUsed = Date.now();
+    }
 
     public initialize() {
-        this.swish = {
-            overlay: this.api.createEffect(
-                'overlay-swish',
-                getGroup(CHANNELS.MAIN, GROUPS.OVERLAY),
-                {
-                    number: '123 607 27 97',
-                },
-            ) as SwishOverlayEffect,
-            wall: this.api.createEffect(
-                'wall-swish',
-                getGroup(CHANNELS.WALL, GROUPS.OVERLAY),
-                {
-                    number: '123 607 27 97',
-                },
-            ) as SwishWallEffect,
-        };
+        if (this.idleSweepInterval !== null) {
+            clearInterval(this.idleSweepInterval);
+            this.idleSweepInterval = null;
+        }
 
-        this.bars = this.api.createEffect(
-            'overlay-bars',
-            getGroup(CHANNELS.MAIN, GROUPS.BARS),
-            {},
-        ) as BarsOverlayEffect; // TODO: special group so it is underneeth all overlays
-        this.insamling = this.api.createEffect(
-            'overlay-insamling',
-            getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY),
-            {},
-        ) as InsamlingOverlayEffect; // TODO: special group so it is underneeth all overlays
+        this.presentation.initialize();
 
-        // this.textEffect = this.api.createEffect('wall-text', getGroup(CHANNELS.MAIN, GROUPS.OVERLAY), {}) as TextWallEffect;
+        this.bars.initialize();
+        this.swish.initialize();
+        this.caption.initialize();
+        this.videoTransition.initialize();
+        this.wallMirror.initialize();
+        this.namnskylt.initialize();
+        this.buildInsamling();
+
+        this.buildRecyclables();
+        this.idleSweepInterval = setInterval(
+            () => this.idleSweep(),
+            IDLE_SWEEP_INTERVAL_MS,
+        );
     }
 
     public dispose() {
-        if (this.swish) {
-            this.swish.overlay.dispose();
-            this.swish.wall.dispose();
-            this.swish = null;
+        if (this.idleSweepInterval !== null) {
+            clearInterval(this.idleSweepInterval);
+            this.idleSweepInterval = null;
         }
+        this.recyclables.clear();
 
-        if (this.bars) {
-            this.bars.dispose();
-            this.bars = null;
-        }
+        this.bars.dispose();
+        this.swish.dispose();
+        this.caption.dispose();
+        this.videoTransition.dispose();
+        this.namnskylt.dispose();
 
-        if (this.insamling) {
-            this.insamling.dispose();
-            this.insamling = null;
-        }
-
-        if (this.videoTransition) {
-            this.videoTransition.dispose();
-            this.videoTransition = null;
-        }
-
-        if (this.presentationWallRoute) {
-            this.presentationWallRoute.dispose();
-            this.presentationWallRoute = null;
-        }
-
-        if (this.presentationEffect) {
-            this.presentationEffect.dispose();
-            this.presentationEffect = null;
-        }
-
-        if (this.namnskylt) {
-            this.namnskylt.overlay.dispose();
-            this.namnskylt.wall.dispose();
-            this.namnskylt = null;
-        }
+        this.presentation.dispose();
+        this.videoSession.dispose();
+        this.wallMirror.dispose();
     }
-
-    private videoSession: null | {
-        wall: RouteEffect;
-        stop: () => void;
-    } = null;
 
     public getVideoSession() {
-        return this.videoSession;
+        return this.videoSession.getVideoSession();
     }
 
-    private externalEnabledVideoSession: boolean = false;
-    public togglePresentationMode(atem = false) {
-        this.externalEnabledVideoSession = !this.externalEnabledVideoSession;
-
-        if (this.externalEnabledVideoSession)
-            return this.startVideoSession(atem);
-        if (this.plugin.video.playing) return Promise.resolve();
-
-        this.stopVideoSession(atem);
-        return Promise.resolve();
+    public startVideoSession(atem = false, intro: VideoIntroMode = 'regular') {
+        return this.videoSession.startVideoSession(atem, intro);
     }
 
-    public startVideoSession(atem = false, skipIntro = false) {
-        if (this.videoSession) return Promise.resolve();
-
-        const width = 0.54;
-        const wallEffect = this.api.createEffect(
-            'lappis-route',
-            `${CHANNELS.WALL}:video`,
-            {
-                source: new BasicChannel(CHANNELS.VIDEO),
-                transform: [0, 0, 1, 1, 0.5 - width / 2, 0, 0.5 + width / 2, 1],
-            },
-        ) as RouteEffect;
-
-        this.videoSession = { wall: wallEffect, stop: () => null };
-        if (this.videoTransitionState !== 1)
-            this.toggleVideoTransition(skipIntro);
-
-        if (skipIntro) {
-            wallEffect.activate();
-            if (atem) this.plugin.atem.setVideoProgram();
-
-            return Promise.resolve();
-        }
-
-        return new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                this.videoSession.stop = () => null;
-                resolve();
-
-                wallEffect.activate();
-                if (atem) this.plugin.atem.setVideoProgram();
-            }, 3000);
-
-            this.videoSession.stop = () => {
-                clearTimeout(timeout);
-                reject(new Error('Video session stopped'));
-            };
-        });
+    public async stopVideoSession(atem = false, outro: VideoOutroMode = 'cut') {
+        return this.videoSession.stopVideoSession(atem, outro);
     }
 
-    public stopVideoSession(atem = false) {
-        if (this.externalEnabledVideoSession) return;
-        if (!this.videoSession)
-            return this.logger.warn('No video session to stop');
-        if (this.videoTransitionState !== 0) this.toggleVideoTransition();
-
-        if (atem) this.plugin.atem.returnToPreview();
-        this.videoSession.wall.dispose();
-
-        this.videoSession.stop();
-        this.videoSession = null;
-    }
-
-    public playVideo(video: string, loop?: boolean) {
-        const media = this.api.getFileDatabase().get(video);
-        if (!media) throw new Error('Video not found');
-
-        return this.api.createEffect(
-            'lappis-video',
-            `${CHANNELS.VIDEO}:video`,
-            {
-                media,
-                holdLastFrame: true,
-                disposeOnStop: true,
-
-                loop,
-            },
-        ) as VideoEffect;
-    }
-
-    public playWallVideo(video: string, loop?: boolean) {
-        const media = this.api.getFileDatabase().get(video);
-        if (!media) throw new Error('Video not found');
-
-        return this.api.createEffect(
-            'lappis-wall-video',
-            `${CHANNELS.WALL}:video`,
-            {
-                media,
-                disposeOnStop: true,
-
-                loop,
-            },
-        ) as WallVideoEffect;
+    public playVideo(video: string, options?: VideoPlayoutOptions) {
+        return this.videoSession.playVideo(video, options);
     }
 
     public showNamnskylt(name: string) {
-        this.namnskylt = {
-            overlay: this.api.createEffect(
-                'overlay-namnskylt',
-                '1:overlay',
-                { name },
-            ) as NamnskyltOverlayEffect,
-            wall: this.api.createEffect('wall-namnskylt', '2:overlay', {
-                name,
-            }) as NamnskyltWallEffect,
-        };
-
-        Promise.all([
-            this.namnskylt.wall.activate(),
-            this.namnskylt.overlay.activate(),
-        ]).catch(err => {
-            this.logger.error('Failed to activate namnskylt effect');
-            this.logger.error(err);
-        });
+        this.namnskylt.show(name);
     }
 
     public hideNamnskylt() {
-        if (!this.namnskylt) return;
-        const { overlay, wall } = this.namnskylt;
-        this.namnskylt = null;
-        Promise.all([overlay.deactivate(), wall.deactivate()])?.catch(err => {
-            this.logger.error('Failed to deactivate namnskylt effect');
-            this.logger.error(err);
-        });
-    }
-
-    public toggleVideoTransition(skipIntro = false) {
-        if (this.videoTransitionState === 1) {
-            this.videoTransitionState = 0;
-            this.videoTransition.deactivate().catch(err => {
-                this.logger.error(
-                    'Failed to deactivate videotransition effect',
-                );
-                this.logger.error(err);
-            });
-
-            this.videoTransition = null;
-            return;
-        }
-
-        this.videoTransitionState = 1;
-
-        if (skipIntro) {
-            const wall = this.api.createEffect(
-                'wall-videotransition',
-                '2:presentation',
-                {
-                    skipIntro: true,
-                },
-            );
-
-            wall.activate().catch(err => {
-                this.logger.error('Failed to activate videotransition effect');
-                this.logger.error(err);
-            });
-
-            this.videoTransition = wall as VideoTransitionWallEffect;
-            return;
-        }
-
-        const overlay = this.api.createEffect(
-            'overlay-videotransition',
-            '1:presentation',
-            {},
-        );
-        const wall = this.api.createEffect(
-            'wall-videotransition',
-            '2:presentation',
-            {},
-        );
-
-        Promise.all([wall.activate(), overlay.activate()]).catch(err => {
-            this.logger.error('Failed to activate videotransition effect');
-            this.logger.error(err);
-        });
-
-        this.videoTransition = wall as VideoTransitionWallEffect;
-    }
-
-    public toggleSwish(number?: string, labels?: string, skipFirst?: boolean) {
-        if (skipFirst) {
-            // 2-step cycle: show minimized + wall, then dismiss both.
-            this.swishState = this.swishState === 1 ? 3 : 1;
-        } else {
-            this.swishState = (this.swishState + 1) % 4;
-        }
-
-        labels = labels || '';
-        if (number) {
-            this.swish.overlay.update({ number, labels });
-            this.swish.wall.update({ number, labels });
-        }
-
-        switch (this.swishState) {
-            case 0:
-                Promise.all([
-                    this.swish.overlay.activate(),
-                    this.swish.wall.activate(),
-                ]).catch(err => {
-                    this.logger.error('Failed to activate swish effect');
-                    this.logger.error(err);
-                });
-                break;
-            case 1:
-                Promise.all([
-                    this.swish.overlay.minimize(),
-                    this.swish.wall.activate(),
-                ]).catch(err => {
-                    this.logger.error('Failed to activate swish effect');
-                    this.logger.error(err);
-                });
-                break;
-            case 2:
-                this.swish.wall.deactivate().catch(err => {
-                    this.logger.error('Failed to deactivate swish effect');
-                    this.logger.error(err);
-                });
-                break;
-            case 3:
-                Promise.all([
-                    this.swish.overlay.deactivate(),
-                    this.swish.wall.deactivate(),
-                ]).catch(err => {
-                    this.logger.error('Failed to deactivate swish effect');
-                    this.logger.error(err);
-                });
-                break;
-        }
+        this.namnskylt.hide();
     }
 
     public toggleBars() {
-        this.barsState = 1 - this.barsState;
-
-        switch (this.barsState) {
-            case 0:
-                this.bars.deactivate().catch(err => {
-                    this.logger.error('Failed to deactivate bars effect');
-                    this.logger.error(err);
-                });
-                break;
-            case 1:
-                this.bars.activate().catch(err => {
-                    this.logger.error('Failed to activate bars effect');
-                    this.logger.error(err);
-                });
-                break;
-        }
+        this.bars.toggle();
     }
 
-    public async toggleInsamling(options?: InsamlingOverlayEffectOptions) {
-        this.insamlingState = 1 - this.insamlingState;
+    public stopBars() {
+        this.bars.stop();
+    }
 
-        if (options) this.insamling.update(options);
+    public toggleCaption() {
+        this.caption.toggle();
+    }
 
-        switch (this.insamlingState) {
-            case 0:
-                if (this.externalEnabledVideoSession)
-                    await this.togglePresentationMode(true);
-                this.insamling.deactivate().catch(err => {
-                    this.logger.error('Failed to deactivate insamling effect');
-                    this.logger.error(err);
-                });
-                break;
-            case 1:
-                if (!this.externalEnabledVideoSession)
-                    await this.togglePresentationMode(true);
-                this.insamling.activate().catch(err => {
-                    this.logger.error('Failed to activate insamling effect');
-                    this.logger.error(err);
-                });
-                break;
-        }
+    public stopCaption() {
+        this.caption.stop();
+    }
+
+    public clearCaption() {
+        this.caption.clear();
+    }
+
+    // Hide captions on-air without touching captionState/UI, e.g. while a
+    // video plays. No-op if captions aren't enabled.
+    public suspendCaption() {
+        this.caption.suspend();
+    }
+
+    // Re-show captions after suspendCaption(), but only if they were left
+    // enabled. Clears first so playback starts fresh instead of flashing
+    // whatever backlog piled up while hidden.
+    public resumeCaption() {
+        this.caption.resume();
+    }
+
+    // Mirrors the namnskylt's own state (0 hidden / 1 full / 2 minimized) onto
+    // the caption, which pushes its text up in lockstep so the two lower-thirds
+    // don't overlap.
+    public setCaptionNamnskyltState(state: number) {
+        this.caption.setNamnskyltState(state);
+    }
+
+    public toggleVideoTransition(mode: VideoIntroMode = 'regular') {
+        this.videoTransition.toggle(mode);
+    }
+
+    public toggleSwish(
+        number?: string,
+        labels?: string,
+        highlightIntro?: boolean,
+        fromBelow?: boolean,
+    ) {
+        this.swish.toggle(number, labels, highlightIntro, fromBelow);
+    }
+
+    public stopSwish() {
+        this.swish.stop();
+    }
+
+    public async toggleInsamling(data?: any) {
+        return this.videoSession.toggleInsamling(data);
+    }
+
+    public stopInsamling() {
+        return this.videoSession.stopInsamling();
+    }
+
+    // Rebuild the caption pair after its settings (channel/language/etc.)
+    // change, re-activating it if it was on-air so the new display URL takes
+    // effect.
+    public rebuildCaption() {
+        this.caption.rebuild();
     }
 
     public getPresentationState(): PresentationPlaybackState {
-        return { ...this.presentationState };
+        return this.presentation.getPresentationState();
     }
 
-    private broadcastPresentation() {
-        this.api.broadcast('slides', 'UPDATE', this.getPresentationState());
+    public pausePresentationVideo() {
+        return this.presentation.pausePresentationVideo();
+    }
+
+    public resumePresentationVideo() {
+        return this.presentation.resumePresentationVideo();
     }
 
     public broadcastArmEvent(presentationId: string, rundownId: string | null) {
-        const event: PresentationArmEvent = {
-            presentationId,
-            rundownId,
-            ts: Date.now(),
-        };
-        this.api.broadcast('slides-arm', 'UPDATE', event);
+        return this.presentation.broadcastArmEvent(presentationId, rundownId);
     }
 
     public playSlide(
         presentationId: string,
         slideId: string,
-        render: SlideRender,
+        render: any,
+        grabAttention = true,
     ) {
-        const wasPlaying = this.presentationState.playing;
-        const wasKind = this.presentationKind;
-
-        this.presentationState = { playing: true, presentationId, slideId };
-
-        // On first slide: route ch2 → wall and grab ATEM.
-        // On subsequent slides: re-grab ATEM only if operator cut away.
-        if (!this.presentationWallRoute) {
-            const width = 0.54;
-            this.presentationWallRoute = this.api.createEffect(
-                'lappis-route',
-                getGroup(CHANNELS.WALL, GROUPS.VIDEO),
-                {
-                    source: new BasicChannel(CHANNELS.VIDEO),
-                    transform: [0, 0, 1, 1, 0.5 - width / 2, 0, 0.5 + width / 2, 1],
-                    disposeOnStop: true,
-                },
-            ) as RouteEffect;
-            this.presentationWallRoute.activate()?.catch(err => {
-                this.logger.error('Failed to activate presentation wall route');
-                this.logger.error(err);
-            });
-            this.plugin.atem.setVideoProgram();
-        } else {
-            this.plugin.atem.ensureVideoProgram();
-        }
-
-        if (render.kind === 'text') {
-            if (this.presentationImageEffect) {
-                this.presentationImageEffect.deactivate()?.catch(err => {
-                    this.logger.error(
-                        'Failed to deactivate presentation image effect',
-                    );
-                    this.logger.error(err);
-                });
-                this.presentationImageEffect = null;
-            }
-
-            if (!this.presentationEffect) {
-                this.presentationEffect = this.api.createEffect(
-                    'overlay-presentation',
-                    getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
-                    { text: render.text, reference: render.reference },
-                ) as PresentationOverlayEffect;
-            } else {
-                this.presentationEffect.update({
-                    text: render.text,
-                    reference: render.reference,
-                });
-            }
-
-            if (!wasPlaying || wasKind !== 'text') {
-                this.presentationEffect.activate()?.catch(err => {
-                    this.logger.error('Failed to activate presentation effect');
-                    this.logger.error(err);
-                });
-            }
-
-            this.presentationKind = 'text';
-        } else {
-            const media = this.api.getFileDatabase().get(render.mediaId);
-            if (!media) {
-                this.logger.error(
-                    `Image slide media not found: ${render.mediaId}`,
-                );
-                return;
-            }
-
-            if (this.presentationImageEffect) {
-                this.presentationImageEffect.deactivate()?.catch(err => {
-                    this.logger.error(
-                        'Failed to deactivate presentation image effect',
-                    );
-                    this.logger.error(err);
-                });
-                this.presentationImageEffect = null;
-            }
-
-            if (wasKind === 'text' && this.presentationEffect) {
-                this.presentationEffect.deactivate()?.catch(err => {
-                    this.logger.error(
-                        'Failed to deactivate presentation effect',
-                    );
-                    this.logger.error(err);
-                });
-            }
-
-            this.presentationImageEffect = this.api.createEffect(
-                'lappis-video',
-                getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
-                { media, disposeOnStop: true, holdLastFrame: true },
-            ) as VideoEffect;
-
-            this.presentationImageEffect.activate()?.catch(err => {
-                this.logger.error(
-                    'Failed to activate presentation image effect',
-                );
-                this.logger.error(err);
-            });
-
-            this.presentationKind = 'image';
-        }
-
-        this.broadcastPresentation();
+        return this.presentation.playSlide(
+            presentationId,
+            slideId,
+            render,
+            grabAttention,
+        );
     }
 
     public stopPlayback() {
-        if (!this.presentationState.playing) return;
-
-        this.presentationState = {
-            playing: false,
-            presentationId: null,
-            slideId: null,
-        };
-        this.presentationKind = null;
-
-        if (this.presentationWallRoute) {
-            this.presentationWallRoute.deactivate()?.catch(err => {
-                this.logger.error(
-                    'Failed to deactivate presentation wall route',
-                );
-                this.logger.error(err);
-            });
-            this.presentationWallRoute = null;
-            this.plugin.atem.returnToPreview();
-        }
-
-        if (this.presentationEffect) {
-            this.presentationEffect.deactivate()?.catch(err => {
-                this.logger.error('Failed to deactivate presentation effect');
-                this.logger.error(err);
-            });
-        }
-
-        if (this.presentationImageEffect) {
-            this.presentationImageEffect.deactivate()?.catch(err => {
-                this.logger.error(
-                    'Failed to deactivate presentation image effect',
-                );
-                this.logger.error(err);
-            });
-            this.presentationImageEffect = null;
-        }
-
-        this.broadcastPresentation();
+        return this.presentation.stopPlayback();
     }
 
-    public setText(text: string) {
-        if (!text) {
-            if (this.textState === 1) this.textEffect.deactivate();
-            this.textState = 0;
-            return;
-        }
-
-        this.textEffect.update({ text });
-
-        if (this.textState === 0) this.textEffect.activate();
-        this.textState = 1;
+    public getOverlayState() {
+        const namnskyltState = this.namnskylt.getState();
+        return {
+            bars: this.bars.getState() === 1,
+            caption: this.caption.getState() === 1,
+            swish: {
+                on: this.swish.isOnAir(),
+                number: this.swish.getNumber(),
+            },
+            insamling: this.getInsamlingState() === 1,
+            namnskylt: namnskyltState,
+        };
     }
 }

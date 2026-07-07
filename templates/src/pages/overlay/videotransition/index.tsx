@@ -5,20 +5,22 @@ import { handleState } from '../../../lib/overlay/videotransition/animation';
 import { getStylesProxy } from '../../../lib/animation';
 import { CG } from '../../../components/CG';
 
-export const VideoTransitionAnimation: React.FC<{ state: number }> = ({
-    state,
-}) => (
+export const VideoTransitionAnimation: React.FC<{
+    state: number;
+    direction: string;
+    mode: string;
+}> = ({ state, direction, mode }) => (
     <CG
         state={state}
-        handle={handleState}
+        handle={(tl, s, p, st) => handleState(tl, s, p, st, direction, mode)}
         labels={['start', 'end']}
         styles={getStylesProxy(styles)}
     >
         <main className={styles.container}>
             <img
                 className={styles['banner-logo']}
-                src="/images/mod-white.png"
-                alt="Lappis - Mod"
+                src="/images/beratta-om.png"
+                alt="Berätta om"
             />
         </main>
     </CG>
@@ -26,9 +28,17 @@ export const VideoTransitionAnimation: React.FC<{ state: number }> = ({
 
 const Page = () => {
     const [state, setState] = useState(0);
-    useEffect(() => register(setState), []);
+    const [direction, setDirection] = useState('left');
+    const [mode, setMode] = useState('regular');
+    useEffect(() => register(setState, setDirection, setMode), []);
 
-    return <VideoTransitionAnimation state={state} />;
+    return (
+        <VideoTransitionAnimation
+            state={state}
+            direction={direction}
+            mode={mode}
+        />
+    );
 };
 
 export default Page;

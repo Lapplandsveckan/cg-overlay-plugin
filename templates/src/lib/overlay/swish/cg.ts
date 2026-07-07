@@ -1,4 +1,4 @@
-import { offCGEvent, onCGEvent } from '../../cg';
+import { offCGEvent, onCGEvent, readyCG } from '../../cg';
 
 // state
 // 0: hidden
@@ -11,12 +11,14 @@ export function register(
     setState: (state: number) => void,
     setNumber: (number: string) => void,
     setLabels: (labels: string) => void,
+    setFromBelow: (fromBelow: boolean) => void,
 ) {
     const states = [() => setState(0), () => setState(1), () => setState(2)];
 
     const number = params => {
         if (params.number) setNumber(params.number?.replace(/,/g, '\n'));
         setLabels(params.labels?.replace(/,/g, '\n') ?? '');
+        setFromBelow(!!params.fromBelow);
     };
 
     onCGEvent('update', number);
@@ -24,6 +26,8 @@ export function register(
     onCGEvent('stop', states[0]);
     onCGEvent('play', states[1]);
     onCGEvent('next', states[2]);
+
+    readyCG();
 
     return () => {
         offCGEvent('update', number);

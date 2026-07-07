@@ -5,8 +5,10 @@ import { XMLParser } from 'fast-xml-parser';
 const DATA_DIR = path.join(__dirname, 'bible', 'data');
 
 const TRANSLATION_MAP: Record<string, string> = {
-    sfb: 'SFB15',
+    sfb15: 'SFB15',
+    sfb98: 'SFB98',
     b2000: 'B2000',
+    niv: 'NIV',
 };
 
 export interface VerseSlide {
@@ -53,7 +55,7 @@ function loadTranslation(file: string): any {
 
 // ---------- core logic (ported from ../bible/index.js) ----------
 
-function parseNotation(notation: string): [number, number, number[]] {
+function parseNotation(notation: string): [number, number, number[] | 'all'] {
     const range = (start: number, end = start) =>
         Array.from({ length: end - start + 1 }, (_, i) => start + i);
 
@@ -71,6 +73,8 @@ function parseNotation(notation: string): [number, number, number[]] {
     );
     if (bookIndex < 0) throw new Error(`Book not found: "${bookName}"`);
 
+    if (versesRaw.trim() === '*') return [bookIndex + 1, chapter, 'all'];
+
     const verseSections = versesRaw.split(',').map(v => v.trim());
     const verseNumbers = verseSections.flatMap(section => {
         const [start, end] = section.split('-').map(Number);
@@ -84,7 +88,7 @@ function lookupVerses(
     translationFile: string,
     bookNum: number,
     chapterNum: number,
-    verseNums: number[],
+    verseNums: number[] | 'all',
 ): { text: string; verse: number }[] {
     const bible = loadTranslation(translationFile);
     const books = toArray(bible.bible.testament).flatMap((t: any) =>
@@ -104,8 +108,10 @@ function lookupVerses(
     );
     if (!chapter) throw new Error(`Chapter ${chapterNum} not found`);
 
-    const verses = toArray(chapter.verse).filter((v: any) =>
-        verseNums.includes(parseInt(String(v['@_number']))),
+    const verses = toArray(chapter.verse).filter(
+        (v: any) =>
+            verseNums === 'all' ||
+            verseNums.includes(parseInt(String(v['@_number']))),
     );
 
     return verses.map((v: any) => ({
@@ -120,7 +126,7 @@ function normalizeNotation(
     verseNumbers: number[],
 ): string {
     const books = loadBooks();
-    const bookAbbr = books[bookNum - 1].abbr.replace(/(\d)/g, '$1 ');
+    const bookName = books[bookNum - 1].name;
 
     const collapseRanges = (nums: number[]): string => {
         if (!nums.length) return '';
@@ -138,7 +144,7 @@ function normalizeNotation(
         return ranges.join(',');
     };
 
-    return `${bookAbbr} ${chapterNum}:${collapseRanges(verseNumbers)}`;
+    return `${bookName} ${chapterNum}:${collapseRanges(verseNumbers)}`;
 }
 
 function smartSplitText(
@@ -149,7 +155,7 @@ function smartSplitText(
     const chunkCount = Math.ceil(text.length / maxLength);
     const targetLength = Math.ceil(text.length / chunkCount);
 
-    let sentences: string[] = text.match(/[^.!?]+[.!?]*/g) ?? [text];
+    let sentences: string[] = text.match(/[^.!?]+[.!?]*["”“’'»«]*/g) ?? [text];
     sentences = sentences.map(s => s.trim());
 
     const chunks: string[] = [];
@@ -193,6 +199,7 @@ export interface VerseLookup {
     chapter: number;
     verseStart: number;
     verseEnd: number;
+    wholeChapter?: boolean;
     merge: boolean;
     inlineNumbers: boolean;
 }
@@ -202,10 +209,11 @@ export function getVerseSlides(lookup: VerseLookup): VerseSlide[] {
     if (!translationFile)
         throw new Error(`Unknown translation: "${lookup.translation}"`);
 
-    const rangeStr =
-        lookup.verseStart === lookup.verseEnd
-            ? String(lookup.verseStart)
-            : `${lookup.verseStart}-${lookup.verseEnd}`;
+    const rangeStr = lookup.wholeChapter
+        ? '*'
+        : lookup.verseStart === lookup.verseEnd
+          ? String(lookup.verseStart)
+          : `${lookup.verseStart}-${lookup.verseEnd}`;
     const notation = `${lookup.book} ${lookup.chapter}:${rangeStr}`;
 
     const [bookNum, chapterNum, verseNumbers] = parseNotation(notation);
@@ -221,7 +229,11 @@ export function getVerseSlides(lookup: VerseLookup): VerseSlide[] {
         const mergedText = verses
             .map(v => (lookup.inlineNumbers ? `⟨${v.verse}⟩${v.text}` : v.text))
             .join(' ');
-        const ref = normalizeNotation(bookNum, chapterNum, verseNumbers);
+        const ref = normalizeNotation(
+            bookNum,
+            chapterNum,
+            verses.map(v => v.verse),
+        );
         return smartSplitText(mergedText, 100).map(chunk => ({
             text: chunk,
             reference: ref,

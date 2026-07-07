@@ -3,8 +3,15 @@ export function handleState(
     state: number,
     prevState: number,
     styles: Record<string, string>,
+    direction: string,
+    mode = 'regular',
 ) {
-    if (state === 0) handleHide(tl, styles);
+    if (mode === 'fast') {
+        if (state === 1) handleSweep(tl, styles, direction);
+        if (state === 0) handleSweepReset(tl, styles);
+        return;
+    }
+    if (state === 0) handleHide(tl, styles, direction);
     if (state === 1) handleShow(tl, styles);
 }
 
@@ -43,14 +50,19 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
     );
 }
 
-function handleHide(tl: gsap.core.Timeline, styles: Record<string, string>) {
-    // tl.clear();
+function handleHide(
+    tl: gsap.core.Timeline,
+    styles: Record<string, string>,
+    direction: string,
+) {
+    // Slide toward the screen's own edge so both sides exit outward.
+    const exitX = direction === 'right' ? '100%' : '-100%';
 
     // Move the logo
     tl.to(
         styles['banner-logo'],
         {
-            left: '-100%',
+            left: exitX,
             ease: 'power1.inOut',
             duration: 0.4,
         },
@@ -61,9 +73,49 @@ function handleHide(tl: gsap.core.Timeline, styles: Record<string, string>) {
     tl.to(
         styles.container,
         {
-            left: '-100%',
+            left: exitX,
             duration: 0.5,
         },
         'end',
     );
+}
+
+// Fast mode: sweep in from top, then immediately slide off to the side.
+// Total duration ~1.4 s; the ATEM cut fires at ~1.0 s (backend FAST_TRANSITION_CUT_DELAY)
+// to stay well within the covered window even accounting for CG round-trip latency.
+function handleSweep(
+    tl: gsap.core.Timeline,
+    styles: Record<string, string>,
+    direction: string,
+) {
+    const exitX = direction === 'right' ? '100%' : '-100%';
+    tl.clear();
+
+    tl.set(styles.container, { top: '-100%', left: '0%', autoAlpha: 1 });
+    tl.set(styles['banner-logo'], { left: '0%' });
+
+    // Slide down to cover
+    tl.to(styles.container, { top: '0%', duration: 0.7, ease: 'power1.in' });
+
+    // Slide off to the side
+    tl.to(styles.container, {
+        left: exitX,
+        duration: 0.7,
+        ease: 'power1.out',
+    });
+    tl.to(
+        styles['banner-logo'],
+        { left: exitX, duration: 0.7, ease: 'power1.out' },
+        '<',
+    );
+}
+
+// Reset silently off-screen after the sweep has already exited.
+function handleSweepReset(
+    tl: gsap.core.Timeline,
+    styles: Record<string, string>,
+) {
+    tl.clear();
+    tl.set(styles.container, { top: '-100%', left: '0%' });
+    tl.set(styles['banner-logo'], { left: '0%' });
 }

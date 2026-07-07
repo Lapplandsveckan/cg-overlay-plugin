@@ -65,7 +65,9 @@ const NameDialog: React.FC<Props> = ({
                 />
             </DialogContent>
             <DialogActions>
-                <Button type="button" onClick={onClose}>Cancel</Button>
+                <Button type="button" onClick={onClose}>
+                    Cancel
+                </Button>
                 <Button
                     type="submit"
                     variant="contained"

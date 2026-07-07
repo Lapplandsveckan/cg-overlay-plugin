@@ -24,6 +24,7 @@ function handleShow(
     now: number,
 ) {
     const proportion = now / goal;
+    const MAX_H = Math.round(window.innerHeight * 0.65);
     insamlingCanvas.fillCoins();
     tl.clear();
 
@@ -48,7 +49,7 @@ function handleShow(
     tl.set(
         '#goal',
         {
-            height: Math.min(700 / proportion, 700),
+            height: Math.min(MAX_H / proportion, MAX_H),
             duration: 3,
         },
         'start',
@@ -57,7 +58,7 @@ function handleShow(
     tl.to(
         '#now',
         {
-            height: Math.min(700 * proportion, 700),
+            height: Math.min(MAX_H * proportion, MAX_H),
             duration: 3,
             ease: 'none',
         },
@@ -67,7 +68,7 @@ function handleShow(
     tl.to(
         '#goal',
         {
-            height: Math.min(700 / proportion, 700),
+            height: Math.min(MAX_H / proportion, MAX_H),
             duration: 3,
             ease: 'none',
         },

@@ -1,15 +1,24 @@
+// 'cut' and 'fade' intros have no hold window to animate into (the ATEM
+// already performs the transition), so the background must snap in instantly.
+const INSTANT_MODES = ['cut', 'fade'];
+
 export function handleState(
     tl: gsap.core.Timeline,
     state: number,
     prevState: number,
     styles: Record<string, string>,
+    mode = 'regular',
 ) {
     if (state === 0) handleHide(tl, styles);
-    if (state === 1) handleShow(tl, styles);
+    if (state === 1) handleShow(tl, styles, INSTANT_MODES.includes(mode));
     if (state === 2) handleSides(tl, styles, prevState);
 }
 
-function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
+function handleShow(
+    tl: gsap.core.Timeline,
+    styles: Record<string, string>,
+    instant: boolean,
+) {
     tl.clear();
 
     tl.set(styles['banner-logo-1'], {
@@ -22,15 +31,21 @@ function handleShow(tl: gsap.core.Timeline, styles: Record<string, string>) {
         width: '50%',
     });
 
+    if (instant) {
+        tl.set(styles.container, {
+            opacity: 1,
+            autoAlpha: 1,
+        });
+        return;
+    }
+
     tl.set(styles.container, {
-        // top: '-100%',
         opacity: 0,
     });
 
     tl.to(
         styles.container,
         {
-            // top: '0%',
             opacity: 1,
             autoAlpha: 1,
             duration: 1.7,
@@ -106,7 +121,6 @@ function handleHide(tl: gsap.core.Timeline, styles: Record<string, string>) {
     tl.to(
         styles.container,
         {
-            // top: '-100%',
             opacity: 0,
             duration: 0.5,
         },

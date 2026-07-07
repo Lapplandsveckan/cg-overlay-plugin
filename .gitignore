@@ -9,3 +9,5 @@ cg-overlay-plugin
 templates/.next
 templates/out
 templates/tsconfig.tsbuildinfo
+
+.claude/worktrees/

@@ -37,7 +37,10 @@ export const SwishEditor: React.FC<SwishEditorProps> = ({
     const [title, setTitle] = useState(entry?.title ?? '');
     const [number, setNumber] = useState(entry?.data.number ?? '');
     const [labels, setLabels] = useState(entry?.data.labels ?? '');
-    const [skipFirst, setSkipFirst] = useState(entry?.data.skipFirst ?? false);
+    const [highlightIntro, setHighlightIntro] = useState(
+        entry?.data.highlightIntro ?? false,
+    );
+    const [fromBelow, setFromBelow] = useState(entry?.data.fromBelow ?? false);
 
     return (
         <Stack spacing={2}>
@@ -68,16 +71,33 @@ export const SwishEditor: React.FC<SwishEditorProps> = ({
 
             <Stack>
                 <FormControlLabel
-                    label={t('swish.skipFirstLabel')}
+                    label={t('swish.highlightIntroLabel')}
                     control={
                         <Checkbox
-                            checked={skipFirst}
-                            onChange={e => setSkipFirst(e.target['checked'])}
+                            checked={highlightIntro}
+                            onChange={e =>
+                                setHighlightIntro(e.target['checked'])
+                            }
                         />
                     }
                 />
                 <FormHelperText sx={{ marginLeft: 4 }}>
-                    {t('swish.skipFirstHelper')}
+                    {t('swish.highlightIntroHelper')}
+                </FormHelperText>
+            </Stack>
+
+            <Stack>
+                <FormControlLabel
+                    label={t('swish.fromBelowLabel')}
+                    control={
+                        <Checkbox
+                            checked={fromBelow}
+                            onChange={e => setFromBelow(e.target['checked'])}
+                        />
+                    }
+                />
+                <FormHelperText sx={{ marginLeft: 4 }}>
+                    {t('swish.fromBelowHelper')}
                 </FormHelperText>
             </Stack>
 
@@ -90,7 +110,8 @@ export const SwishEditor: React.FC<SwishEditorProps> = ({
                         data: {
                             number,
                             labels,
-                            skipFirst,
+                            highlightIntro,
+                            fromBelow,
                         },
                         title,
                     });

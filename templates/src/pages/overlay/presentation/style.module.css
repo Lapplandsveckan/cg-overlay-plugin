@@ -6,9 +6,7 @@
     width: 100vw;
     height: 100vh;
 
-    background-image: url(/images/banner1.png);
-    background-size: 100vw;
-    background-repeat: no-repeat;
+    background: var(--c-orange);
     color: #fff;
 
     display: flex;
@@ -32,10 +30,15 @@
     color: #fff;
 }
 
+.presentation__text--heading {
+    font-size: 11.5vh;
+    font-weight: 700;
+}
+
 .presentation__verse-number {
     font-size: 0.55em;
     vertical-align: super;
-    opacity: 0.65;
+    opacity: 0.8;
     margin-right: 0.2em;
     font-weight: 500;
 }
@@ -46,7 +49,7 @@
     bottom: 5vh;
 
     font-family: 'Alright Sans', sans-serif;
-    font-size: 4.2vh;
+    font-size: 4.8vh;
     font-weight: 300;
     letter-spacing: 0.05em;
 
