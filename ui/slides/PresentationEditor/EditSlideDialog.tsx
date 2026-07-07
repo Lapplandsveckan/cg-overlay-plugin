@@ -201,7 +201,15 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
                         <>
                             <SlidePreview
                                 imageUrl={selectedImageUrl}
-                                isVideo={mediaKind === 'video'}
+                                isVideo={isVideo}
+                                videoUrl={
+                                    isVideo && clip?.id
+                                        ? `/api/caspar/media/raw/${encodeURIComponent(clip.id)}`
+                                        : null
+                                }
+                                inPoint={trim.inPoint}
+                                outPoint={trim.outPoint}
+                                volume={trim.volume}
                             />
                             {isVideo && clip && (
                                 <Stack

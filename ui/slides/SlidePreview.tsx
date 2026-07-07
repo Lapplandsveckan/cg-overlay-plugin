@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import TrimmedVideo from './TrimmedVideo';
 
 export interface SlidePreviewProps {
     text?: string;
@@ -12,6 +13,12 @@ export interface SlidePreviewProps {
     imageUrl?: string | null;
     /** Shows a play-icon badge over the thumbnail to mark it as a video slide. */
     isVideo?: boolean;
+    /** For video slides: raw clip URL, rendered as a real <video> instead of the thumbnail + play-icon. */
+    videoUrl?: string | null;
+    /** Playback is clamped to [inPoint, outPoint]; defaults span the full clip. */
+    inPoint?: number;
+    outPoint?: number;
+    volume?: number;
     aspectRatio?: string;
     minWidth?: number | string;
     selected?: boolean;
@@ -68,6 +75,10 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
     backgroundUrl,
     imageUrl,
     isVideo,
+    videoUrl,
+    inPoint = 0,
+    outPoint,
+    volume = 1,
     aspectRatio = '16/9',
     minWidth,
     selected,
@@ -80,11 +91,14 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
             width: '100%',
             minWidth,
             backgroundColor: '#1a1c22',
-            backgroundImage: imageUrl
-                ? `url(${imageUrl})`
-                : backgroundUrl
-                  ? `url(${backgroundUrl})`
-                  : undefined,
+            backgroundImage:
+                isVideo && videoUrl
+                    ? undefined
+                    : imageUrl
+                      ? `url(${imageUrl})`
+                      : backgroundUrl
+                        ? `url(${backgroundUrl})`
+                        : undefined,
             backgroundSize: 'cover',
             borderRadius: 1,
             overflow: 'hidden',
@@ -96,7 +110,7 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
             containerType: 'size',
         }}
     >
-        {!imageUrl && (
+        {!imageUrl && !(isVideo && videoUrl) && (
             <>
                 <Box
                     sx={{
@@ -142,26 +156,37 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
                 )}
             </>
         )}
-        {imageUrl && isVideo && (
-            <Box
-                sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: 'rgba(0,0,0,0.25)',
-                    pointerEvents: 'none',
-                }}
-            >
-                <PlayArrowIcon
+        {isVideo && videoUrl ? (
+            <TrimmedVideo
+                videoUrl={videoUrl}
+                imageUrl={imageUrl}
+                inPoint={inPoint}
+                outPoint={outPoint}
+                volume={volume}
+            />
+        ) : (
+            imageUrl &&
+            isVideo && (
+                <Box
                     sx={{
-                        fontSize: '18cqh',
-                        color: 'rgba(255,255,255,0.85)',
-                        filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.6))',
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'rgba(0,0,0,0.25)',
+                        pointerEvents: 'none',
                     }}
-                />
-            </Box>
+                >
+                    <PlayArrowIcon
+                        sx={{
+                            fontSize: '18cqh',
+                            color: 'rgba(255,255,255,0.85)',
+                            filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.6))',
+                        }}
+                    />
+                </Box>
+            )
         )}
     </Box>
 );
