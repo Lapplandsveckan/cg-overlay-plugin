@@ -1,5 +1,11 @@
 /* eslint-disable max-lines */
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import {
     Accordion,
     AccordionDetails,
@@ -27,9 +33,11 @@ import {
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
+import ContentCutIcon from '@mui/icons-material/ContentCut';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import EditIcon from '@mui/icons-material/Edit';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import {
     DndContext,
     DragOverlay,
@@ -64,6 +72,7 @@ import {
     type ImageSlide,
     type Slide,
     type TextSlide,
+    type VideoSlide,
     buildThumbnailUrl,
     slideLabel,
     updatePresentation,
@@ -83,6 +92,16 @@ import {
     type Book,
 } from './bible-api';
 import { backTargetFromSearch, slidesHomeUrl } from './urls';
+import { formatTime } from '../format';
+import { type BroadcastReq, useBroadcast } from '../hooks';
+import {
+    DEFAULT_FPS,
+    fullDurationOf,
+    isTrimmed,
+    normalizeVideoPayload,
+} from '../video-utils';
+import { type VideoInspectorValue } from '../play-video/VideoInspector';
+import VideoInspectorModal from '../play-video/VideoInspectorModal';
 
 const IMAGE_CODECS = new Set([
     'mjpeg',
@@ -95,26 +114,30 @@ const IMAGE_CODECS = new Set([
     'apng',
 ]);
 
-function isImageMedia(item: any): boolean {
+/** Classifies a CasparCG media item as a still image or a video, or null if unusable. */
+function classifyMedia(item: any): 'image' | 'video' | null {
     const streams = item.mediainfo?.streams;
-    if (!streams) return false;
-    if (streams.some((s: any) => s.codec?.type === 'audio')) return false;
+    if (!streams) return null;
     const duration = Number(item.mediainfo?.format?.duration) || 0;
+    const hasAudio = streams.some((s: any) => s.codec?.type === 'audio');
     const hasImageCodec = streams.some((s: any) =>
         IMAGE_CODECS.has(s.codec?.name),
     );
-    return hasImageCodec || duration === 0;
+    if (!hasAudio && (hasImageCodec || duration === 0)) return 'image';
+    return duration > 0 ? 'video' : null;
 }
 
-interface ImagePickerProps {
+interface MediaPickerProps {
     selectedId: string | null;
-    onSelect: (id: string) => void;
+    onSelect: (id: string, kind: 'image' | 'video') => void;
 }
 
-const ImagePicker: React.FC<ImagePickerProps> = ({ selectedId, onSelect }) => {
+const MediaPicker: React.FC<MediaPickerProps> = ({ selectedId, onSelect }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
-    const [allImages, setAllImages] = useState<any[]>([]);
+    const [allMedia, setAllMedia] = useState<
+        { item: any; kind: 'image' | 'video' }[]
+    >([]);
     const [query, setQuery] = useState('');
 
     useEffect(() => {
@@ -122,11 +145,12 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ selectedId, onSelect }) => {
             (conn as any).caspar
                 .getMedia()
                 .then((media: Map<string, any>) => {
-                    const imgs: any[] = [];
+                    const items: { item: any; kind: 'image' | 'video' }[] = [];
                     for (const item of media.values()) {
-                        if (isImageMedia(item)) imgs.push(item);
+                        const kind = classifyMedia(item);
+                        if (kind) items.push({ item, kind });
                     }
-                    setAllImages(imgs);
+                    setAllMedia(items);
                 })
                 .catch(console.error);
 
@@ -137,13 +161,13 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ selectedId, onSelect }) => {
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
-        if (!q) return allImages;
-        return allImages.filter(m => m.id.toLowerCase().includes(q));
-    }, [allImages, query]);
+        if (!q) return allMedia;
+        return allMedia.filter(m => m.item.id.toLowerCase().includes(q));
+    }, [allMedia, query]);
 
     return (
         <MediaDropZone
-            accept={['image/*']}
+            accept={['image/*', 'video/*']}
             overlayLabel={t('presentationEditor.dropToUpload')}
         >
             <Stack spacing={1}>
@@ -174,7 +198,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ selectedId, onSelect }) => {
                         multiple
                         types={[
                             {
-                                description: 'Images',
+                                description: 'Media',
                                 accept: {
                                     'image/*': [
                                         '.png',
@@ -184,6 +208,13 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ selectedId, onSelect }) => {
                                         '.bmp',
                                         '.webp',
                                         '.tiff',
+                                    ],
+                                    'video/*': [
+                                        '.mp4',
+                                        '.mov',
+                                        '.mxf',
+                                        '.mkv',
+                                        '.webm',
                                     ],
                                 },
                             },
@@ -211,7 +242,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ selectedId, onSelect }) => {
                                 gap: 1,
                             }}
                         >
-                            {filtered.map(item => {
+                            {filtered.map(({ item, kind }) => {
                                 const thumbUrl = buildThumbnailUrl(item);
                                 const name =
                                     item.id.split('/').pop() ?? item.id;
@@ -219,7 +250,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ selectedId, onSelect }) => {
                                 return (
                                     <Box
                                         key={item.id}
-                                        onClick={() => onSelect(item.id)}
+                                        onClick={() => onSelect(item.id, kind)}
                                         sx={{
                                             position: 'relative',
                                             aspectRatio: '16/9',
@@ -243,6 +274,27 @@ const ImagePicker: React.FC<ImagePickerProps> = ({ selectedId, onSelect }) => {
                                             },
                                         }}
                                     >
+                                        {kind === 'video' && (
+                                            <Box
+                                                sx={{
+                                                    position: 'absolute',
+                                                    inset: 0,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    backgroundColor:
+                                                        'rgba(0,0,0,0.2)',
+                                                    pointerEvents: 'none',
+                                                }}
+                                            >
+                                                <PlayArrowIcon
+                                                    sx={{
+                                                        fontSize: 28,
+                                                        color: 'rgba(255,255,255,0.85)',
+                                                    }}
+                                                />
+                                            </Box>
+                                        )}
                                         <Box
                                             sx={{
                                                 position: 'absolute',
@@ -379,8 +431,8 @@ export const PresentationEditor: React.FC<Props> = ({ id }) => {
     const imageMediaIds = useMemo(
         () =>
             (remote?.slides ?? [])
-                .filter(s => s.type === 'image')
-                .map(s => (s as ImageSlide).mediaId),
+                .filter(s => s.type === 'image' || s.type === 'video')
+                .map(s => (s as ImageSlide | VideoSlide).mediaId),
         [remote?.slides],
     );
     const imageThumbnails = useImageThumbnails(imageMediaIds);
@@ -883,9 +935,10 @@ const SlideContent: React.FC<SlideContentProps> = ({
     selected,
     dimmed,
 }) =>
-    slide.type === 'image' ? (
+    slide.type === 'image' || slide.type === 'video' ? (
         <SlidePreview
             imageUrl={imageThumbnails?.[slide.mediaId] ?? null}
+            isVideo={slide.type === 'video'}
             selected={selected}
             dimmed={dimmed}
         />
@@ -1150,7 +1203,7 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
-    const [mode, setMode] = useState<'bible' | 'text' | 'heading' | 'image'>(
+    const [mode, setMode] = useState<'bible' | 'text' | 'heading' | 'media'>(
         'bible',
     );
 
@@ -1319,11 +1372,11 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                             type="button"
                             size="small"
                             variant={
-                                mode === 'image' ? 'contained' : 'outlined'
+                                mode === 'media' ? 'contained' : 'outlined'
                             }
-                            onClick={() => setMode('image')}
+                            onClick={() => setMode('media')}
                         >
-                            {t('presentationEditor.imageSlide')}
+                            {t('presentationEditor.mediaSlide')}
                         </Button>
                     </Stack>
 
@@ -1542,13 +1595,13 @@ const AddSlidesDialog: React.FC<AddSlidesDialogProps> = ({
                         />
                     )}
 
-                    {mode === 'image' && (
-                        <ImagePicker
+                    {mode === 'media' && (
+                        <MediaPicker
                             selectedId={null}
-                            onSelect={mediaId =>
+                            onSelect={(mediaId, kind) =>
                                 onAdd([
                                     {
-                                        type: 'image',
+                                        type: kind,
                                         id: makeSlideId(),
                                         mediaId,
                                     },
@@ -1610,30 +1663,140 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
     onSave,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
+    const conn = useSocket();
     const [text, setText] = useState('');
     const [reference, setReference] = useState('');
     const [mediaId, setMediaId] = useState('');
+    const [mediaKind, setMediaKind] = useState<'image' | 'video'>('image');
+    const [clip, setClip] = useState<any | null>(null);
+    const [inspectorOpen, setInspectorOpen] = useState(false);
+    const [channelFps, setChannelFps] = useState(DEFAULT_FPS);
+    const [trim, setTrim] = useState<VideoInspectorValue>({
+        inPoint: 0,
+        outPoint: 0,
+        volume: 1,
+    });
+    const outPointExplicit = useRef(false);
     const backgroundUrl = useBackgroundImage();
-    const selectedImageUrl = useFullImage(
-        slide?.type === 'image' ? mediaId : null,
-    );
+    const isMedia = slide?.type === 'image' || slide?.type === 'video';
+    const isVideo = mediaKind === 'video';
+    const selectedImageUrl = useFullImage(isMedia ? mediaId : null);
 
     useEffect(() => {
         if (!slide) return;
-        if (slide.type === 'image') {
+        if (slide.type === 'image' || slide.type === 'video') {
             setMediaId(slide.mediaId);
+            setMediaKind(slide.type);
+            const video = slide.type === 'video' ? slide : null;
+            outPointExplicit.current = video?.outPoint !== undefined;
+            setTrim({
+                inPoint: video?.inPoint ?? 0,
+                outPoint: video?.outPoint ?? 0,
+                volume: video?.volume ?? 1,
+            });
         } else {
             setText(slide.text);
             setReference(slide.type === 'bible' ? slide.reference : '');
         }
     }, [slide?.id]);
 
+    // Loads the raw CasparCG media item for the selected video, so the
+    // inspector can scrub a real <video> and know the full duration.
+    useEffect(() => {
+        if (!isVideo || !mediaId) {
+            setClip(null);
+            return;
+        }
+        (conn as any).caspar
+            .getMedia()
+            .then((map: Map<string, any>) => setClip(map.get(mediaId) ?? null))
+            .catch(console.error);
+
+        const onMedia = (key: string, value: any) => {
+            if (key === mediaId && value) setClip(value);
+        };
+        (conn as any).caspar.on('media', onMedia);
+        return () => (conn as any).caspar.off('media', onMedia);
+    }, [conn, isVideo, mediaId]);
+
+    useEffect(() => {
+        conn.rawRequest('/api/plugin/lappis/videos', 'GET', {})
+            .then((res: any) =>
+                setChannelFps(normalizeVideoPayload(res.data).channelFps),
+            )
+            .catch(() => {});
+    }, [conn]);
+    useBroadcast(
+        conn,
+        'plugin/lappis/videos',
+        'UPDATE',
+        useCallback(
+            (req: BroadcastReq) =>
+                setChannelFps(normalizeVideoPayload(req.data).channelFps),
+            [],
+        ),
+    );
+
+    const fullDuration = fullDurationOf(clip);
+
+    // Untrimmed slides default the out point to the full clip once its
+    // duration loads, so the inspector opens edge-to-edge instead of at 0.
+    useEffect(() => {
+        if (outPointExplicit.current || !fullDuration) return;
+        outPointExplicit.current = true;
+        setTrim(prev => ({ ...prev, outPoint: fullDuration }));
+        // Also depend on clip?.id: a clip swap with an identical duration
+        // wouldn't otherwise retrigger this effect.
+    }, [fullDuration, clip?.id]);
+
+    const trimmed = outPointExplicit.current && isTrimmed(trim, fullDuration);
+    const volumeChanged = trim.volume !== 1;
+    const trimRangeValid = trim.outPoint > trim.inPoint;
+
+    const inspectorSummary = [
+        trimmed &&
+            t('playVideo.trimmedChip', {
+                in: formatTime(trim.inPoint),
+                out: formatTime(trim.outPoint),
+            }),
+        volumeChanged &&
+            t('playVideo.volumeChip', {
+                volume: Math.round(trim.volume * 100),
+            }),
+    ]
+        .filter(Boolean)
+        .join(' · ');
+
     if (!slide) return null;
 
+    const selectMedia = (id: string, kind: 'image' | 'video') => {
+        if (id !== mediaId) {
+            outPointExplicit.current = false;
+            setTrim({ inPoint: 0, outPoint: 0, volume: 1 });
+        }
+        setMediaId(id);
+        setMediaKind(kind);
+    };
+
     const handleSave = () => {
-        if (slide.type === 'image') {
+        if (slide.type === 'image' || slide.type === 'video') {
             if (!mediaId) return;
-            onSave({ ...slide, mediaId });
+            // Rebuild from just `id` — spreading the old image/video slide
+            // would leak its stale inPoint/outPoint/volume through whenever
+            // the trim/volume aren't actively set on this save.
+            if (mediaKind === 'video') {
+                onSave({
+                    type: 'video',
+                    id: slide.id,
+                    mediaId,
+                    ...(trimmed && trimRangeValid
+                        ? { inPoint: trim.inPoint, outPoint: trim.outPoint }
+                        : {}),
+                    ...(volumeChanged ? { volume: trim.volume } : {}),
+                });
+            } else {
+                onSave({ type: 'image', id: slide.id, mediaId });
+            }
         } else if (slide.type === 'bible') {
             onSave({ ...slide, text, reference });
         } else {
@@ -1659,12 +1822,46 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
             <DialogTitle>{t('presentationEditor.editSlide')}</DialogTitle>
             <DialogContent>
                 <Stack spacing={2.5} sx={{ marginTop: 1 }}>
-                    {slide.type === 'image' ? (
+                    {isMedia ? (
                         <>
-                            <SlidePreview imageUrl={selectedImageUrl} />
-                            <ImagePicker
+                            <SlidePreview
+                                imageUrl={selectedImageUrl}
+                                isVideo={mediaKind === 'video'}
+                            />
+                            {isVideo && clip && (
+                                <Stack
+                                    direction="row"
+                                    alignItems="center"
+                                    spacing={1.5}
+                                >
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{ flexGrow: 1, minWidth: 0 }}
+                                        noWrap
+                                    >
+                                        {inspectorSummary ||
+                                            t('playVideo.noTrim')}
+                                    </Typography>
+                                    <Button
+                                        type="button"
+                                        size="small"
+                                        variant="outlined"
+                                        startIcon={
+                                            <ContentCutIcon
+                                                sx={{ fontSize: 16 }}
+                                            />
+                                        }
+                                        onClick={() => setInspectorOpen(true)}
+                                        sx={{ flexShrink: 0 }}
+                                    >
+                                        {t('playVideo.openInspector')}
+                                    </Button>
+                                </Stack>
+                            )}
+                            <MediaPicker
                                 selectedId={mediaId}
-                                onSelect={setMediaId}
+                                onSelect={selectMedia}
                             />
                         </>
                     ) : (
@@ -1706,11 +1903,21 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
                 <Button
                     type="submit"
                     variant="contained"
-                    disabled={slide.type === 'image' && !mediaId}
+                    disabled={isMedia && !mediaId}
                 >
                     {t('presentationEditor.save')}
                 </Button>
             </DialogActions>
+            {isVideo && (
+                <VideoInspectorModal
+                    open={inspectorOpen}
+                    onClose={() => setInspectorOpen(false)}
+                    clip={clip}
+                    value={trim}
+                    onChange={setTrim}
+                    fps={channelFps}
+                />
+            )}
         </Dialog>
     );
 };

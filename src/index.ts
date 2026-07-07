@@ -1025,6 +1025,19 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                                 { kind: 'image', mediaId: slide.mediaId },
                                 grab,
                             );
+                        } else if (slide.type === 'video') {
+                            this.overlay.playSlide(
+                                presentation.id,
+                                slide.id,
+                                {
+                                    kind: 'video',
+                                    mediaId: slide.mediaId,
+                                    inPoint: slide.inPoint,
+                                    outPoint: slide.outPoint,
+                                    volume: slide.volume,
+                                },
+                                grab,
+                            );
                         } else {
                             this.overlay.playSlide(
                                 presentation.id,
@@ -1045,6 +1058,12 @@ export default class LappisOverlayPlugin extends CasparPlugin {
                     }
                     case 'stop':
                         this.overlay.stopPlayback();
+                        break;
+                    case 'pause':
+                        this.overlay.pausePresentationVideo();
+                        break;
+                    case 'resume':
+                        this.overlay.resumePresentationVideo();
                         break;
                 }
 

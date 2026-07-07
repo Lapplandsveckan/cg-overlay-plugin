@@ -34,10 +34,18 @@ type VideoPlayoutOptions = Pick<
 export type VideoIntroMode = 'regular' | 'fast' | 'fade' | 'cut';
 export type VideoOutroMode = 'fade' | 'cut';
 
+export interface PresentationVideoMetadata {
+    playing: boolean;
+    paused: boolean;
+    clipDuration: number;
+    playDuration: number;
+}
+
 export interface PresentationPlaybackState {
     playing: boolean;
     presentationId: string | null;
     slideId: string | null;
+    video?: PresentationVideoMetadata;
 }
 
 export interface PresentationArmEvent {
@@ -48,7 +56,14 @@ export interface PresentationArmEvent {
 
 type SlideRender =
     | { kind: 'text'; text: string; reference: string; heading?: boolean }
-    | { kind: 'image'; mediaId: string };
+    | { kind: 'image'; mediaId: string }
+    | {
+          kind: 'video';
+          mediaId: string;
+          inPoint?: number;
+          outPoint?: number;
+          volume?: number;
+      };
 
 export const CHANNELS = {
     LEFT: 1,
@@ -142,7 +157,7 @@ export default class OverlayManager {
 
     private presentationEffect: PresentationOverlayEffect = null;
     private presentationImageEffect: VideoEffect = null;
-    private presentationKind: 'text' | 'image' | null = null;
+    private presentationKind: 'text' | 'image' | 'video' | null = null;
     private presentationState: PresentationPlaybackState = {
         playing: false,
         presentationId: null,
@@ -845,7 +860,36 @@ export default class OverlayManager {
     }
 
     public getPresentationState(): PresentationPlaybackState {
-        return { ...this.presentationState };
+        const state = { ...this.presentationState };
+        if (this.presentationKind === 'video' && this.presentationImageEffect) {
+            const meta = this.presentationImageEffect.getMetadata() as {
+                playing: boolean;
+                paused: boolean;
+                clipDuration: number;
+                playDuration: number;
+            };
+            state.video = {
+                playing: meta.playing,
+                paused: meta.paused,
+                clipDuration: meta.clipDuration,
+                playDuration: meta.playDuration,
+            };
+        }
+        return state;
+    }
+
+    public pausePresentationVideo() {
+        if (this.presentationKind !== 'video' || !this.presentationImageEffect)
+            return;
+        this.presentationImageEffect.pause();
+        this.broadcastPresentation();
+    }
+
+    public resumePresentationVideo() {
+        if (this.presentationKind !== 'video' || !this.presentationImageEffect)
+            return;
+        this.presentationImageEffect.resume();
+        this.broadcastPresentation();
     }
 
     private broadcastPresentation() {
@@ -921,7 +965,7 @@ export default class OverlayManager {
                 reportError(
                     this.plugin,
                     'overlay',
-                    `Image slide media not found: "${render.mediaId}" — ` +
+                    `${render.kind === 'video' ? 'Video' : 'Image'} slide media not found: "${render.mediaId}" — ` +
                         `check CasparCG has scanned the file (scan-timing race?) ` +
                         `or that the mediaId casing is correct`,
                 );
@@ -941,12 +985,40 @@ export default class OverlayManager {
             this.presentationImageEffect = this.api.createEffect(
                 'lappis-video',
                 getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
-                { media, disposeOnStop: true, holdLastFrame: true },
+                {
+                    media,
+                    disposeOnStop: true,
+                    holdLastFrame: true,
+                    channelFps: this.getChannelFps(CHANNELS.VIDEO),
+                    ...(render.kind === 'video'
+                        ? {
+                              seekSec: render.inPoint,
+                              lengthSec:
+                                  render.outPoint !== undefined
+                                      ? render.outPoint - (render.inPoint ?? 0)
+                                      : undefined,
+                              volume: render.volume,
+                          }
+                        : {}),
+                },
             ) as VideoEffect;
 
             // New effect allocates a higher layer in the group, so it renders
             // on top of the still-visible previous image — activate first.
             this.presentationImageEffect.activate();
+
+            if (render.kind === 'video') {
+                // Once the clip reaches its held last frame, rebroadcast so
+                // the operator UI stops the countdown/pause controls.
+                const forSlideId = slideId;
+                this.presentationImageEffect.once('video:finish', () => {
+                    if (
+                        this.presentationState.slideId === forSlideId &&
+                        this.presentationState.presentationId === presentationId
+                    )
+                        this.broadcastPresentation();
+                });
+            }
 
             // Clear the old image after a brief overlap so there's no empty frame.
             if (prevImage) {
@@ -956,7 +1028,7 @@ export default class OverlayManager {
                 );
             }
 
-            this.presentationKind = 'image';
+            this.presentationKind = render.kind;
         }
 
         // Delay the ATEM cut so the new slide renders before going to air.

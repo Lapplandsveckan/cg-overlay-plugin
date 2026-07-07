@@ -204,7 +204,7 @@
         "verseRangeLong": "Intervallet är för långt",
         "verseCount_one": "{{count}} vers",
         "verseCount_other": "{{count}} verser",
-        "imageSlide": "Bild",
+        "mediaSlide": "Media",
         "imageSearchPlaceholder": "Sök bilder…",
         "noImages": "Inga bilder hittades.",
         "uploadImage": "Ladda upp bild",
@@ -220,7 +220,10 @@
         "noSlides": "Inga slides att spela.",
         "startFromHere": "Starta härifrån",
         "grabAttentionHint": "Byt automatiskt till sliden i mixern vid byte (Tryck A för att växla). Håll Shift för att hoppa över bytet för ett enda steg.",
-        "grabAttentionShiftHint": "Shift är nedtryckt — nästa steg byter INTE i mixern"
+        "grabAttentionShiftHint": "Shift är nedtryckt — nästa steg byter INTE i mixern",
+        "pauseVideo": "Pausa video",
+        "resumeVideo": "Fortsätt video",
+        "videoTimeLeft": "{{time}} kvar"
     },
     "presentationIndex": {
         "heading": "Presentationer",

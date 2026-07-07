@@ -204,7 +204,7 @@
         "verseRangeLong": "Range too long",
         "verseCount_one": "{{count}} verse",
         "verseCount_other": "{{count}} verses",
-        "imageSlide": "Image",
+        "mediaSlide": "Media",
         "imageSearchPlaceholder": "Search images…",
         "noImages": "No images found.",
         "uploadImage": "Upload image",
@@ -220,7 +220,10 @@
         "noSlides": "No slides to play.",
         "startFromHere": "Start from here",
         "grabAttentionHint": "Auto-cut the switcher to the slide when it changes (Press A to toggle). Hold Shift to skip the cut for one advance.",
-        "grabAttentionShiftHint": "Shift held — next advance will NOT cut to the slide"
+        "grabAttentionShiftHint": "Shift held — next advance will NOT cut to the slide",
+        "pauseVideo": "Pause video",
+        "resumeVideo": "Resume video",
+        "videoTimeLeft": "{{time}} left"
     },
     "presentationIndex": {
         "heading": "Presentations",

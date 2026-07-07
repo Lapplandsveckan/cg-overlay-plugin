@@ -28,7 +28,9 @@ import {
     createPresentation,
     deletePresentation,
     duplicatePresentation,
+    pausePlayback,
     playSlide,
+    resumePlayback,
     stopPlayback,
     type Presentation,
     slideRef,
@@ -354,6 +356,8 @@ const SlidesTab: React.FC = () => {
                         console.error,
                     )
                 }
+                onPauseVideo={() => pausePlayback(conn).catch(console.error)}
+                onResumeVideo={() => resumePlayback(conn).catch(console.error)}
             />
 
             <Dialog open={!!deleting} onClose={() => setDeleting(null)}>

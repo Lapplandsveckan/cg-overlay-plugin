@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useCallback, useEffect, useState } from 'react';
 
 import { useSocket } from '@web-lib';
@@ -70,7 +71,21 @@ export interface ImageSlide {
     mediaId: string;
 }
 
-export type Slide = BibleSlide | TextSlide | HeadingSlide | ImageSlide;
+export interface VideoSlide {
+    type: 'video';
+    id: string;
+    mediaId: string;
+    inPoint?: number;
+    outPoint?: number;
+    volume?: number;
+}
+
+export type Slide =
+    | BibleSlide
+    | TextSlide
+    | HeadingSlide
+    | ImageSlide
+    | VideoSlide;
 
 export interface Presentation {
     id: string;
@@ -80,10 +95,18 @@ export interface Presentation {
     updatedAt: number;
 }
 
+export interface VideoPlaybackMetadata {
+    playing: boolean;
+    paused: boolean;
+    clipDuration: number;
+    playDuration: number;
+}
+
 export interface PlaybackState {
     playing: boolean;
     presentationId: string | null;
     slideId: string | null;
+    video?: VideoPlaybackMetadata;
 }
 
 export interface ArmEvent {
@@ -97,15 +120,16 @@ export function slideRef(slide: Slide): string {
     return slide.type === 'bible' ? slide.reference : '';
 }
 
-/** Returns the display text for a slide, or '' for image slides. */
+/** Returns the display text for a slide, or '' for image/video slides. */
 export function slideText(slide: Slide): string {
-    return slide.type === 'image' ? '' : slide.text;
+    return slide.type === 'image' || slide.type === 'video' ? '' : slide.text;
 }
 
-/** Short label for a slide: its reference for bible slides, 'Image' for image slides, 'Text' otherwise. */
+/** Short label for a slide: its reference for bible slides, 'Image'/'Video' for media slides, 'Text' otherwise. */
 export function slideLabel(slide: Slide): string {
     if (slide.type === 'bible') return slide.reference;
     if (slide.type === 'image') return 'Image';
+    if (slide.type === 'video') return 'Video';
     if (slide.type === 'heading') return 'Heading';
     return 'Text';
 }
@@ -290,6 +314,18 @@ export function fetchBibleSlides(
 export function stopPlayback(conn: any): Promise<PlaybackState | null> {
     return conn
         .rawRequest(`${ROOT}/slides`, 'ACTION', { action: 'stop' })
+        .then((res: any) => res?.data ?? null);
+}
+
+export function pausePlayback(conn: any): Promise<PlaybackState | null> {
+    return conn
+        .rawRequest(`${ROOT}/slides`, 'ACTION', { action: 'pause' })
+        .then((res: any) => res?.data ?? null);
+}
+
+export function resumePlayback(conn: any): Promise<PlaybackState | null> {
+    return conn
+        .rawRequest(`${ROOT}/slides`, 'ACTION', { action: 'resume' })
         .then((res: any) => res?.data ?? null);
 }
 

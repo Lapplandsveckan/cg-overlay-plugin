@@ -6,6 +6,7 @@ import {
     DialogContent,
     DialogTitle,
     IconButton,
+    LinearProgress,
     Stack,
     Tooltip,
     Typography,
@@ -16,13 +17,17 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CloseIcon from '@mui/icons-material/CloseOutlined';
 import LiveTvIcon from '@mui/icons-material/LiveTvOutlined';
+import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import TvOffIcon from '@mui/icons-material/TvOffOutlined';
 import SlidePreview from './SlidePreview';
+import VideoPlaybackPreview from './VideoPlaybackPreview';
 import {
     type Presentation,
     type Slide,
     type ImageSlide,
+    type VideoSlide,
+    type VideoPlaybackMetadata,
     type PlaybackState,
     slideRef,
     slideLabel,
@@ -31,6 +36,8 @@ import {
     useFullImage,
     useImageThumbnails,
 } from './api';
+import { formatTime } from '../format';
+import { playbackProgress } from '../video-utils';
 
 import { useTranslation } from '../i18n';
 
@@ -39,11 +46,11 @@ function slidePreviewProps(
     thumbnails: Record<string, string>,
     backgroundUrl?: string | null,
 ) {
-    if (slide.type === 'image')
+    if (slide.type === 'image' || slide.type === 'video')
         return {
-            imageUrl: (thumbnails[(slide as ImageSlide).mediaId] ?? null) as
-                | string
-                | null,
+            imageUrl: (thumbnails[(slide as ImageSlide | VideoSlide).mediaId] ??
+                null) as string | null,
+            isVideo: slide.type === 'video',
         };
     return {
         text: slideText(slide),
@@ -61,6 +68,8 @@ export interface RunModalProps {
     onClose: () => void;
     onClear: () => void;
     onPlay: (slideId: string, grabAttention: boolean) => void;
+    onPauseVideo: () => void;
+    onResumeVideo: () => void;
 }
 
 export const RunModal: React.FC<RunModalProps> = ({
@@ -70,6 +79,8 @@ export const RunModal: React.FC<RunModalProps> = ({
     onClose,
     onClear,
     onPlay,
+    onPauseVideo,
+    onResumeVideo,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
     const slides = presentation?.slides ?? [];
@@ -77,7 +88,10 @@ export const RunModal: React.FC<RunModalProps> = ({
     const [grabAttention, setGrabAttention] = useState(true);
     const [shiftPressed, setShiftPressed] = useState(false);
     const imageMediaIds = slides
-        .filter((s): s is ImageSlide => s.type === 'image')
+        .filter(
+            (s): s is ImageSlide | VideoSlide =>
+                s.type === 'image' || s.type === 'video',
+        )
         .map(s => s.mediaId);
     const thumbnails = useImageThumbnails(imageMediaIds);
 
@@ -319,6 +333,7 @@ export const RunModal: React.FC<RunModalProps> = ({
                         slides={slides}
                         currentSlideId={playback!.slideId}
                         current={current}
+                        video={playback!.video ?? null}
                         atStart={atStart}
                         atEnd={atEnd}
                         thumbnailRef={thumbnailRef}
@@ -330,6 +345,8 @@ export const RunModal: React.FC<RunModalProps> = ({
                         onJump={(slideId, shiftHeld) =>
                             play(slideId, shiftHeld)
                         }
+                        onPauseVideo={onPauseVideo}
+                        onResumeVideo={onResumeVideo}
                     />
                 ) : (
                     <PickerView
@@ -350,6 +367,7 @@ interface PlayingViewProps {
     slides: Slide[];
     currentSlideId: string | null;
     current: Slide;
+    video: VideoPlaybackMetadata | null;
     atStart: boolean;
     atEnd: boolean;
     thumbnailRef: React.RefObject<HTMLDivElement>;
@@ -359,12 +377,15 @@ interface PlayingViewProps {
     onNext: (shiftHeld: boolean) => void;
     onPrev: (shiftHeld: boolean) => void;
     onJump: (slideId: string, shiftHeld: boolean) => void;
+    onPauseVideo: () => void;
+    onResumeVideo: () => void;
 }
 
 const PlayingView: React.FC<PlayingViewProps> = ({
     slides,
     currentSlideId,
     current,
+    video,
     atStart,
     atEnd,
     thumbnailRef,
@@ -374,8 +395,28 @@ const PlayingView: React.FC<PlayingViewProps> = ({
     onNext,
     onPrev,
     onJump,
+    onPauseVideo,
+    onResumeVideo,
 }) => {
     const { t } = useTranslation('cg-overlay-plugin');
+    const isVideoSlide = current.type === 'video';
+    const [playTime, setPlayTime] = useState(video?.playDuration ?? 0);
+
+    useEffect(() => {
+        if (!video) return;
+        setPlayTime(video.playDuration);
+        if (!video.playing) return;
+        const interval = setInterval(() => setPlayTime(t => t + 100), 100);
+        return () => clearInterval(interval);
+    }, [video]);
+
+    const progress = playbackProgress(
+        playTime / 1000,
+        (video?.clipDuration ?? 0) / 1000,
+        { active: !!video && (video.playing || video.paused) },
+    );
+    const showVideoStatus = isVideoSlide && progress.active;
+
     return (
         <Stack spacing={2}>
             <Stack direction="row" spacing={1.5} alignItems="stretch">
@@ -398,18 +439,82 @@ const PlayingView: React.FC<PlayingViewProps> = ({
                         </IconButton>
                     </span>
                 </Tooltip>
-                <Box sx={{ flexGrow: 1 }}>
-                    <SlidePreview
-                        {...slidePreviewProps(
-                            current,
-                            thumbnails,
-                            backgroundUrl,
-                        )}
-                        {...(currentFullUrl
-                            ? { imageUrl: currentFullUrl }
-                            : {})}
-                    />
-                </Box>
+                <Stack spacing={1} sx={{ flexGrow: 1 }}>
+                    {isVideoSlide ? (
+                        <VideoPlaybackPreview
+                            mediaId={(current as VideoSlide).mediaId}
+                            poster={
+                                thumbnails[(current as VideoSlide).mediaId] ??
+                                null
+                            }
+                            currentTime={playTime / 1000}
+                            playing={!!video?.playing}
+                        />
+                    ) : (
+                        <SlidePreview
+                            {...slidePreviewProps(
+                                current,
+                                thumbnails,
+                                backgroundUrl,
+                            )}
+                            {...(currentFullUrl
+                                ? { imageUrl: currentFullUrl }
+                                : {})}
+                        />
+                    )}
+                    {showVideoStatus && (
+                        <Stack
+                            direction="row"
+                            spacing={1.5}
+                            alignItems="center"
+                        >
+                            <Tooltip
+                                title={
+                                    video?.paused
+                                        ? t('runModal.resumeVideo')
+                                        : t('runModal.pauseVideo')
+                                }
+                            >
+                                <IconButton
+                                    size="small"
+                                    onClick={
+                                        video?.paused
+                                            ? onResumeVideo
+                                            : onPauseVideo
+                                    }
+                                    sx={{
+                                        backgroundColor:
+                                            'rgba(255,255,255,0.06)',
+                                    }}
+                                >
+                                    {video?.paused ? (
+                                        <PlayArrowIcon sx={{ fontSize: 18 }} />
+                                    ) : (
+                                        <PauseIcon sx={{ fontSize: 18 }} />
+                                    )}
+                                </IconButton>
+                            </Tooltip>
+                            <LinearProgress
+                                variant="determinate"
+                                value={progress.percent}
+                                sx={{
+                                    flexGrow: 1,
+                                    height: 4,
+                                    borderRadius: 2,
+                                }}
+                            />
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ minWidth: 48, textAlign: 'right' }}
+                            >
+                                {t('runModal.videoTimeLeft', {
+                                    time: formatTime(progress.timeLeft),
+                                })}
+                            </Typography>
+                        </Stack>
+                    )}
+                </Stack>
                 <Tooltip title={t('runModal.next')}>
                     <span>
                         <IconButton

@@ -39,7 +39,21 @@ export interface ImageSlide {
     mediaId: string;
 }
 
-export type Slide = BibleSlide | TextSlide | HeadingSlide | ImageSlide;
+export interface VideoSlide {
+    type: 'video';
+    id: string;
+    mediaId: string;
+    inPoint?: number;
+    outPoint?: number;
+    volume?: number;
+}
+
+export type Slide =
+    | BibleSlide
+    | TextSlide
+    | HeadingSlide
+    | ImageSlide
+    | VideoSlide;
 
 export interface Presentation {
     id: string;
@@ -232,6 +246,18 @@ function sanitizeSlide(raw: any): Slide | null {
     if (type === 'image') {
         if (typeof raw.mediaId !== 'string' || !raw.mediaId) return null;
         return { type: 'image', id: raw.id, mediaId: raw.mediaId };
+    }
+    if (type === 'video') {
+        if (typeof raw.mediaId !== 'string' || !raw.mediaId) return null;
+        const slide: VideoSlide = {
+            type: 'video',
+            id: raw.id,
+            mediaId: raw.mediaId,
+        };
+        if (Number.isFinite(raw.inPoint)) slide.inPoint = raw.inPoint;
+        if (Number.isFinite(raw.outPoint)) slide.outPoint = raw.outPoint;
+        if (Number.isFinite(raw.volume)) slide.volume = raw.volume;
+        return slide;
     }
     return null;
 }

@@ -6,7 +6,9 @@ import { useTranslation } from '../i18n';
 import {
     type ArmEvent,
     importJobLabel,
+    pausePlayback,
     playSlide,
+    resumePlayback,
     slideRef,
     stopPlayback,
     useArmEvents,
@@ -156,6 +158,12 @@ export const SlidesRundownItem: React.FC<SlidesRundownItemProps> = ({
                         slideId,
                         grabAttention,
                     ).catch(console.error);
+                }}
+                onPauseVideo={() => {
+                    pausePlayback(conn).catch(console.error);
+                }}
+                onResumeVideo={() => {
+                    resumePlayback(conn).catch(console.error);
                 }}
             />
         </>

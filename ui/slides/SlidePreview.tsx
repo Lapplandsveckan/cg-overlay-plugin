@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 
 export interface SlidePreviewProps {
     text?: string;
@@ -7,8 +8,10 @@ export interface SlidePreviewProps {
     heading?: boolean;
 
     backgroundUrl?: string | null;
-    /** For image slides: thumbnail from CasparCG media, overrides backgroundUrl and hides text. */
+    /** For image/video slides: thumbnail from CasparCG media, overrides backgroundUrl and hides text. */
     imageUrl?: string | null;
+    /** Shows a play-icon badge over the thumbnail to mark it as a video slide. */
+    isVideo?: boolean;
     aspectRatio?: string;
     minWidth?: number | string;
     selected?: boolean;
@@ -64,6 +67,7 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
     heading = false,
     backgroundUrl,
     imageUrl,
+    isVideo,
     aspectRatio = '16/9',
     minWidth,
     selected,
@@ -137,6 +141,27 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({
                     </Box>
                 )}
             </>
+        )}
+        {imageUrl && isVideo && (
+            <Box
+                sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'rgba(0,0,0,0.25)',
+                    pointerEvents: 'none',
+                }}
+            >
+                <PlayArrowIcon
+                    sx={{
+                        fontSize: '18cqh',
+                        color: 'rgba(255,255,255,0.85)',
+                        filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.6))',
+                    }}
+                />
+            </Box>
         )}
     </Box>
 );

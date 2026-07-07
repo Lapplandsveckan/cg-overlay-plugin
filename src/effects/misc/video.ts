@@ -280,8 +280,17 @@ export class VideoEffect extends Effect {
     }
 
     public getMetadata(): Record<string, unknown> {
+        const now = Date.now();
+        let playDuration = 0;
+        if (this.playing)
+            playDuration = now - this.startedTime - this.pausedDuration;
+        else if (this.paused)
+            playDuration =
+                this.pausedTime - this.startedTime - this.pausedDuration;
+
         return {
             playing: this.playing,
+            paused: this.paused,
             loop: this.options.loop ?? false,
 
             startedTime: this.startedTime,
@@ -290,10 +299,8 @@ export class VideoEffect extends Effect {
             pausedDuration: this.pausedDuration,
             clipDuration: this.clipDuration * 1000,
 
-            playDuration: this.playing
-                ? Date.now() - this.startedTime - this.pausedDuration
-                : 0,
-            now: Date.now(),
+            playDuration,
+            now,
 
             seekSec: this.options.seekSec,
             lengthSec: this.options.lengthSec,
