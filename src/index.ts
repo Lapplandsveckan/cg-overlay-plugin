@@ -60,7 +60,7 @@ export default class LappisOverlayPlugin extends CasparPlugin {
     }
 
     public static get minChannels() {
-        return 3;
+        return 4;
     }
 
     public getInjectionZone(zone: UI_INJECTION_ZONE, key: string) {
