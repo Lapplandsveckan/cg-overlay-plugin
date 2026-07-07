@@ -1,322 +1,118 @@
-/* eslint-disable max-lines */
-import { noTryAsync } from 'no-try';
-import { type Effect, type Logger, type PluginAPI } from '@lappis/cg-manager';
-import { type BarsOverlayEffect } from './effects/overlay/bars';
-import { type SwishOverlayEffect } from './effects/overlay/swish';
-import { type NamnskyltOverlayEffect } from './effects/overlay/namnskylt';
-import { type CaptionOverlayEffect } from './effects/overlay/caption';
-import { type VideoTransitionOverlayEffect } from './effects/overlay/videotransition';
-import {
-    type InsamlingOverlayEffect,
-    type InsamlingOverlayEffectOptions,
-} from './effects/overlay/insamling';
-import {
-    type VideoEffect,
-    type VideoEffectOptions,
-} from './effects/misc/video';
+import { type Logger, type PluginAPI } from '@lappis/cg-manager';
 import type LappisOverlayPlugin from './index';
-import { type PresentationOverlayEffect } from './effects/overlay/presentation';
-import { SidePair } from './effects/side-pair';
-import { reportError, reportWarn } from './diagnostics';
-import { DEFAULT_CHANNEL_FPS, parseChannelFps } from './effects/misc/fps';
+import { reportWarn } from './diagnostics';
+import PresentationManager from './presentation-manager';
+import VideoSessionManager, {
+    VideoSessionStoppedError,
+} from './video-session-manager';
+import BarsManager from './effects/bars-manager';
+import SwishManager from './effects/swish-manager';
+import NamnskyltManager from './effects/namnskylt-manager';
+import CaptionManager from './effects/caption-manager';
+import VideoTransitionManager from './effects/video-transition-manager';
+import {
+    IDLE_RECYCLE_MS,
+    IDLE_SWEEP_INTERVAL_MS,
+    LOAD_DELAY,
+    MAX_RECOVERY,
+    delay,
+} from './overlay-constants';
+import {
+    type PresentationPlaybackState,
+    type Recyclable,
+    type VideoIntroMode,
+    type VideoOutroMode,
+    type VideoPlayoutOptions,
+} from './overlay-types';
 
 // Re-export the canonical slide type from the store; OverlayManager
 // stays narrow and only cares about (presentationId, slideId).
 export type { Slide } from './presentations';
-
-type VideoPlayoutOptions = Pick<
-    VideoEffectOptions,
-    'loop' | 'seekSec' | 'lengthSec' | 'volume'
->;
-
-// 'regular'/'fast' show the beratta-om banner (ATEM hard-cuts behind it);
-// 'cut'/'fade' skip the banner and drive the transition on the ATEM directly.
-export type VideoIntroMode = 'regular' | 'fast' | 'fade' | 'cut';
-export type VideoOutroMode = 'fade' | 'cut';
-
-export interface PresentationVideoMetadata {
-    playing: boolean;
-    paused: boolean;
-    clipDuration: number;
-    playDuration: number;
-}
-
-export interface PresentationPlaybackState {
-    playing: boolean;
-    presentationId: string | null;
-    slideId: string | null;
-    video?: PresentationVideoMetadata;
-}
-
-export interface PresentationArmEvent {
-    presentationId: string;
-    rundownId: string | null;
-    ts: number;
-}
-
-type SlideRender =
-    | { kind: 'text'; text: string; reference: string; heading?: boolean }
-    | { kind: 'image'; mediaId: string }
-    | {
-          kind: 'video';
-          mediaId: string;
-          inPoint?: number;
-          outPoint?: number;
-          volume?: number;
-      };
-
-export const CHANNELS = {
-    LEFT: 1,
-    RIGHT: 2,
-    VIDEO: 3,
-};
-
-export const MAIN_SIDES = [CHANNELS.LEFT, CHANNELS.RIGHT] as const;
-
-export const GROUPS = {
-    BARS: 'bars',
-    OVERLAY: 'overlay',
-    VIDEO: 'video',
-    PRESENTATION: 'presentation',
-};
-
-export const getGroup = (channel: number, group: string) =>
-    `${channel}:${group}`;
-
-// Time for both LEFT and RIGHT templates to finish loading (CG ADD) before we
-// fire CG PLAY, so the two halves animate in together instead of offset.
-export const LOAD_DELAY = 200;
-// Delay before cutting ATEM to the slides channel on first play, giving
-// CasparCG time to render the new slide before it goes to air.
-export const ATEM_CUT_DELAY = 300;
-// How long to hold the video transition cover before cutting ATEM to the source.
-export const VIDEO_TRANSITION_CUT_DELAY = 3000;
-// Delay for fast-sweep transitions: cut while the screen is covered.
-// The slide-in animation is 700ms, but starts after CG round-trip latency;
-// 1000ms gives a comfortable margin while still landing before the exit begins.
-export const FAST_TRANSITION_CUT_DELAY = 1000;
-// Recycle idle (off-air, not recently used) templates after this duration.
-export const IDLE_RECYCLE_MS = 10 * 60_000;
-// Overlap window before clearing the previous image slide: new effect activates
-// first (on a higher layer), then the old one is cleared after this delay.
-const SLIDE_SWAP_DEACTIVATE_DELAY = 80;
-
-const IDLE_SWEEP_INTERVAL_MS = 60_000;
-// Max auto-replay attempts per template before giving up and requiring manual
-// retrigger. Prevents a reload loop when a template is persistently broken.
-const MAX_RECOVERY = 2;
-
-const delay = (ms: number) =>
-    new Promise<void>(resolve => setTimeout(resolve, ms));
-
-// Tracks a recyclable persistent overlay so the idle sweep and healthcheck
-// recovery can dispose + re-arm it without duplicating per-effect logic.
-interface Recyclable {
-    base: string;
-    rebuild: () => void;
-    isOnAir: () => boolean;
-    replay: () => void;
-    lastUsed: number;
-    attempts: number;
-    recycling: boolean;
-}
+export type {
+    PresentationPlaybackState,
+    VideoIntroMode,
+    VideoOutroMode,
+    VideoPlayoutOptions,
+} from './overlay-types';
+export {
+    CHANNELS,
+    GROUPS,
+    getGroup,
+    LOAD_DELAY,
+    ATEM_CUT_DELAY,
+    VIDEO_TRANSITION_CUT_DELAY,
+    FAST_TRANSITION_CUT_DELAY,
+    IDLE_RECYCLE_MS,
+} from './overlay-constants';
+export { VideoSessionStoppedError };
 
 export default class OverlayManager {
     private api: PluginAPI;
     private logger: Logger;
     private plugin: LappisOverlayPlugin;
 
-    constructor(instance: LappisOverlayPlugin) {
-        this.plugin = instance;
-        this.api = instance['api'];
-        this.logger = instance['logger'];
-    }
+    public presentation: PresentationManager;
+    public videoSession: VideoSessionManager;
 
-    private bars: SidePair<BarsOverlayEffect> = null;
-    private barsState = 0;
-
-    private swish: SidePair<SwishOverlayEffect> = null;
-    private swishState = -1;
-    private swishNumber = '';
-
-    private videoTransition: SidePair<VideoTransitionOverlayEffect> = null;
-    private videoTransitionState = 0;
-
-    private namnskylt: SidePair<NamnskyltOverlayEffect> = null;
-    private namnskyltName: string | null = null;
-    private namnskyltStartedAt: number | null = null;
-    private namnskyltDuration: number | null = null;
-
-    private caption: SidePair<CaptionOverlayEffect> = null;
-    private captionState = 0;
-    private namnskyltState = 0;
-
-    private insamling: InsamlingOverlayEffect = null;
-    private insamlingState = 0;
-    private insamlingOutro: VideoOutroMode = 'cut';
-
-    private presentationEffect: PresentationOverlayEffect = null;
-    private presentationImageEffect: VideoEffect = null;
-    private presentationKind: 'text' | 'image' | 'video' | null = null;
-    private presentationState: PresentationPlaybackState = {
-        playing: false,
-        presentationId: null,
-        slideId: null,
-    };
-
-    private lastTextRender: {
-        text: string;
-        reference: string;
-        heading?: boolean;
-    } | null = null;
+    private bars: BarsManager;
+    private swish: SwishManager;
+    private namnskylt: NamnskyltManager;
+    private caption: CaptionManager;
+    private videoTransition: VideoTransitionManager;
 
     private recyclables = new Map<string, Recyclable>();
     private idleSweepInterval: ReturnType<typeof setInterval> | null = null;
 
-    private channelFps = new Map<number, number>();
+    constructor(instance: LappisOverlayPlugin) {
+        this.plugin = instance;
+        this.api = instance['api'];
+        this.logger = instance['logger'];
 
-    // Cached per channel; re-resolved on initialize() since the mode can change across a restart.
-    private async resolveChannelFps(channel: number): Promise<number> {
-        const [err, result] = await noTryAsync(() =>
-            this.api.getChannel(channel).executor.promise(`INFO ${channel}`),
+        this.presentation = new PresentationManager(instance, (base: string) =>
+            this.touchRecyclable(base),
         );
-        const fps = !err ? parseChannelFps(result.data) : null;
+        this.videoSession = new VideoSessionManager(instance, {
+            onToggleVideoTransition: (fast?: boolean) =>
+                this.toggleVideoTransition(fast),
+            getVideoTransitionState: () => this.videoTransition.getState(),
+            broadcastOverlay: () => this.broadcastOverlay(),
+            touchRecyclable: (base: string) => this.touchRecyclable(base),
+        });
 
-        if (fps === null) {
-            reportWarn(
-                this.plugin,
-                'video',
-                `Could not resolve fps for channel ${channel}, falling back to ${DEFAULT_CHANNEL_FPS}`,
-            );
-            this.channelFps.delete(channel);
-            return DEFAULT_CHANNEL_FPS;
-        }
-
-        this.channelFps.set(channel, fps);
-        return fps;
+        this.bars = new BarsManager(this, instance);
+        this.swish = new SwishManager(this, instance);
+        this.namnskylt = new NamnskyltManager(this, instance);
+        this.caption = new CaptionManager(this, instance);
+        this.videoTransition = new VideoTransitionManager(this, instance);
     }
 
     public getChannelFps(channel: number): number {
-        return this.channelFps.get(channel) ?? DEFAULT_CHANNEL_FPS;
+        return this.presentation.getChannelFps(channel);
     }
 
-    // Build a SidePair targeting LEFT and RIGHT channels with the given group.
-    // optsFor receives the channel number so per-side options (e.g. direction)
-    // can be derived from the side.
-    private makeSidePair<T extends Effect>(
-        effectName: string,
-        group: string,
-        optsFor: (channel: number) => object,
-    ): SidePair<T> {
-        return new SidePair<T>(
-            this.api.createEffect(
-                effectName,
-                getGroup(CHANNELS.LEFT, group),
-                optsFor(CHANNELS.LEFT),
-            ) as T,
-            this.api.createEffect(
-                effectName,
-                getGroup(CHANNELS.RIGHT, group),
-                optsFor(CHANNELS.RIGHT),
-            ) as T,
-            this.plugin,
-        );
+    public touchRecyclable(base: string) {
+        const r = this.recyclables.get(base);
+        if (r) r.lastUsed = Date.now();
     }
 
-    // Wait for both LEFT and RIGHT templates to finish loading (CG ADD) before
-    // playing. Disposes the pair if superseded.
-    private async loadThenActivate(
-        pair: SidePair<Effect>,
-        isCurrent: () => boolean,
-    ) {
-        await delay(LOAD_DELAY);
-        if (isCurrent()) {
-            pair.activate();
-        } else {
-            pair.dispose();
-        }
-    }
-
-    // --- Per-effect builders (shared by initialize() and recycle) ---
-
-    private buildBars() {
-        this.bars?.dispose();
-        this.bars = this.makeSidePair('overlay-bars', GROUPS.BARS, channel => ({
-            healthType: channel === CHANNELS.LEFT ? 'bars-left' : 'bars-right',
-        }));
-    }
-
-    private buildSwish() {
-        this.swish?.dispose();
-        this.swish = this.makeSidePair(
-            'overlay-swish',
-            GROUPS.OVERLAY,
-            channel => ({
-                number: '123 607 27 97',
-                healthType:
-                    channel === CHANNELS.LEFT ? 'swish-left' : 'swish-right',
-            }),
-        );
-    }
-
-    private buildCaption() {
-        this.caption?.dispose();
-        this.caption = this.makeSidePair<CaptionOverlayEffect>(
-            'overlay-caption',
-            GROUPS.OVERLAY,
-            () => this.plugin.captionkit.getStreamConfig(),
-        );
-        this.caption.each(e => e.setNamnskyltState(this.namnskyltState));
-    }
-
-    // Rebuild the caption pair after its settings (channel/language/etc.)
-    // change, re-activating it if it was on-air so the new display URL takes
-    // effect.
-    public rebuildCaption() {
-        const wasOnAir = this.captionState === 1;
-        this.buildCaption();
-        if (wasOnAir && this.caption) {
-            this.touchRecyclable('caption');
-            this.caption.activate();
-        }
-    }
-
-    private buildVideoTransition() {
-        this.videoTransition?.dispose();
-        this.videoTransition = this.makeSidePair<VideoTransitionOverlayEffect>(
-            'overlay-videotransition',
-            GROUPS.PRESENTATION,
-            channel => ({
-                direction: channel === CHANNELS.LEFT ? 'left' : 'right',
-                healthType:
-                    channel === CHANNELS.LEFT
-                        ? 'videotransition-left'
-                        : 'videotransition-right',
-            }),
-        );
+    public broadcastOverlay() {
+        this.api.broadcast('overlay-state', 'UPDATE', this.getOverlayState());
+        this.api.invalidateFeedback('lappis-rundown-namnskylt');
+        this.api.invalidateFeedback('lappis-swish-state');
+        this.api.invalidateFeedback('lappis-bars-state');
+        this.api.invalidateFeedback('lappis-insamling-state');
     }
 
     private buildInsamling() {
-        this.insamling?.dispose();
-        this.insamling = this.api.createEffect(
-            'overlay-insamling',
-            getGroup(CHANNELS.VIDEO, GROUPS.OVERLAY),
-            { healthType: 'insamling' },
-        ) as InsamlingOverlayEffect; // TODO: special group so it is underneeth all overlays
+        this.videoSession.buildInsamling();
     }
 
-    private buildPresentation() {
-        this.presentationEffect?.dispose();
-        this.presentationEffect = this.api.createEffect(
-            'overlay-presentation',
-            getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
-            {
-                text: '',
-                reference: '',
-                heading: false,
-                healthType: 'presentation',
-            },
-        ) as PresentationOverlayEffect;
+    private getInsamlingState(): number {
+        return this.videoSession.getInsamlingState();
+    }
+
+    private getInsamlingEffect() {
+        return this.videoSession.getInsamlingEffect();
     }
 
     private buildRecyclables() {
@@ -326,9 +122,9 @@ export default class OverlayManager {
                 'bars',
                 {
                     base: 'bars',
-                    rebuild: () => this.buildBars(),
-                    isOnAir: () => this.barsState === 1,
-                    replay: () => this.bars.activate(),
+                    rebuild: () => this.bars.rebuild(),
+                    isOnAir: () => this.bars.isOnAir(),
+                    replay: () => this.bars.replay(),
                     lastUsed: now,
                     attempts: 0,
                     recycling: false,
@@ -338,14 +134,9 @@ export default class OverlayManager {
                 'swish',
                 {
                     base: 'swish',
-                    rebuild: () => this.buildSwish(),
-                    isOnAir: () =>
-                        this.swishState === 0 || this.swishState === 1,
-                    replay: () => {
-                        this.swish.activate();
-                        if (this.swishState === 1)
-                            this.swish.each(e => e.minimize(), 'minimize');
-                    },
+                    rebuild: () => this.swish.rebuild(),
+                    isOnAir: () => this.swish.isOnAir(),
+                    replay: () => this.swish.replay(),
                     lastUsed: now,
                     attempts: 0,
                     recycling: false,
@@ -355,9 +146,9 @@ export default class OverlayManager {
                 'caption',
                 {
                     base: 'caption',
-                    rebuild: () => this.buildCaption(),
-                    isOnAir: () => this.captionState === 1,
-                    replay: () => this.caption.activate(),
+                    rebuild: () => this.caption.rebuildEffect(),
+                    isOnAir: () => this.caption.isOnAir(),
+                    replay: () => this.caption.replay(),
                     lastUsed: now,
                     attempts: 0,
                     recycling: false,
@@ -367,12 +158,9 @@ export default class OverlayManager {
                 'videotransition',
                 {
                     base: 'videotransition',
-                    rebuild: () => this.buildVideoTransition(),
-                    isOnAir: () => this.videoTransitionState === 1,
-                    replay: () => {
-                        this.videoTransition.update({ fast: false });
-                        this.videoTransition.activate();
-                    },
+                    rebuild: () => this.videoTransition.rebuild(),
+                    isOnAir: () => this.videoTransition.isOnAir(),
+                    replay: () => this.videoTransition.replay(),
                     lastUsed: now,
                     attempts: 0,
                     recycling: false,
@@ -383,8 +171,8 @@ export default class OverlayManager {
                 {
                     base: 'insamling',
                     rebuild: () => this.buildInsamling(),
-                    isOnAir: () => this.insamlingState === 1,
-                    replay: () => this.insamling.activate(),
+                    isOnAir: () => this.getInsamlingState() === 1,
+                    replay: () => this.getInsamlingEffect().activate(),
                     lastUsed: now,
                     attempts: 0,
                     recycling: false,
@@ -394,14 +182,15 @@ export default class OverlayManager {
                 'presentation',
                 {
                     base: 'presentation',
-                    rebuild: () => this.buildPresentation(),
-                    isOnAir: () =>
-                        this.presentationState.playing &&
-                        this.presentationKind === 'text',
+                    rebuild: () => this.presentation.buildPresentation(),
+                    isOnAir: () => this.presentation.isPresentationPlaying(),
                     replay: () => {
-                        if (this.lastTextRender)
-                            this.presentationEffect.update(this.lastTextRender);
-                        this.presentationEffect.activate();
+                        const lastRender =
+                            this.presentation.getLastTextRender();
+                        const effect =
+                            this.presentation.getPresentationEffect();
+                        if (lastRender && effect) effect.update(lastRender);
+                        if (effect) effect.activate();
                     },
                     lastUsed: now,
                     attempts: 0,
@@ -409,11 +198,6 @@ export default class OverlayManager {
                 },
             ],
         ]);
-    }
-
-    private touchRecyclable(base: string) {
-        const r = this.recyclables.get(base);
-        if (r) r.lastUsed = Date.now();
     }
 
     private idleSweep() {
@@ -481,15 +265,14 @@ export default class OverlayManager {
             this.idleSweepInterval = null;
         }
 
-        this.resolveChannelFps(CHANNELS.VIDEO);
+        this.presentation.initialize();
 
-        this.buildBars();
-        this.buildSwish();
-        this.buildCaption();
-        this.buildVideoTransition();
+        this.bars.initialize();
+        this.swish.initialize();
+        this.caption.initialize();
+        this.videoTransition.initialize();
+        this.namnskylt.initialize();
         this.buildInsamling();
-        this.buildPresentation();
-        this.presentationKind = null;
 
         this.buildRecyclables();
         this.idleSweepInterval = setInterval(
@@ -505,283 +288,82 @@ export default class OverlayManager {
         }
         this.recyclables.clear();
 
-        if (this.bars) {
-            this.bars.dispose();
-            this.bars = null;
-        }
+        this.bars.dispose();
+        this.swish.dispose();
+        this.caption.dispose();
+        this.videoTransition.dispose();
+        this.namnskylt.dispose();
 
-        if (this.swish) {
-            this.swish.dispose();
-            this.swish = null;
-        }
-
-        if (this.caption) {
-            this.caption.dispose();
-            this.caption = null;
-        }
-
-        if (this.videoTransition) {
-            this.videoTransition.dispose();
-            this.videoTransition = null;
-        }
-
-        if (this.insamling) {
-            this.insamling.dispose();
-            this.insamling = null;
-        }
-
-        if (this.presentationEffect) {
-            this.presentationEffect.dispose();
-            this.presentationEffect = null;
-        }
-
-        if (this.namnskylt) {
-            this.namnskylt.dispose();
-            this.namnskylt = null;
-        }
+        this.presentation.dispose();
+        this.videoSession.dispose();
     }
-
-    private videoSession: null | {
-        stop: () => void;
-    } = null;
 
     public getVideoSession() {
-        return this.videoSession;
-    }
-
-    private cutVideoToProgram() {
-        this.plugin.atem.setVideoProgram();
-        if (this.plugin.settings.get().projectorsToProgram)
-            this.plugin.atem.setProjectorsProgram();
-    }
-
-    private async fadeVideoToProgram() {
-        await this.plugin.atem.fadeVideoToProgram();
-        if (this.plugin.settings.get().projectorsToProgram)
-            this.plugin.atem.setProjectorsProgram();
+        return this.videoSession.getVideoSession();
     }
 
     public startVideoSession(atem = false, intro: VideoIntroMode = 'regular') {
-        if (this.videoSession) return Promise.resolve();
-
-        this.videoSession = { stop: () => null };
-
-        if (intro === 'cut' || intro === 'fade') {
-            return this.startVideoSessionDirect(atem, intro);
-        }
-
-        const fast = intro === 'fast';
-        if (this.videoTransitionState !== 1) this.toggleVideoTransition(fast);
-
-        const holdMs = fast
-            ? FAST_TRANSITION_CUT_DELAY
-            : VIDEO_TRANSITION_CUT_DELAY;
-        return new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                this.videoSession.stop = () => null;
-                resolve();
-
-                if (atem) this.cutVideoToProgram();
-            }, holdMs);
-
-            this.videoSession.stop = () => {
-                clearTimeout(timeout);
-                // Use a sentinel so video.ts can distinguish a normal stop
-                // from a real failure.
-                reject(new VideoSessionStoppedError());
-            };
-        });
-    }
-
-    // No banner — the transition itself happens on the ATEM (hard cut or mix).
-    private async startVideoSessionDirect(
-        atem: boolean,
-        intro: 'cut' | 'fade',
-    ) {
-        if (!atem) return;
-        if (intro === 'fade') await this.fadeVideoToProgram();
-        else this.cutVideoToProgram();
+        return this.videoSession.startVideoSession(atem, intro);
     }
 
     public async stopVideoSession(atem = false, outro: VideoOutroMode = 'cut') {
-        if (this.insamlingState === 1) return; // insamling still showing — keep session alive
-        if (!this.videoSession)
-            return this.logger.warn('No video session to stop');
-        if (this.videoTransitionState !== 0) this.toggleVideoTransition();
-
-        if (atem) {
-            if (outro === 'fade') await this.plugin.atem.fadeReturnToPreview();
-            else this.plugin.atem.returnToPreview();
-        }
-
-        this.videoSession.stop();
-        this.videoSession = null;
+        return this.videoSession.stopVideoSession(atem, outro);
     }
 
     public playVideo(video: string, options?: VideoPlayoutOptions) {
-        const media = this.api.getFileDatabase().get(video);
-        if (!media) throw new Error('Video not found');
-
-        return this.api.createEffect(
-            'lappis-video',
-            `${CHANNELS.VIDEO}:video`,
-            {
-                media,
-                holdLastFrame: true,
-                disposeOnStop: true,
-                channelFps: this.getChannelFps(CHANNELS.VIDEO),
-                ...options,
-            },
-        ) as VideoEffect;
+        return this.videoSession.playVideo(video, options);
     }
 
     public showNamnskylt(name: string) {
-        const pair = this.makeSidePair<NamnskyltOverlayEffect>(
-            'overlay-namnskylt',
-            GROUPS.OVERLAY,
-            channel => ({
-                name,
-                healthType:
-                    channel === CHANNELS.LEFT
-                        ? 'namnskylt-left'
-                        : 'namnskylt-right',
-            }),
-        );
-        this.namnskylt = pair;
-        this.namnskyltName = name;
-        this.broadcastOverlay();
-        this.loadThenActivate(pair, () => this.namnskylt === pair);
-
-        // Only the left side needs to report state — both sides transition
-        // in lockstep, and guarding against a superseded pair keeps a
-        // rapid re-trigger from clobbering the caption with a stale state.
-        pair.left.onState = s => {
-            if (this.namnskylt !== pair) return;
-            this.setCaptionNamnskyltState(s);
-            if (s === 1) {
-                this.namnskyltStartedAt = Date.now();
-                this.namnskyltDuration = 10000;
-                this.broadcastOverlay();
-            }
-        };
-
-        const clearOnDone = () => {
-            if (this.namnskylt === pair) {
-                this.namnskylt = null;
-                this.namnskyltName = null;
-                this.namnskyltStartedAt = null;
-                this.namnskyltDuration = null;
-                this.broadcastOverlay();
-            }
-        };
-        pair.left.onAutoDeactivate = clearOnDone;
-        pair.right.onAutoDeactivate = clearOnDone;
+        this.namnskylt.show(name);
     }
 
     public hideNamnskylt() {
-        if (!this.namnskylt) return;
-        const pair = this.namnskylt;
-        this.namnskylt = null;
-        this.namnskyltName = null;
-        this.namnskyltStartedAt = null;
-        this.namnskyltDuration = null;
-        this.broadcastOverlay();
-        pair.deactivate();
+        this.namnskylt.hide();
     }
 
     public toggleBars() {
-        this.barsState = 1 - this.barsState;
-
-        switch (this.barsState) {
-            case 0:
-                this.bars.deactivate();
-                break;
-            case 1:
-                this.touchRecyclable('bars');
-                this.bars.activate();
-                break;
-        }
-
-        this.broadcastOverlay();
+        this.bars.toggle();
     }
 
     public stopBars() {
-        this.barsState = 0;
-        this.bars.deactivate();
-        this.broadcastOverlay();
+        this.bars.stop();
     }
 
     public toggleCaption() {
-        this.captionState = 1 - this.captionState;
-
-        switch (this.captionState) {
-            case 0:
-                this.caption.deactivate();
-                break;
-            case 1:
-                this.touchRecyclable('caption');
-                // Seed the effect's internal state so activate() sends the
-                // current namnskylt state along with CG PLAY, in case a
-                // namnskylt went up while captions were off.
-                this.caption.each(e =>
-                    e.setNamnskyltState(this.namnskyltState),
-                );
-                this.caption.activate();
-                break;
-        }
-
-        this.broadcastOverlay();
+        this.caption.toggle();
     }
 
     public stopCaption() {
-        this.captionState = 0;
-        this.caption.deactivate();
-        this.broadcastOverlay();
+        this.caption.stop();
     }
 
     public clearCaption() {
-        this.caption?.each(e => e.clear());
+        this.caption.clear();
     }
 
     // Hide captions on-air without touching captionState/UI, e.g. while a
     // video plays. No-op if captions aren't enabled.
     public suspendCaption() {
-        if (this.captionState !== 1) return;
-        this.caption?.deactivate();
+        this.caption.suspend();
     }
 
     // Re-show captions after suspendCaption(), but only if they were left
     // enabled. Clears first so playback starts fresh instead of flashing
     // whatever backlog piled up while hidden.
     public resumeCaption() {
-        if (this.captionState !== 1 || !this.caption) return;
-
-        this.touchRecyclable('caption');
-        this.caption.each(e => e.setNamnskyltState(this.namnskyltState));
-        this.clearCaption();
-        this.caption.activate();
+        this.caption.resume();
     }
 
     // Mirrors the namnskylt's own state (0 hidden / 1 full / 2 minimized) onto
     // the caption, which pushes its text up in lockstep so the two lower-thirds
     // don't overlap.
     public setCaptionNamnskyltState(state: number) {
-        this.namnskyltState = state;
-        if (this.captionState === 1) {
-            this.caption.each(e => e.setNamnskyltState(state));
-        }
+        this.caption.setNamnskyltState(state);
     }
 
     public toggleVideoTransition(fast = false) {
-        if (this.videoTransitionState === 1) {
-            this.videoTransitionState = 0;
-            return;
-        }
-
-        this.videoTransitionState = 1;
-        this.touchRecyclable('videotransition');
-        this.videoTransition.update({ fast });
-        this.videoTransition.activate();
+        this.videoTransition.toggle(fast);
     }
 
     public toggleSwish(
@@ -790,292 +372,73 @@ export default class OverlayManager {
         highlightIntro?: boolean,
         fromBelow?: boolean,
     ) {
-        if (highlightIntro) {
-            this.swishState = (this.swishState + 1) % 3;
-        } else {
-            // default: 2-step cycle, show minimized then dismiss.
-            this.swishState = this.swishState === 1 ? 2 : 1;
-        }
-
-        labels = labels || '';
-        this.swishNumber = number || '';
-        this.swish.update({ number: this.swishNumber, labels, fromBelow });
-
-        switch (this.swishState) {
-            case 0:
-                this.touchRecyclable('swish');
-                this.swish.activate();
-                break;
-            case 1:
-                this.touchRecyclable('swish');
-                this.swish.each(e => e.minimize(), 'minimize');
-                break;
-            case 2:
-                this.swish.deactivate();
-                break;
-        }
-
-        this.broadcastOverlay();
+        this.swish.toggle(number, labels, highlightIntro, fromBelow);
     }
 
     public stopSwish() {
-        this.swishState = 2;
-        this.swishNumber = '';
-        this.swish.deactivate();
-        this.broadcastOverlay();
+        this.swish.stop();
     }
 
-    public async toggleInsamling(
-        data?: InsamlingOverlayEffectOptions & {
-            options?: { intro?: VideoIntroMode; outro?: VideoOutroMode };
-        },
-    ) {
-        this.insamlingState = 1 - this.insamlingState;
-        this.broadcastOverlay();
-
-        const { options, ...effectOptions } = data ?? {};
-        if (data) this.insamling.update(effectOptions);
-
-        switch (this.insamlingState) {
-            case 0:
-                this.insamling.deactivate();
-                if (!this.plugin.video.playing)
-                    this.stopVideoSession(true, this.insamlingOutro);
-                break;
-            case 1:
-                this.insamlingOutro = options?.outro ?? 'cut';
-                await this.startVideoSession(true, options?.intro ?? 'regular');
-                this.touchRecyclable('insamling');
-                this.insamling.activate();
-                break;
-        }
+    public async toggleInsamling(data?: any) {
+        return this.videoSession.toggleInsamling(data);
     }
 
     public stopInsamling() {
-        this.insamlingState = 0;
-        this.broadcastOverlay();
-        this.insamling.deactivate();
-        if (!this.plugin.video.playing)
-            this.stopVideoSession(true, this.insamlingOutro);
+        return this.videoSession.stopInsamling();
+    }
+
+    // Rebuild the caption pair after its settings (channel/language/etc.)
+    // change, re-activating it if it was on-air so the new display URL takes
+    // effect.
+    public rebuildCaption() {
+        this.caption.rebuild();
     }
 
     public getPresentationState(): PresentationPlaybackState {
-        const state = { ...this.presentationState };
-        if (this.presentationKind === 'video' && this.presentationImageEffect) {
-            const meta = this.presentationImageEffect.getMetadata() as {
-                playing: boolean;
-                paused: boolean;
-                clipDuration: number;
-                playDuration: number;
-            };
-            state.video = {
-                playing: meta.playing,
-                paused: meta.paused,
-                clipDuration: meta.clipDuration,
-                playDuration: meta.playDuration,
-            };
-        }
-        return state;
+        return this.presentation.getPresentationState();
     }
 
     public pausePresentationVideo() {
-        if (this.presentationKind !== 'video' || !this.presentationImageEffect)
-            return;
-        this.presentationImageEffect.pause();
-        this.broadcastPresentation();
+        return this.presentation.pausePresentationVideo();
     }
 
     public resumePresentationVideo() {
-        if (this.presentationKind !== 'video' || !this.presentationImageEffect)
-            return;
-        this.presentationImageEffect.resume();
-        this.broadcastPresentation();
-    }
-
-    private broadcastPresentation() {
-        this.api.broadcast('slides', 'UPDATE', this.getPresentationState());
-    }
-
-    public getOverlayState() {
-        return {
-            bars: this.barsState === 1,
-            caption: this.captionState === 1,
-            swish: {
-                on: this.swishState === 0 || this.swishState === 1,
-                number: this.swishNumber,
-            },
-            insamling: this.insamlingState === 1,
-            namnskylt: {
-                on: this.namnskylt !== null,
-                name: this.namnskyltName,
-                startedAt: this.namnskyltStartedAt,
-                totalDuration: this.namnskyltDuration,
-            },
-        };
-    }
-
-    private broadcastOverlay() {
-        this.api.broadcast('overlay-state', 'UPDATE', this.getOverlayState());
-        this.api.invalidateFeedback('lappis-rundown-namnskylt');
-        this.api.invalidateFeedback('lappis-swish-state');
-        this.api.invalidateFeedback('lappis-bars-state');
-        this.api.invalidateFeedback('lappis-insamling-state');
+        return this.presentation.resumePresentationVideo();
     }
 
     public broadcastArmEvent(presentationId: string, rundownId: string | null) {
-        const event: PresentationArmEvent = {
-            presentationId,
-            rundownId,
-            ts: Date.now(),
-        };
-        this.api.broadcast('slides-arm', 'UPDATE', event);
+        return this.presentation.broadcastArmEvent(presentationId, rundownId);
     }
 
     public playSlide(
         presentationId: string,
         slideId: string,
-        render: SlideRender,
+        render: any,
         grabAttention = true,
     ) {
-        const prevState = { ...this.presentationState };
-        const wasKind = this.presentationKind;
-
-        this.presentationState = { playing: true, presentationId, slideId };
-
-        if (render.kind === 'text') {
-            if (this.presentationImageEffect) {
-                this.presentationImageEffect.deactivate();
-                this.presentationImageEffect = null;
-            }
-
-            this.lastTextRender = {
-                text: render.text,
-                reference: render.reference,
-                heading: render.heading,
-            };
-            this.presentationEffect.update(this.lastTextRender);
-
-            this.touchRecyclable('presentation');
-            this.presentationEffect.activate();
-
-            this.presentationKind = 'text';
-        } else {
-            const media = this.api.getFileDatabase().get(render.mediaId);
-            if (!media) {
-                reportError(
-                    this.plugin,
-                    'overlay',
-                    `${render.kind === 'video' ? 'Video' : 'Image'} slide media not found: "${render.mediaId}" — ` +
-                        `check CasparCG has scanned the file (scan-timing race?) ` +
-                        `or that the mediaId casing is correct`,
-                );
-                this.presentationState = prevState;
-                this.broadcastPresentation();
-                return;
-            }
-
-            if (wasKind === 'text' && this.presentationEffect) {
-                this.presentationEffect.deactivate();
-            }
-
-            // Capture the outgoing image effect before reassigning so we can
-            // clear it after the new one is visible (prevents flicker).
-            const prevImage = this.presentationImageEffect;
-
-            this.presentationImageEffect = this.api.createEffect(
-                'lappis-video',
-                getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION),
-                {
-                    media,
-                    disposeOnStop: true,
-                    holdLastFrame: true,
-                    channelFps: this.getChannelFps(CHANNELS.VIDEO),
-                    ...(render.kind === 'video'
-                        ? {
-                              seekSec: render.inPoint,
-                              lengthSec:
-                                  render.outPoint !== undefined
-                                      ? render.outPoint - (render.inPoint ?? 0)
-                                      : undefined,
-                              volume: render.volume,
-                          }
-                        : {}),
-                },
-            ) as VideoEffect;
-
-            // New effect allocates a higher layer in the group, so it renders
-            // on top of the still-visible previous image — activate first.
-            this.presentationImageEffect.activate();
-
-            if (render.kind === 'video') {
-                // Once the clip reaches its held last frame, rebroadcast so
-                // the operator UI stops the countdown/pause controls.
-                const forSlideId = slideId;
-                this.presentationImageEffect.once('video:finish', () => {
-                    if (
-                        this.presentationState.slideId === forSlideId &&
-                        this.presentationState.presentationId === presentationId
-                    )
-                        this.broadcastPresentation();
-                });
-            }
-
-            // Clear the old image after a brief overlap so there's no empty frame.
-            if (prevImage) {
-                setTimeout(
-                    () => prevImage.deactivate(),
-                    SLIDE_SWAP_DEACTIVATE_DELAY,
-                );
-            }
-
-            this.presentationKind = render.kind;
-        }
-
-        // Delay the ATEM cut so the new slide renders before going to air.
-        if (grabAttention) {
-            setTimeout(() => {
-                if (
-                    this.presentationState.playing &&
-                    this.presentationState.presentationId === presentationId &&
-                    this.presentationState.slideId === slideId
-                ) {
-                    this.plugin.atem.ensureVideoProgram();
-                }
-            }, ATEM_CUT_DELAY);
-        }
-
-        this.broadcastPresentation();
+        return this.presentation.playSlide(
+            presentationId,
+            slideId,
+            render,
+            grabAttention,
+        );
     }
 
     public stopPlayback() {
-        if (!this.presentationState.playing) return;
-
-        this.presentationState = {
-            playing: false,
-            presentationId: null,
-            slideId: null,
-        };
-        this.presentationKind = null;
-        this.plugin.atem.returnToPreview();
-
-        if (this.presentationEffect) {
-            this.presentationEffect.deactivate();
-        }
-
-        if (this.presentationImageEffect) {
-            this.presentationImageEffect.deactivate();
-            this.presentationImageEffect = null;
-        }
-
-        this.broadcastPresentation();
+        return this.presentation.stopPlayback();
     }
-}
 
-// Sentinel error used by stopVideoSession so video.ts can distinguish a
-// normal session stop from an actual failure without mislogging it.
-export class VideoSessionStoppedError extends Error {
-    constructor() {
-        super('Video session stopped');
-        this.name = 'VideoSessionStoppedError';
+    public getOverlayState() {
+        const namnskyltState = this.namnskylt.getState();
+        return {
+            bars: this.bars.getState() === 1,
+            caption: this.caption.getState() === 1,
+            swish: {
+                on: this.swish.isOnAir(),
+                number: this.swish.getNumber(),
+            },
+            insamling: this.getInsamlingState() === 1,
+            namnskylt: namnskyltState,
+        };
     }
 }
