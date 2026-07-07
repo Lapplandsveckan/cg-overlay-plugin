@@ -10,11 +10,13 @@ import SwishManager from './effects/swish-manager';
 import NamnskyltManager from './effects/namnskylt-manager';
 import CaptionManager from './effects/caption-manager';
 import VideoTransitionManager from './effects/video-transition-manager';
+import WallMirrorManager from './effects/wall-mirror-manager';
 import {
     IDLE_RECYCLE_MS,
     IDLE_SWEEP_INTERVAL_MS,
     LOAD_DELAY,
     MAX_RECOVERY,
+    type WALL_VIDEO_TRANSFORM,
     delay,
 } from './overlay-constants';
 import {
@@ -59,6 +61,7 @@ export default class OverlayManager {
     private namnskylt: NamnskyltManager;
     private caption: CaptionManager;
     private videoTransition: VideoTransitionManager;
+    private wallMirror: WallMirrorManager;
 
     private recyclables = new Map<string, Recyclable>();
     private idleSweepInterval: ReturnType<typeof setInterval> | null = null;
@@ -68,15 +71,24 @@ export default class OverlayManager {
         this.api = instance['api'];
         this.logger = instance['logger'];
 
-        this.presentation = new PresentationManager(instance, (base: string) =>
-            this.touchRecyclable(base),
-        );
+        this.wallMirror = new WallMirrorManager(instance);
+
+        this.presentation = new PresentationManager(instance, {
+            touchRecyclable: (base: string) => this.touchRecyclable(base),
+            startWallMirror: () => this.wallMirror.start(),
+            stopWallMirror: () => this.wallMirror.stop(),
+        });
         this.videoSession = new VideoSessionManager(instance, {
-            onToggleVideoTransition: (fast?: boolean) =>
-                this.toggleVideoTransition(fast),
+            onToggleVideoTransition: (mode?: VideoIntroMode) =>
+                this.toggleVideoTransition(mode),
             getVideoTransitionState: () => this.videoTransition.getState(),
             broadcastOverlay: () => this.broadcastOverlay(),
             touchRecyclable: (base: string) => this.touchRecyclable(base),
+            startWallMirror: (
+                mode?: VideoIntroMode,
+                transform?: typeof WALL_VIDEO_TRANSFORM,
+            ) => this.wallMirror.start(mode, transform),
+            stopWallMirror: () => this.wallMirror.stop(),
         });
 
         this.bars = new BarsManager(this, instance);
@@ -161,6 +173,18 @@ export default class OverlayManager {
                     rebuild: () => this.videoTransition.rebuild(),
                     isOnAir: () => this.videoTransition.isOnAir(),
                     replay: () => this.videoTransition.replay(),
+                    lastUsed: now,
+                    attempts: 0,
+                    recycling: false,
+                },
+            ],
+            [
+                'wall-videotransition',
+                {
+                    base: 'wall-videotransition',
+                    rebuild: () => this.wallMirror.rebuild(),
+                    isOnAir: () => this.wallMirror.isOnAir(),
+                    replay: () => this.wallMirror.replay(),
                     lastUsed: now,
                     attempts: 0,
                     recycling: false,
@@ -271,6 +295,7 @@ export default class OverlayManager {
         this.swish.initialize();
         this.caption.initialize();
         this.videoTransition.initialize();
+        this.wallMirror.initialize();
         this.namnskylt.initialize();
         this.buildInsamling();
 
@@ -296,6 +321,7 @@ export default class OverlayManager {
 
         this.presentation.dispose();
         this.videoSession.dispose();
+        this.wallMirror.dispose();
     }
 
     public getVideoSession() {
@@ -362,8 +388,8 @@ export default class OverlayManager {
         this.caption.setNamnskyltState(state);
     }
 
-    public toggleVideoTransition(fast = false) {
-        this.videoTransition.toggle(fast);
+    public toggleVideoTransition(mode: VideoIntroMode = 'regular') {
+        this.videoTransition.toggle(mode);
     }
 
     public toggleSwish(

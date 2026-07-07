@@ -10,6 +10,11 @@ import {
     getGroup,
 } from '../overlay-constants';
 
+interface Activatable {
+    activate: () => unknown;
+    dispose: () => void;
+}
+
 export default class NamnskyltManager {
     private api: PluginAPI;
     private logger: Logger;
@@ -17,6 +22,7 @@ export default class NamnskyltManager {
     private overlayManager: any;
 
     private namnskylt: SidePair<NamnskyltOverlayEffect> | null = null;
+    private wallNamnskylt: NamnskyltOverlayEffect | null = null;
     private namnskyltName: string | null = null;
     private namnskyltStartedAt: number | null = null;
     private namnskyltDuration: number | null = null;
@@ -48,15 +54,15 @@ export default class NamnskyltManager {
         );
     }
 
-    private async loadThenActivate(
-        pair: SidePair<NamnskyltOverlayEffect>,
+    private async loadThenActivate<T extends Activatable>(
+        effect: T,
         isCurrent: () => boolean,
     ) {
         await delay(LOAD_DELAY);
         if (isCurrent()) {
-            pair.activate();
+            effect.activate();
         } else {
-            pair.dispose();
+            effect.dispose();
         }
     }
 
@@ -69,6 +75,12 @@ export default class NamnskyltManager {
             this.namnskylt.dispose();
             this.namnskylt = null;
         }
+
+        if (this.wallNamnskylt) {
+            this.wallNamnskylt.dispose();
+            this.wallNamnskylt = null;
+        }
+
         this.namnskyltName = null;
         this.namnskyltStartedAt = null;
         this.namnskyltDuration = null;
@@ -87,9 +99,19 @@ export default class NamnskyltManager {
             }),
         );
         this.namnskylt = pair;
+
+        this.wallNamnskylt?.dispose();
+        const wall = this.api.createEffect(
+            'wall-namnskylt',
+            getGroup(CHANNELS.WALL, GROUPS.OVERLAY),
+            { name, healthType: 'wall-namnskylt' },
+        ) as NamnskyltOverlayEffect;
+        this.wallNamnskylt = wall;
+
         this.namnskyltName = name;
         this.overlayManager.broadcastOverlay();
         this.loadThenActivate(pair, () => this.namnskylt === pair);
+        this.loadThenActivate(wall, () => this.wallNamnskylt === wall);
 
         // Only the left side needs to report state — both sides transition
         // in lockstep, and guarding against a superseded pair keeps a
@@ -115,9 +137,19 @@ export default class NamnskyltManager {
         };
         pair.left.onAutoDeactivate = clearOnDone;
         pair.right.onAutoDeactivate = clearOnDone;
+
+        wall.onAutoDeactivate = () => {
+            if (this.wallNamnskylt === wall) this.wallNamnskylt = null;
+        };
     }
 
     public hide() {
+        if (this.wallNamnskylt) {
+            const wall = this.wallNamnskylt;
+            this.wallNamnskylt = null;
+            wall.deactivate();
+        }
+
         if (!this.namnskylt) return;
         const pair = this.namnskylt;
         this.namnskylt = null;

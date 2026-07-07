@@ -4,9 +4,9 @@ export function handleState(
     prevState: number,
     styles: Record<string, string>,
     direction: string,
-    fast = false,
+    mode = 'regular',
 ) {
-    if (fast) {
+    if (mode === 'fast') {
         if (state === 1) handleSweep(tl, styles, direction);
         if (state === 0) handleSweepReset(tl, styles);
         return;

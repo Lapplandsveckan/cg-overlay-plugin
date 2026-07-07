@@ -1,5 +1,6 @@
 import { noTryAsync } from 'no-try';
 import { type PluginAPI } from '@lappis/cg-manager';
+import { type MediaDoc } from '@lappis/cg-manager/dist/types/scanner/db';
 import { type VideoEffect } from './effects/misc/video';
 import type LappisOverlayPlugin from './index';
 import { type PresentationOverlayEffect } from './effects/overlay/presentation';
@@ -18,10 +19,17 @@ import {
 import { reportError, reportWarn } from './diagnostics';
 import { DEFAULT_CHANNEL_FPS, parseChannelFps } from './effects/misc/fps';
 
+export interface PresentationManagerCallbacks {
+    touchRecyclable: (base: string) => void;
+    startWallMirror: () => void;
+    stopWallMirror: () => void;
+}
+
 export default class PresentationManager {
     private api: PluginAPI;
     private plugin: LappisOverlayPlugin;
-    private touchRecyclable: (base: string) => void;
+    private callbacks: PresentationManagerCallbacks;
+    private wallMirrorActive = false;
 
     private presentationEffect: PresentationOverlayEffect = null;
     private presentationImageEffect: VideoEffect = null;
@@ -42,11 +50,11 @@ export default class PresentationManager {
 
     constructor(
         instance: LappisOverlayPlugin,
-        touchRecyclable: (base: string) => void,
+        callbacks: PresentationManagerCallbacks,
     ) {
         this.plugin = instance;
         this.api = instance['api'];
-        this.touchRecyclable = touchRecyclable;
+        this.callbacks = callbacks;
     }
 
     // Cached per channel; re-resolved on initialize() since the mode can change across a restart.
@@ -140,10 +148,29 @@ export default class PresentationManager {
         render: SlideRender,
         grabAttention = true,
     ) {
-        const prevState = { ...this.presentationState };
         const wasKind = this.presentationKind;
 
+        let media: MediaDoc;
+        if (render.kind !== 'text') {
+            media = this.api.getFileDatabase().get(render.mediaId);
+            if (!media) {
+                reportError(
+                    this.plugin,
+                    'overlay',
+                    `${render.kind === 'video' ? 'Video' : 'Image'} slide media not found: "${render.mediaId}" — ` +
+                        `check CasparCG has scanned the file (scan-timing race?) ` +
+                        `or that the mediaId casing is correct`,
+                );
+                this.broadcastPresentation();
+                return;
+            }
+        }
+
         this.presentationState = { playing: true, presentationId, slideId };
+        if (!this.wallMirrorActive) {
+            this.callbacks.startWallMirror();
+            this.wallMirrorActive = true;
+        }
 
         if (render.kind === 'text') {
             if (this.presentationImageEffect) {
@@ -157,25 +184,11 @@ export default class PresentationManager {
                 heading: render.heading,
             };
             this.presentationEffect.update(this.lastTextRender);
-            this.touchRecyclable('presentation');
+            this.callbacks.touchRecyclable('presentation');
             this.presentationEffect.activate();
 
             this.presentationKind = 'text';
         } else {
-            const media = this.api.getFileDatabase().get(render.mediaId);
-            if (!media) {
-                reportError(
-                    this.plugin,
-                    'overlay',
-                    `${render.kind === 'video' ? 'Video' : 'Image'} slide media not found: "${render.mediaId}" — ` +
-                        `check CasparCG has scanned the file (scan-timing race?) ` +
-                        `or that the mediaId casing is correct`,
-                );
-                this.presentationState = prevState;
-                this.broadcastPresentation();
-                return;
-            }
-
             if (wasKind === 'text' && this.presentationEffect) {
                 this.presentationEffect.deactivate();
             }
@@ -260,6 +273,11 @@ export default class PresentationManager {
         this.presentationKind = null;
         this.plugin.atem.returnToPreview();
 
+        if (this.wallMirrorActive) {
+            this.callbacks.stopWallMirror();
+            this.wallMirrorActive = false;
+        }
+
         if (this.presentationEffect) {
             this.presentationEffect.deactivate();
         }
@@ -305,6 +323,11 @@ export default class PresentationManager {
         if (this.presentationImageEffect) {
             this.presentationImageEffect.dispose();
             this.presentationImageEffect = null;
+        }
+
+        if (this.wallMirrorActive) {
+            this.callbacks.stopWallMirror();
+            this.wallMirrorActive = false;
         }
     }
 }

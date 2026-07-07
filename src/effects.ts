@@ -71,6 +71,27 @@ const EFFECTS: EffectDef[] = [
         scope: 'effect:presentation',
         needsHealth: true,
     },
+    {
+        name: 'wall-swish',
+        ctor: SwishOverlayEffect,
+        templatePath: 'wall/swish',
+        scope: 'effect:wall-swish',
+        needsHealth: true,
+    },
+    {
+        name: 'wall-namnskylt',
+        ctor: NamnskyltOverlayEffect,
+        templatePath: 'wall/namnskylt',
+        scope: 'effect:wall-namnskylt',
+        needsHealth: true,
+    },
+    {
+        name: 'wall-videotransition',
+        ctor: VideoTransitionOverlayEffect,
+        templatePath: 'wall/videotransition',
+        scope: 'effect:wall-videotransition',
+        needsHealth: true,
+    },
 ];
 
 export function registerEffects(plugin: LappisOverlayPlugin) {
@@ -140,4 +161,10 @@ export function registerEffectGroups(plugin: LappisOverlayPlugin) {
     plugin
         .getApi()
         .getEffectGroup(getGroup(CHANNELS.VIDEO, GROUPS.PRESENTATION));
+
+    plugin.getApi().getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.VIDEO));
+    plugin
+        .getApi()
+        .getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.PRESENTATION));
+    plugin.getApi().getEffectGroup(getGroup(CHANNELS.WALL, GROUPS.OVERLAY));
 }
