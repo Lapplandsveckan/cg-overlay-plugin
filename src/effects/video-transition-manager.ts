@@ -3,7 +3,6 @@ import { type VideoTransitionOverlayEffect } from './overlay/videotransition';
 import type LappisOverlayPlugin from '../index';
 import { SidePair } from './side-pair';
 import { CHANNELS, GROUPS, getGroup } from '../overlay-constants';
-import type { VideoIntroMode } from '../overlay-types';
 
 export default class VideoTransitionManager {
     private api: PluginAPI;
@@ -68,7 +67,7 @@ export default class VideoTransitionManager {
         }
     }
 
-    public toggle(mode: VideoIntroMode = 'regular') {
+    public toggle(fast = false) {
         if (this.videoTransitionState === 1) {
             this.videoTransitionState = 0;
             return;
@@ -76,7 +75,7 @@ export default class VideoTransitionManager {
 
         this.videoTransitionState = 1;
         this.overlayManager.touchRecyclable('videotransition');
-        this.videoTransition?.update({ mode });
+        this.videoTransition?.update({ fast });
         this.videoTransition?.activate();
     }
 
@@ -97,7 +96,7 @@ export default class VideoTransitionManager {
     }
 
     public replay() {
-        this.videoTransition?.update({ mode: 'regular' });
+        this.videoTransition?.update({ fast: false });
         this.videoTransition?.activate();
     }
 }

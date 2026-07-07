@@ -15,7 +15,6 @@ import {
     FAST_TRANSITION_CUT_DELAY,
     GROUPS,
     VIDEO_TRANSITION_CUT_DELAY,
-    WALL_VIDEO_TRANSFORM,
     getGroup,
 } from './overlay-constants';
 
@@ -27,15 +26,10 @@ export class VideoSessionStoppedError extends Error {
 }
 
 export interface VideoSessionManagerCallbacks {
-    onToggleVideoTransition: (mode?: VideoIntroMode) => void;
+    onToggleVideoTransition: (fast?: boolean) => void;
     getVideoTransitionState: () => number;
     broadcastOverlay: () => void;
     touchRecyclable: (base: string) => void;
-    startWallMirror: (
-        mode?: VideoIntroMode,
-        transform?: typeof WALL_VIDEO_TRANSFORM,
-    ) => void;
-    stopWallMirror: () => void;
 }
 
 export default class VideoSessionManager {
@@ -76,20 +70,19 @@ export default class VideoSessionManager {
         if (this.videoSession) return Promise.resolve();
 
         this.videoSession = { stop: () => null };
-        this.callbacks.startWallMirror(intro, WALL_VIDEO_TRANSFORM);
 
         if (intro === 'cut' || intro === 'fade') {
             return this.startVideoSessionDirect(atem, intro);
         }
 
+        const fast = intro === 'fast';
         if (this.callbacks.getVideoTransitionState() !== 1) {
-            this.callbacks.onToggleVideoTransition(intro);
+            this.callbacks.onToggleVideoTransition(fast);
         }
 
-        const holdMs =
-            intro === 'fast'
-                ? FAST_TRANSITION_CUT_DELAY
-                : VIDEO_TRANSITION_CUT_DELAY;
+        const holdMs = fast
+            ? FAST_TRANSITION_CUT_DELAY
+            : VIDEO_TRANSITION_CUT_DELAY;
         return new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(() => {
                 this.videoSession.stop = () => null;
@@ -129,7 +122,6 @@ export default class VideoSessionManager {
 
         this.videoSession.stop();
         this.videoSession = null;
-        this.callbacks.stopWallMirror();
     }
 
     public getVideoSession() {

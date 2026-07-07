@@ -2,7 +2,6 @@ import { CgCommand, type EffectGroup, type Logger } from '@lappis/cg-manager';
 import { execChecked } from '../../diagnostics';
 import { HealthCheckedEffect } from '../health-checked-effect';
 import type { HealthMonitor } from '../../healthcheck';
-import type { VideoIntroMode } from '../../overlay-types';
 
 // How long the normal transition holds before triggering its slide-off exit.
 const HOLD_DURATION = 3000;
@@ -11,23 +10,12 @@ const SWEEP_DURATION = 1500;
 
 export interface VideoTransitionOverlayEffectOptions {
     direction?: 'left' | 'right';
-    // Mirrors the video session's intro mode so each template can derive its
-    // own behavior from it (e.g. the side pair sweeps on 'fast'; the wall
-    // skips its fade-in on 'cut'/'fade', which have no hold window to
-    // animate into).
-    mode?: VideoIntroMode;
-    // Skip the auto-hide timer — the wall's copy stays up as the background
-    // behind the routed video for the whole session, not just the cut cover.
-    persistent?: boolean;
+    fast?: boolean;
     healthType?: string;
 }
 
 export class VideoTransitionOverlayEffect extends HealthCheckedEffect {
-    private options: Omit<
-        VideoTransitionOverlayEffectOptions,
-        'healthType' | 'persistent'
-    >;
-    private persistent: boolean;
+    private options: Omit<VideoTransitionOverlayEffectOptions, 'healthType'>;
     private logger: Logger;
 
     public constructor(
@@ -37,19 +25,18 @@ export class VideoTransitionOverlayEffect extends HealthCheckedEffect {
         logger: Logger,
         health: HealthMonitor,
     ) {
-        const { healthType, persistent, ...effectOptions } = options;
+        const { healthType, ...effectOptions } = options;
         super(group, health, healthType ?? 'videotransition');
 
         this.logger = logger;
         this.options = effectOptions;
-        this.persistent = persistent ?? false;
         this.allocateLayers(1);
         this.executor.executeAllocations();
 
         // Pass direction to the template so the animation knows which way to slide.
         const cmd = CgCommand.add(template, false, {
             direction: options.direction ?? 'left',
-            mode: options.mode ?? 'regular',
+            fast: options.fast ?? false,
         });
         cmd.allocate(this.layer);
         execChecked(
@@ -63,15 +50,15 @@ export class VideoTransitionOverlayEffect extends HealthCheckedEffect {
         return this.layers[0];
     }
 
-    public update(opts: { mode?: VideoIntroMode }) {
-        if (opts.mode !== undefined) this.options.mode = opts.mode;
+    public update(opts: { fast?: boolean }) {
+        if (opts.fast !== undefined) this.options.fast = opts.fast;
         return execChecked(
             this.logger,
             'update videotransition effect',
             this.executor.execute(
-                CgCommand.update({
-                    mode: this.options.mode ?? 'regular',
-                }).allocate(this.layer),
+                CgCommand.update({ fast: this.options.fast ?? false }).allocate(
+                    this.layer,
+                ),
             ),
         );
     }
@@ -88,14 +75,11 @@ export class VideoTransitionOverlayEffect extends HealthCheckedEffect {
             ),
         );
 
-        if (!this.persistent) {
-            const holdMs =
-                this.options.mode === 'fast' ? SWEEP_DURATION : HOLD_DURATION;
-            setTimeout(() => {
-                if (!this.active) return;
-                this.deactivate();
-            }, holdMs);
-        }
+        const holdMs = this.options.fast ? SWEEP_DURATION : HOLD_DURATION;
+        setTimeout(() => {
+            if (!this.active) return;
+            this.deactivate();
+        }, holdMs);
 
         return execChecked(
             this.logger,
@@ -115,9 +99,6 @@ export class VideoTransitionOverlayEffect extends HealthCheckedEffect {
     }
 
     public getMetadata(): Record<string, unknown> {
-        return {
-            direction: this.options.direction,
-            mode: this.options.mode,
-        };
+        return { direction: this.options.direction, fast: this.options.fast };
     }
 }

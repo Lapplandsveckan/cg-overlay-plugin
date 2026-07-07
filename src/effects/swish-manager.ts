@@ -11,7 +11,6 @@ export default class SwishManager {
     private overlayManager: any;
 
     private swish: SidePair<SwishOverlayEffect> | null = null;
-    private wallSwish: SwishOverlayEffect | null = null;
     private swishState = -1;
     private swishNumber = '';
 
@@ -53,13 +52,6 @@ export default class SwishManager {
                     channel === CHANNELS.LEFT ? 'swish-left' : 'swish-right',
             }),
         );
-
-        this.wallSwish?.dispose();
-        this.wallSwish = this.api.createEffect(
-            'wall-swish',
-            getGroup(CHANNELS.WALL, GROUPS.OVERLAY),
-            { number: '123 607 27 97', healthType: 'wall-swish' },
-        ) as SwishOverlayEffect;
     }
 
     public initialize() {
@@ -70,11 +62,6 @@ export default class SwishManager {
         if (this.swish) {
             this.swish.dispose();
             this.swish = null;
-        }
-
-        if (this.wallSwish) {
-            this.wallSwish.dispose();
-            this.wallSwish = null;
         }
     }
 
@@ -94,17 +81,11 @@ export default class SwishManager {
         labels = labels || '';
         this.swishNumber = number || '';
         this.swish?.update({ number: this.swishNumber, labels, fromBelow });
-        this.wallSwish?.update({
-            number: this.swishNumber,
-            labels,
-            fromBelow,
-        });
 
         switch (this.swishState) {
             case 0:
                 this.overlayManager.touchRecyclable('swish');
                 this.swish?.activate();
-                this.wallSwish?.activate();
                 break;
             case 1:
                 this.overlayManager.touchRecyclable('swish');
@@ -115,7 +96,6 @@ export default class SwishManager {
                 break;
             case 2:
                 this.swish?.deactivate();
-                this.wallSwish?.deactivate();
                 break;
         }
 
@@ -126,7 +106,6 @@ export default class SwishManager {
         this.swishState = 2;
         this.swishNumber = '';
         this.swish?.deactivate();
-        this.wallSwish?.deactivate();
         this.overlayManager.broadcastOverlay();
     }
 
@@ -152,7 +131,6 @@ export default class SwishManager {
 
     public replay() {
         this.swish?.activate();
-        this.wallSwish?.activate();
         if (this.swishState === 1) {
             this.swish?.each(
                 (e: SwishOverlayEffect) => e.minimize(),
