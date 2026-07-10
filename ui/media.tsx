@@ -42,6 +42,7 @@ const DraggableClip: React.FC<DraggableClipProps> = ({
                 type: 'play-video',
                 data: { clip: item.id, options: {} },
                 title: displayName,
+                immediate: true,
             })
         }
         onClick={onInstantPlay}

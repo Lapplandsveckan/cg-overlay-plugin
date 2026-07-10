@@ -92,6 +92,7 @@ const NamnskyltCard: React.FC<NamnskyltCardProps> = ({
                     type: 'namnskylt',
                     data: { name },
                     title: name,
+                    immediate: true,
                 })
             }
             onClick={onEdit}

@@ -72,6 +72,7 @@ export function registerRundownActions(plugin: LappisOverlayPlugin) {
                             clip: (file as unknown as { mediaId: string })
                                 .mediaId,
                         },
+                        immediate: true,
                     };
                 },
             },
@@ -190,6 +191,7 @@ export function registerRundownActions(plugin: LappisOverlayPlugin) {
                         type: 'slides',
                         title,
                         data: { presentationId, importJobId: job.id },
+                        immediate: true,
                     };
                 },
             },

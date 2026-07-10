@@ -102,6 +102,7 @@ const PresentationCard: React.FC<PresentationCardProps> = ({
                     type: 'slides',
                     data: { presentationId: presentation.id },
                     title: presentation.title,
+                    immediate: true,
                 })
             }
             onClick={activate}
