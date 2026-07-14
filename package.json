@@ -3,7 +3,7 @@
   "repository": "https://github.com/Lapplandsveckan/cg-overlay-plugin",
   "author": "firecraftgaming <eliyah@sundstroem.com>",
   "license": "MIT",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "index.js",
   "devDependencies": {
     "@babel/core": "^7.19.3",

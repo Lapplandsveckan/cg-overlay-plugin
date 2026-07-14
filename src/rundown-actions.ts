@@ -76,7 +76,22 @@ export function registerRundownActions(plugin: LappisOverlayPlugin) {
                     };
                 },
             },
-            stop: () => plugin.video.stopVideo(),
+            stop: item => {
+                const video = plugin
+                    .getApi()
+                    .getFileDatabase()
+                    .get(item.data.clip);
+                if (!video) {
+                    reportWarn(
+                        plugin,
+                        'route',
+                        `play-video stop: clip "${item.data.clip}" not found`,
+                    );
+                    return;
+                }
+
+                plugin.video.stopByClip(video.id);
+            },
         },
     );
 

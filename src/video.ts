@@ -233,4 +233,16 @@ export default class VideoManager {
 
         this.plugin.sendVideoInformation();
     }
+
+    public stopByClip(clipId: string) {
+        if (this.playing?.video.id === clipId) {
+            this.stopVideo();
+            return;
+        }
+
+        const index = this.queue.findIndex(video => video.id === clipId);
+        if (index !== -1) this.queue.splice(index, 1);
+
+        this.plugin.sendVideoInformation();
+    }
 }
