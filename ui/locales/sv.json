@@ -59,6 +59,7 @@
         "whenNow": "Spela nu",
         "label": "Spela video",
         "playNowChip": "Hoppa över kön",
+        "loopChip": "Loop",
         "noClip": "Inget klipp valt",
         "inspectorLabel": "Trimning & volym",
         "trimLabel": "Trimning",

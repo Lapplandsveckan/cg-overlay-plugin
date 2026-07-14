@@ -59,6 +59,7 @@
         "whenNow": "Play now",
         "label": "Play video",
         "playNowChip": "Skip queue",
+        "loopChip": "Loop",
         "noClip": "No clip selected",
         "inspectorLabel": "Trim & volume",
         "trimLabel": "Trim",

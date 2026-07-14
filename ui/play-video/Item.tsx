@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Chip, LinearProgress, Stack, Typography } from '@mui/material';
 
 import ContentCutIcon from '@mui/icons-material/ContentCut';
+import LoopIcon from '@mui/icons-material/Loop';
 import { useSocket, MediaCard } from '@web-lib';
 import { useTranslation } from '../i18n';
 import { buildThumbnailUrl } from '../thumbnail';
@@ -112,6 +113,14 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
                             in: formatTime(opts.inPoint ?? 0),
                             out: formatTime(opts.outPoint ?? fullDuration),
                         })}
+                        size="small"
+                        variant="outlined"
+                    />
+                )}
+                {opts.loop && (
+                    <Chip
+                        icon={<LoopIcon sx={{ fontSize: 14 }} />}
+                        label={t('playVideo.loopChip')}
                         size="small"
                         variant="outlined"
                     />
