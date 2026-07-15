@@ -223,7 +223,7 @@ export default class VideoManager {
     }
 
     public clearQueue() {
-        this.queue = [];
+        this.stopVideo(true);
         this.plugin.sendVideoInformation();
     }
 

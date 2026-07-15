@@ -333,7 +333,7 @@ const VideoQueue: React.FC<VideoQueueProps> = ({
                             </Typography>
                         )
                     )}
-                    {queue.length > 0 && (
+                    {(queue.length > 0 || current) && (
                         <Tooltip title={t('video.clearQueue')}>
                             <IconButton size="small" onClick={clearQueue}>
                                 <PlaylistRemoveIcon sx={{ fontSize: 20 }} />
