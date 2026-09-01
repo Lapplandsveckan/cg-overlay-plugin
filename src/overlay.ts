@@ -231,7 +231,7 @@ export default class OverlayManager {
             if (now - r.lastUsed > IDLE_RECYCLE_MS) {
                 r.rebuild();
                 r.lastUsed = now;
-                this.logger.info(`Idle-recycled overlay: ${r.base}`);
+                this.logger.debug(`Idle-recycled overlay: ${r.base}`);
             }
         }
     }
