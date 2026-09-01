@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { type useSocket } from '@web-lib';
+import { Method, useBroadcast, type useSocket } from '@web-lib';
 
-import { type BroadcastReq, broadcastHub } from './broadcast-hub';
+import { topic } from './broadcast-topics';
 
 const ROOT = '/api/plugin/lappis';
 
@@ -11,20 +11,10 @@ export interface RundownSummary {
     name: string;
 }
 
-export type { BroadcastReq };
-
-export function useBroadcast(
-    conn: ReturnType<typeof useSocket>,
-    path: string,
-    method: string,
-    handler: (req: BroadcastReq) => void,
-) {
-    useEffect(
-        () => broadcastHub.subscribe(conn, path, method, handler),
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [conn, handler], // path/method are stable across renders
-    );
-}
+const activeRundownTopic = topic<{ id: string | null }>(
+    'plugin/lappis/active-rundown',
+    Method.UPDATE,
+);
 
 export function useActiveRundown(conn: ReturnType<typeof useSocket>) {
     const [rundowns, setRundowns] = useState<RundownSummary[]>([]);
@@ -49,16 +39,9 @@ export function useActiveRundown(conn: ReturnType<typeof useSocket>) {
             .catch(() => {});
     }, [conn]);
 
-    const onUpdate = useCallback(
-        (req: BroadcastReq) =>
-            setActiveId(
-                req?.data?.id && typeof req.data.id === 'string'
-                    ? req.data.id
-                    : null,
-            ),
-        [],
+    useBroadcast(activeRundownTopic, data =>
+        setActiveId(data?.id && typeof data.id === 'string' ? data.id : null),
     );
-    useBroadcast(conn, 'plugin/lappis/active-rundown', 'UPDATE', onUpdate);
 
     const setActive = useCallback(
         (id: string | null) => {

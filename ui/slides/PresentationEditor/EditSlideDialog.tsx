@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Button,
     Dialog,
@@ -10,7 +10,7 @@ import {
     TextField,
 } from '@mui/material';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
-import { useSocket } from '@web-lib';
+import { useBroadcast, useSocket } from '@web-lib';
 import { useTranslation } from '../../i18n';
 import { MediaPicker } from './MediaPicker';
 import SlidePreview from '../SlidePreview';
@@ -24,7 +24,7 @@ import {
 import { type VideoInspectorValue } from '../../play-video/VideoInspector';
 import VideoInspectorModal from '../../play-video/VideoInspectorModal';
 import { formatTime } from '../../format';
-import { type BroadcastReq, useBroadcast } from '../../hooks';
+import { casparMediaTopic, videosTopic } from '../../broadcast-topics';
 
 interface EditSlideDialogProps {
     slide: Slide | null;
@@ -82,17 +82,15 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
             setClip(null);
             return;
         }
-        (conn as any).caspar
-            .getMedia()
-            .then((map: Map<string, any>) => setClip(map.get(mediaId) ?? null))
+        conn.caspar
+            .getAllMedia()
+            .then(media => setClip(media.find(m => m.id === mediaId) ?? null))
             .catch(console.error);
-
-        const onMedia = (key: string, value: any) => {
-            if (key === mediaId && value) setClip(value);
-        };
-        (conn as any).caspar.on('media', onMedia);
-        return () => (conn as any).caspar.off('media', onMedia);
     }, [conn, isVideo, mediaId]);
+
+    useBroadcast(casparMediaTopic, ({ key, value }) => {
+        if (isVideo && key === mediaId) setClip(value ?? null);
+    });
 
     useEffect(() => {
         conn.rawRequest('/api/plugin/lappis/videos', 'GET', {})
@@ -101,15 +99,8 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
             )
             .catch(() => {});
     }, [conn]);
-    useBroadcast(
-        conn,
-        'plugin/lappis/videos',
-        'UPDATE',
-        useCallback(
-            (req: BroadcastReq) =>
-                setChannelFps(normalizeVideoPayload(req.data).channelFps),
-            [],
-        ),
+    useBroadcast(videosTopic, data =>
+        setChannelFps(normalizeVideoPayload(data).channelFps),
     );
 
     const fullDuration = fullDurationOf(clip);

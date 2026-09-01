@@ -3,7 +3,7 @@
   "repository": "https://github.com/Lapplandsveckan/cg-overlay-plugin",
   "author": "firecraftgaming <eliyah@sundstroem.com>",
   "license": "MIT",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "index.js",
   "devDependencies": {
     "@babel/core": "^7.19.3",
@@ -57,7 +57,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@gsap/react": "^2.1.0",
-    "@lappis/cg-manager": "^0.0.52",
+    "@lappis/cg-manager": "^0.2.0",
     "@mui/icons-material": "^5.15.11",
     "@mui/material": "^5.15.11",
     "atem-connection": "^3.5.0",

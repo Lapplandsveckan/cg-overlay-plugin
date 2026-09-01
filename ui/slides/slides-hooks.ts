@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { useSocket } from '@web-lib';
+import { Method, type MediaDoc, useBroadcast, useSocket } from '@web-lib';
 
-import { type BroadcastReq, useBroadcast } from '../hooks';
+import { casparMediaTopic, topic } from '../broadcast-topics';
 import { buildThumbnailUrl } from '../thumbnail';
 import {
     ROOT,
@@ -15,6 +15,16 @@ import {
     type Presentation,
     type PlaybackState,
 } from './slides-types';
+
+const presentationsTopic = topic<Presentation[]>(
+    'plugin/lappis/presentations',
+    Method.UPDATE,
+);
+const slidesTopic = topic<PlaybackState>('plugin/lappis/slides', Method.UPDATE);
+const slidesArmTopic = topic<ArmEvent>(
+    'plugin/lappis/slides-arm',
+    Method.UPDATE,
+);
 
 let backgroundCache: Promise<string | null> | null = null;
 const fullImageCache = new Map<string, Promise<string | null>>();
@@ -88,24 +98,32 @@ export function useImageThumbnails(mediaIds: string[]): Record<string, string> {
             return;
         }
 
-        const refresh = () =>
-            (conn as any).caspar
-                .getMedia()
-                .then((media: Map<string, any>) => {
-                    const map: Record<string, string> = {};
-                    for (const [mid, item] of media) {
-                        const url = buildThumbnailUrl(item);
-                        if (url) map[mid] = url;
-                    }
-                    setThumbnails(map);
-                })
-                .catch(console.error);
-
-        refresh();
-        (conn as any).caspar.on('media', refresh);
-        return () => (conn as any).caspar.off('media', refresh);
+        conn.caspar
+            .getAllMedia()
+            .then((media: MediaDoc[]) => {
+                const map: Record<string, string> = {};
+                for (const item of media) {
+                    const url = buildThumbnailUrl(item);
+                    if (url) map[item.id] = url;
+                }
+                setThumbnails(map);
+            })
+            .catch(console.error);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mediaIds.join(',')]);
+    }, [mediaIds.join(','), conn]);
+
+    useBroadcast(casparMediaTopic, ({ key, value }) => {
+        if (!mediaIds.includes(key)) return;
+        setThumbnails(prev => {
+            const url = value && buildThumbnailUrl(value);
+            if (!url) {
+                if (!(key in prev)) return prev;
+                const { [key]: _removed, ...rest } = prev;
+                return rest;
+            }
+            return { ...prev, [key]: url };
+        });
+    });
 
     return thumbnails;
 }
@@ -127,10 +145,9 @@ export function usePresentations(): {
         listPresentations(conn).then(setPresentations).catch(console.error);
     }, [conn]);
 
-    const onUpdate = useCallback((req: BroadcastReq) => {
-        if (Array.isArray(req.data)) setPresentations(req.data);
-    }, []);
-    useBroadcast(conn, 'plugin/lappis/presentations', 'UPDATE', onUpdate);
+    useBroadcast(presentationsTopic, data => {
+        if (Array.isArray(data)) setPresentations(data);
+    });
 
     return { presentations, refresh };
 }
@@ -159,14 +176,13 @@ export function usePresentation(
     }, [id, conn]);
 
     // Refresh on broadcast of any presentation change
-    const onUpdate = useCallback(() => {
+    useBroadcast(presentationsTopic, () => {
         if (id) {
             getPresentation(conn, id)
                 .then(setPresentation)
                 .catch(console.error);
         }
-    }, [conn, id]);
-    useBroadcast(conn, 'plugin/lappis/presentations', 'UPDATE', onUpdate);
+    });
 
     return presentation;
 }
@@ -179,24 +195,15 @@ export function usePlaybackState(): PlaybackState | null {
         getPlaybackState(conn).then(setState).catch(console.error);
     }, [conn]);
 
-    const onUpdate = useCallback(
-        (req: BroadcastReq) => setState(req.data ?? null),
-        [],
-    );
-    useBroadcast(conn, 'plugin/lappis/slides', 'UPDATE', onUpdate);
+    useBroadcast(slidesTopic, data => setState(data ?? null));
 
     return state;
 }
 
 export function useArmEvents(handler: (event: ArmEvent) => void) {
-    const conn = useSocket();
-    const cb = useCallback(
-        (req: BroadcastReq) => {
-            if (req.data && typeof req.data === 'object') handler(req.data);
-        },
-        [handler],
-    );
-    useBroadcast(conn, 'plugin/lappis/slides-arm', 'UPDATE', cb);
+    useBroadcast(slidesArmTopic, data => {
+        if (data && typeof data === 'object') handler(data);
+    });
 }
 
 export { buildThumbnailUrl };

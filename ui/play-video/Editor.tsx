@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Accordion,
     AccordionDetails,
@@ -19,7 +19,12 @@ import LooksOneIcon from '@mui/icons-material/LooksOne';
 import LoopIcon from '@mui/icons-material/Loop';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import QueueMusicIcon from '@mui/icons-material/QueueMusic';
-import { useSocket, MediaSelect, RundownEditorActionBar } from '@web-lib';
+import {
+    useBroadcast,
+    useSocket,
+    MediaSelect,
+    RundownEditorActionBar,
+} from '@web-lib';
 import { useTranslation } from '../i18n';
 import { formatTime } from '../format';
 import {
@@ -32,7 +37,7 @@ import {
     type IntroMode,
     type OutroMode,
 } from '../video-utils';
-import { useBroadcast } from '../hooks';
+import { casparMediaTopic, videosTopic } from '../broadcast-topics';
 import { ModeRow, type ModeOption } from '../mode-row';
 import { type VideoInspectorValue } from './VideoInspector';
 import VideoInspectorModal from './VideoInspectorModal';
@@ -99,22 +104,19 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
         volume: opts?.volume ?? 1,
     });
 
+    const clip = entry.data?.clip as string | undefined;
     useEffect(() => {
-        if (!entry.data?.clip) return;
-        const clip = entry.data.clip as string;
+        if (!clip) return;
 
-        socket.caspar.getMedia().then((map: Map<string, any>) => {
-            if (map.has(clip)) setMedia(map.get(clip));
-        });
+        socket.caspar
+            .getAllMedia()
+            .then(media => setMedia(media.find(m => m.id === clip) ?? null))
+            .catch(console.error);
+    }, [clip, socket]);
 
-        const onMedia = (key: string, value: any) => {
-            if (key === clip && value) setMedia(value);
-        };
-        socket.caspar.on('media', onMedia);
-        return () => {
-            socket.caspar.off('media', onMedia);
-        };
-    }, [entry.data?.clip]);
+    useBroadcast(casparMediaTopic, ({ key, value }) => {
+        if (clip && key === clip) setMedia(value ?? null);
+    });
 
     useEffect(() => {
         socket
@@ -124,15 +126,8 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
             )
             .catch(() => {});
     }, [socket]);
-    useBroadcast(
-        socket,
-        'plugin/lappis/videos',
-        'UPDATE',
-        useCallback(
-            (req: { data?: any }) =>
-                setChannelFps(normalizeVideoPayload(req.data).channelFps),
-            [],
-        ),
+    useBroadcast(videosTopic, data =>
+        setChannelFps(normalizeVideoPayload(data).channelFps),
     );
 
     const fullDuration = fullDurationOf(media);

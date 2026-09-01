@@ -13,8 +13,9 @@ import {
 } from '@mui/material';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useSocket } from '@web-lib';
+import { Method, useBroadcast, useSocket } from '@web-lib';
 import { useTranslation } from './i18n';
+import { topic } from './broadcast-topics';
 import VideoQueue from './video';
 import ActiveRundownSelector from './active-rundown';
 
@@ -30,6 +31,11 @@ const LEVEL_COLORS: Record<DiagEvent['level'], 'error' | 'warning' | 'info'> = {
     warn: 'warning',
     health: 'warning',
 };
+
+const diagnosticsTopic = topic<DiagEvent>(
+    'plugin/lappis/diagnostics',
+    Method.UPDATE,
+);
 
 function DiagnosticsPanel() {
     const { t } = useTranslation('cg-overlay-plugin');
@@ -64,17 +70,14 @@ function DiagnosticsPanel() {
                     });
             })
             .catch(() => {});
-
-        const handler = (event: DiagEvent) => {
-            setEvents(prev => {
-                const next = [...prev, event];
-                return next.length > 50 ? next.slice(next.length - 50) : next;
-            });
-        };
-
-        conn.routes.register('diagnostics', handler);
-        return () => conn.routes.unregister('diagnostics', handler);
     }, [conn]);
+
+    useBroadcast(diagnosticsTopic, event => {
+        setEvents(prev => {
+            const next = [...prev, event];
+            return next.length > 50 ? next.slice(next.length - 50) : next;
+        });
+    });
 
     const errorCount = events.filter(e => e.level === 'error').length;
     const healthCount = events.filter(e => e.level === 'health').length;
@@ -324,6 +327,11 @@ const SETTINGS_DEFAULTS: PluginSettings = {
     projectorsToProgram: false,
 };
 
+const settingsTopic = topic<Partial<PluginSettings>>(
+    'plugin/lappis/settings',
+    Method.UPDATE,
+);
+
 function SettingsPanel() {
     const { t } = useTranslation('cg-overlay-plugin');
     const conn = useSocket();
@@ -337,12 +345,12 @@ function SettingsPanel() {
                 if (res?.data) setSettings(prev => ({ ...prev, ...res.data }));
             })
             .catch(() => {});
-
-        const handler = (next: PluginSettings) =>
-            setSettings(prev => ({ ...prev, ...next }));
-        conn.routes.register('settings', handler);
-        return () => conn.routes.unregister('settings', handler);
     }, [conn]);
+
+    useBroadcast(settingsTopic, data => {
+        if (!data) return;
+        setSettings(prev => ({ ...prev, ...data }));
+    });
 
     const update = (patch: Partial<PluginSettings>) => {
         setSettings(prev => ({ ...prev, ...patch }));

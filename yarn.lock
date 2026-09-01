@@ -1344,10 +1344,10 @@
     node-addon-api "^5.0.0"
     pkg-prebuilds "^0.2.1"
 
-"@lappis/cg-manager@^0.0.52":
-  version "0.0.52"
-  resolved "https://registry.yarnpkg.com/@lappis/cg-manager/-/cg-manager-0.0.52.tgz#73c49f5d1e5ce808de0dfc7124f7d3e4f63c0a12"
-  integrity sha512-foBh4ybviepcw/zCVWPvxqk8n89zTa06Y5Fxzr5C2rRkoDdFgTjX7NcGmVOIGHKubv0uk9PS/mQko3L8Roku0w==
+"@lappis/cg-manager@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@lappis/cg-manager/-/cg-manager-0.2.0.tgz#e81d45ba16b58bd15e39a5c77b2266dbcf2c5d73"
+  integrity sha512-ezSnWlUcjbp5ITUTv2YR5TzZPq4idLs2KQFgOS9JafxJLSe+vymWugRJWlLiVl0Lur2dREmfrjJEcFJIqSEuwQ==
   dependencies:
     archiver "^7.0.1"
     babel-loader "^8.2.5"

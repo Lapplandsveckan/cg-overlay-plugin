@@ -1,11 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Chip } from '@mui/material';
-import { useSocket } from '@web-lib';
+import { Method, useBroadcast, useSocket } from '@web-lib';
 import { useTranslation } from './i18n';
-import { type BroadcastReq, useBroadcast } from './hooks';
 import { normalizeVideoPayload } from './video-utils';
+import { topic, videosTopic } from './broadcast-topics';
 
 const ROOT = '/api/plugin/lappis';
+
+const overlayStateTopic = topic<OverlayState | null>(
+    'plugin/lappis/overlay-state',
+    Method.UPDATE,
+);
 
 export interface OverlayState {
     bars: boolean;
@@ -32,11 +37,7 @@ export function useOverlayState(): OverlayState | null {
             .catch(console.error);
     }, [conn]);
 
-    const onUpdate = useCallback(
-        (req: BroadcastReq) => setState(req.data ?? null),
-        [],
-    );
-    useBroadcast(conn, 'plugin/lappis/overlay-state', 'UPDATE', onUpdate);
+    useBroadcast(overlayStateTopic, data => setState(data ?? null));
 
     return state;
 }
@@ -88,11 +89,7 @@ export function useVideoPlayback(): VideoPlayback {
             .catch(console.error);
     }, [conn]);
 
-    const onUpdate = useCallback(
-        (req: BroadcastReq) => setPlayback(parseVideoData(req.data)),
-        [],
-    );
-    useBroadcast(conn, 'plugin/lappis/videos', 'UPDATE', onUpdate);
+    useBroadcast(videosTopic, data => setPlayback(parseVideoData(data)));
 
     return playback;
 }

@@ -12,11 +12,18 @@ import {
 
 import CloseIcon from '@mui/icons-material/Close';
 import FolderIcon from '@mui/icons-material/Folder';
-import { MediaDropZone, useSocket, useRundownLive } from '@web-lib';
+import {
+    type MediaDoc,
+    MediaDropZone,
+    useBroadcast,
+    useSocket,
+    useRundownLive,
+} from '@web-lib';
 import { useTranslation } from './i18n';
 import { setRundownDragPayload } from './drag';
 import { buildThumbnailUrl } from './thumbnail';
 import { formatDuration } from './format';
+import { casparMediaTopic } from './broadcast-topics';
 
 interface MediaItem {
     id: string;
@@ -142,23 +149,21 @@ const MediaTab: React.FC = () => {
     const { t } = useTranslation('cg-overlay-plugin');
     const socket = useSocket();
     const isLive = useRundownLive();
-    const [allMedia, setAllMedia] = useState<any[]>([]);
+    const [allMedia, setAllMedia] = useState<MediaDoc[]>([]);
     const [query, setQuery] = useState('');
     const [path, setPath] = useState<string[]>([]);
 
     useEffect(() => {
-        const load = () =>
-            socket.caspar
-                .getMedia()
-                .then((media: Map<string, any>) =>
-                    setAllMedia([...media.values()]),
-                )
-                .catch(console.error);
+        socket.caspar.getAllMedia().then(setAllMedia).catch(console.error);
+    }, [socket]);
 
-        load();
-        socket.caspar.on('media', load);
-        return () => void socket.caspar.off('media', load);
-    }, []);
+    useBroadcast(casparMediaTopic, ({ key, value }) => {
+        setAllMedia(prev => {
+            const next = prev.filter(m => m.id !== key);
+            if (value) next.push(value);
+            return next;
+        });
+    });
 
     const prefix = path.length ? `${path.join('/')}/` : '';
     const trimmedQuery = query.trim().toLowerCase();

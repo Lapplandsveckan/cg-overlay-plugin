@@ -3,7 +3,7 @@ import { Box, Chip, LinearProgress, Stack, Typography } from '@mui/material';
 
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import LoopIcon from '@mui/icons-material/Loop';
-import { useSocket, MediaCard } from '@web-lib';
+import { useBroadcast, useSocket, MediaCard } from '@web-lib';
 import { useTranslation } from '../i18n';
 import { buildThumbnailUrl } from '../thumbnail';
 import { formatTime } from '../format';
@@ -15,6 +15,7 @@ import {
 } from '../video-utils';
 import { LiveChip, useVideoPlayback } from '../overlay-state';
 import { TransitionChips } from '../transition-chips';
+import { casparMediaTopic } from '../broadcast-topics';
 
 interface RundownEntry {
     id: string;
@@ -62,21 +63,17 @@ export const PlayVideoRundownItem: React.FC<PlayVideoRundownItemProps> = ({
     const isQueued = !isLive && !!clipId && queued.has(clipId);
 
     useEffect(() => {
-        if (!entry.data?.clip) return;
-        const clip = entry.data.clip as string;
+        if (!clipId) return;
 
         socket.caspar
-            .getMedia()
-            .then(media => setClip(media.get(clip) || null));
+            .getAllMedia()
+            .then(media => setClip(media.find(m => m.id === clipId) ?? null))
+            .catch(console.error);
+    }, [clipId, socket]);
 
-        const onMedia = (key: string, value: any) => {
-            if (key === clip && value) setClip(value);
-        };
-        socket.caspar.on('media', onMedia);
-        return () => {
-            socket.caspar.off('media', onMedia);
-        };
-    }, [entry.data?.clip]);
+    useBroadcast(casparMediaTopic, ({ key, value }) => {
+        if (clipId && key === clipId) setClip(value ?? null);
+    });
 
     useEffect(() => {
         if (!isLive || !current) return;

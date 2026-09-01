@@ -9,9 +9,10 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import { useSocket, MediaDropZone, UploadButton } from '@web-lib';
+import { useBroadcast, useSocket, MediaDropZone, UploadButton } from '@web-lib';
 import { useTranslation } from '../../i18n';
 import { buildThumbnailUrl } from '../api';
+import { casparMediaTopic } from '../../broadcast-topics';
 
 const IMAGE_CODECS = new Set([
     'mjpeg',
@@ -51,28 +52,34 @@ const MediaPicker: React.FC<MediaPickerProps> = ({ selectedId, onSelect }) => {
     const [query, setQuery] = useState('');
 
     useEffect(() => {
-        const load = () =>
-            (conn as any).caspar
-                .getMedia()
-                .then((media: Map<string, any>) => {
-                    const items: { item: any; kind: 'image' | 'video' }[] = [];
-                    for (const item of media.values()) {
-                        const kind = classifyMedia(item);
-                        if (kind) items.push({ item, kind });
-                    }
-                    setAllMedia(items);
-                })
-                .catch(console.error);
+        conn.caspar
+            .getAllMedia()
+            .then(media => {
+                const items: { item: any; kind: 'image' | 'video' }[] = [];
+                for (const item of media) {
+                    const kind = classifyMedia(item);
+                    if (kind) items.push({ item, kind });
+                }
+                setAllMedia(items);
+            })
+            .catch(console.error);
+    }, [conn]);
 
-        load();
-        (conn as any).caspar.on('media', load);
-        return () => void (conn as any).caspar.off('media', load);
-    }, []);
+    useBroadcast(casparMediaTopic, ({ key, value }) => {
+        setAllMedia(prev => {
+            const next = prev.filter(m => m.item.id !== key);
+            const kind = value && classifyMedia(value);
+            if (kind) next.push({ item: value, kind });
+            return next;
+        });
+    });
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
-        if (!q) return allMedia;
-        return allMedia.filter(m => m.item.id.toLowerCase().includes(q));
+        const items = q
+            ? allMedia.filter(m => m.item.id.toLowerCase().includes(q))
+            : allMedia;
+        return [...items].sort((a, b) => a.item.id.localeCompare(b.item.id));
     }, [allMedia, query]);
 
     return (

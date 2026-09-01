@@ -21,10 +21,11 @@ import React, {
     useState,
 } from 'react';
 
-import { useSocket } from '@web-lib';
+import { useBroadcast, useSocket } from '@web-lib';
 import { useTranslation } from './i18n';
 import { buildThumbnailUrl } from './thumbnail';
 import { formatTime } from './format';
+import { videosTopic } from './broadcast-topics';
 import {
     fullDurationOf,
     isTrimmed,
@@ -33,7 +34,7 @@ import {
     type NormalizedCurrent,
     type NormalizedItem,
 } from './video-utils';
-import { useActiveRundown, useBroadcast } from './hooks';
+import { useActiveRundown } from './hooks';
 
 function useRundownIdFromUrl(): string | null {
     return useMemo(() => {
@@ -287,14 +288,10 @@ const VideoQueue: React.FC<VideoQueueProps> = ({
             .catch(console.error);
     }, [conn, setData]);
 
-    const onUpdate = useCallback(
-        (req: { data?: any }) => {
-            receivedBroadcast.current = true;
-            setData(req.data);
-        },
-        [setData],
-    );
-    useBroadcast(conn, 'plugin/lappis/videos', 'UPDATE', onUpdate);
+    useBroadcast(videosTopic, data => {
+        receivedBroadcast.current = true;
+        setData(data);
+    });
 
     const isEmpty = !current && queue.length === 0;
     const clearQueue = () =>

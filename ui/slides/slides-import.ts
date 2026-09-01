@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { useSocket } from '@web-lib';
+import { Method, useBroadcast, useSocket } from '@web-lib';
 
-import { type BroadcastReq, useBroadcast } from '../hooks';
+import { topic } from '../broadcast-topics';
 import { ROOT } from './slides-crud';
 
 export type ImportStatus =
@@ -25,6 +25,11 @@ export interface ImportJob {
     error?: string;
     createdAt: number;
 }
+
+const presentationImportsTopic = topic<ImportJob>(
+    'plugin/lappis/presentation-imports',
+    Method.UPDATE,
+);
 
 export function startImport(
     conn: any,
@@ -77,18 +82,9 @@ export function useImportStatus(jobId: string | null): ImportJob | null {
         getImportJob(conn, jobId).then(setJob).catch(console.error);
     }, [conn, jobId]);
 
-    const onUpdate = useCallback(
-        (req: BroadcastReq) => {
-            if (req.data?.id === jobId) setJob(req.data);
-        },
-        [jobId],
-    );
-    useBroadcast(
-        conn,
-        'plugin/lappis/presentation-imports',
-        'UPDATE',
-        onUpdate,
-    );
+    useBroadcast(presentationImportsTopic, data => {
+        if (data?.id === jobId) setJob(data);
+    });
 
     return job;
 }
