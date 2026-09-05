@@ -5,7 +5,7 @@ export const ROOT = '/api/plugin/lappis';
 export function listPresentations(conn: any): Promise<Presentation[]> {
     return conn
         .rawRequest(`${ROOT}/presentations`, 'GET', {})
-        .then((res: any) => (Array.isArray(res?.data) ? res.data : []));
+        .then((res: any) => (Array.isArray(res) ? res : []));
 }
 
 export function getPresentation(
@@ -14,16 +14,14 @@ export function getPresentation(
 ): Promise<Presentation | null> {
     return conn
         .rawRequest(`${ROOT}/presentations/${id}`, 'GET', {})
-        .then((res: any) => res?.data ?? null);
+        .then((res: any) => res ?? null);
 }
 
 export function createPresentation(
     conn: any,
     input: Partial<Pick<Presentation, 'title' | 'slides'>>,
 ): Promise<Presentation> {
-    return conn
-        .rawRequest(`${ROOT}/presentations`, 'ACTION', input)
-        .then((res: any) => res?.data);
+    return conn.rawRequest(`${ROOT}/presentations`, 'ACTION', input);
 }
 
 export function updatePresentation(
@@ -33,13 +31,13 @@ export function updatePresentation(
 ): Promise<Presentation | null> {
     return conn
         .rawRequest(`${ROOT}/presentations/${id}`, 'UPDATE', patch)
-        .then((res: any) => res?.data ?? null);
+        .then((res: any) => res ?? null);
 }
 
 export function deletePresentation(conn: any, id: string): Promise<boolean> {
     return conn
         .rawRequest(`${ROOT}/presentations/${id}`, 'DELETE', null)
-        .then((res: any) => !!res?.data);
+        .then((res: any) => !!res);
 }
 
 export function duplicatePresentation(
@@ -58,7 +56,7 @@ export function duplicatePresentation(
 export function getPlaybackState(conn: any): Promise<PlaybackState> {
     return conn.rawRequest(`${ROOT}/slides`, 'GET', {}).then(
         (res: any) =>
-            res?.data ?? {
+            res ?? {
                 playing: false,
                 presentationId: null,
                 slideId: null,
@@ -79,7 +77,7 @@ export function playSlide(
             slideId,
             grabAttention,
         })
-        .then((res: any) => res?.data ?? null);
+        .then((res: any) => res ?? null);
 }
 
 export interface BibleLookup {
@@ -106,25 +104,25 @@ export function fetchBibleSlides(
     return conn
         .rawRequest(`${ROOT}/bible`, 'ACTION', lookup)
         .then((res: any) => {
-            if (res?.data?.error) throw new Error(res.data.error);
-            return Array.isArray(res?.data) ? res.data : [];
+            if (res?.error) throw new Error(res.error);
+            return Array.isArray(res) ? res : [];
         });
 }
 
 export function stopPlayback(conn: any): Promise<PlaybackState | null> {
     return conn
         .rawRequest(`${ROOT}/slides`, 'ACTION', { action: 'stop' })
-        .then((res: any) => res?.data ?? null);
+        .then((res: any) => res ?? null);
 }
 
 export function pausePlayback(conn: any): Promise<PlaybackState | null> {
     return conn
         .rawRequest(`${ROOT}/slides`, 'ACTION', { action: 'pause' })
-        .then((res: any) => res?.data ?? null);
+        .then((res: any) => res ?? null);
 }
 
 export function resumePlayback(conn: any): Promise<PlaybackState | null> {
     return conn
         .rawRequest(`${ROOT}/slides`, 'ACTION', { action: 'resume' })
-        .then((res: any) => res?.data ?? null);
+        .then((res: any) => res ?? null);
 }

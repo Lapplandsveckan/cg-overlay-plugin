@@ -24,16 +24,14 @@ export function useActiveRundown(conn: ReturnType<typeof useSocket>) {
         if (!conn) return;
         conn.rawRequest(`${ROOT}/rundowns`, 'GET', {})
             .then((res: any) => {
-                if (Array.isArray(res?.data)) setRundowns(res.data);
+                if (Array.isArray(res)) setRundowns(res);
             })
             .catch(() => {});
 
         conn.rawRequest(`${ROOT}/active-rundown`, 'GET', {})
             .then((res: any) => {
                 setActiveId(
-                    res?.data?.id && typeof res.data.id === 'string'
-                        ? res.data.id
-                        : null,
+                    res?.id && typeof res.id === 'string' ? res.id : null,
                 );
             })
             .catch(() => {});

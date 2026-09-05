@@ -36,7 +36,7 @@ export function useBackgroundImage(): string | null {
         backgroundCache ??= conn
             .rawRequest(`${ROOT}/assets/background`, 'GET', {})
             .then((res: any) => {
-                const { data, mimeType } = res?.data ?? {};
+                const { data, mimeType } = res ?? {};
                 return data && mimeType
                     ? `data:${mimeType};base64,${data}`
                     : null;
@@ -66,7 +66,7 @@ export function useFullImage(mediaId: string | null): string | null {
                 conn
                     .rawRequest(`${ROOT}/assets/media`, 'ACTION', { mediaId })
                     .then((res: any) => {
-                        const { data, mimeType } = res?.data ?? {};
+                        const { data, mimeType } = res ?? {};
                         return data && mimeType
                             ? `data:${mimeType};base64,${data}`
                             : null;

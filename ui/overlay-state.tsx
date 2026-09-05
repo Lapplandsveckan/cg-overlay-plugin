@@ -33,7 +33,7 @@ export function useOverlayState(): OverlayState | null {
         if (!conn) return;
         conn.rawRequest(`${ROOT}/overlay-state`, 'GET', {})
             // Only apply the GET result if no broadcast has arrived yet.
-            .then((res: any) => setState(prev => prev ?? res?.data ?? null))
+            .then((res: any) => setState(prev => prev ?? res ?? null))
             .catch(console.error);
     }, [conn]);
 
@@ -83,7 +83,7 @@ export function useVideoPlayback(): VideoPlayback {
                 setPlayback(prev =>
                     prev.currentClip !== null || prev.queued.size > 0
                         ? prev
-                        : parseVideoData(res?.data),
+                        : parseVideoData(res),
                 ),
             )
             .catch(console.error);

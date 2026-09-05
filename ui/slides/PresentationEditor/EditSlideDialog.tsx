@@ -95,7 +95,7 @@ const EditSlideDialog: React.FC<EditSlideDialogProps> = ({
     useEffect(() => {
         conn.rawRequest('/api/plugin/lappis/videos', 'GET', {})
             .then((res: any) =>
-                setChannelFps(normalizeVideoPayload(res.data).channelFps),
+                setChannelFps(normalizeVideoPayload(res).channelFps),
             )
             .catch(() => {});
     }, [conn]);

@@ -35,15 +35,13 @@ export function startImport(
     conn: any,
     input: { filename: string; title: string },
 ): Promise<ImportJob> {
-    return conn
-        .rawRequest(`${ROOT}/presentations/import`, 'ACTION', input)
-        .then((res: any) => res?.data);
+    return conn.rawRequest(`${ROOT}/presentations/import`, 'ACTION', input);
 }
 
 export function getImportJob(conn: any, id: string): Promise<ImportJob | null> {
     return conn
         .rawRequest(`${ROOT}/presentation-imports/${id}`, 'GET', {})
-        .then((res: any) => res?.data ?? null);
+        .then((res: any) => res ?? null);
 }
 
 /** Translates an import job's status into a human-readable progress label. */

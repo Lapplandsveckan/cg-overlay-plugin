@@ -229,7 +229,7 @@ function CaptionKitPanel() {
         if (!conn) return;
         conn.rawRequest(`${ROOT}/captionkit/settings`, 'GET', null)
             .then((res: any) => {
-                if (res?.data) setSettings(prev => ({ ...prev, ...res.data }));
+                if (res) setSettings(prev => ({ ...prev, ...res }));
             })
             .catch(() => {});
     }, [conn]);
@@ -342,7 +342,7 @@ function SettingsPanel() {
         if (!conn) return;
         conn.rawRequest(`${ROOT}/settings`, 'GET', null)
             .then((res: any) => {
-                if (res?.data) setSettings(prev => ({ ...prev, ...res.data }));
+                if (res) setSettings(prev => ({ ...prev, ...res }));
             })
             .catch(() => {});
     }, [conn]);

@@ -138,9 +138,7 @@ const NamnskyltarTab: React.FC = () => {
 
     useEffect(() => {
         conn.rawRequest('/api/plugin/lappis/namnskylt-presets', 'GET', {})
-            .then((res: any) =>
-                setPresets(Array.isArray(res?.data) ? res.data : []),
-            )
+            .then((res: any) => setPresets(Array.isArray(res) ? res : []))
             .catch(console.error)
             .finally(() => setLoaded(true));
     }, []);
@@ -207,7 +205,7 @@ const NamnskyltarTab: React.FC = () => {
             ),
         );
         if (err) console.error(err);
-        else setPresets(Array.isArray(res?.data) ? res.data : next);
+        else setPresets(Array.isArray(res) ? res : next);
         setSaving(false);
         closeDialog();
     };

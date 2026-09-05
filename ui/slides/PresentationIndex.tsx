@@ -61,7 +61,7 @@ export const PresentationIndex: React.FC = () => {
 
     useEffect(() => {
         conn.rawRequest('/api/plugin/lappis/presentations/convert', 'GET', {})
-            .then((r: any) => setPptxEnabled(!!r?.data?.enabled))
+            .then((r: any) => setPptxEnabled(!!r?.enabled))
             .catch(() => setPptxEnabled(false));
     }, [conn]);
 
