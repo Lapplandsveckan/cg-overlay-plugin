@@ -121,7 +121,7 @@ export const PlayVideoEditor: React.FC<PlayVideoEditorProps> = ({
     useEffect(() => {
         socket
             .rawRequest(`/api/plugin/lappis/videos`, 'GET', {})
-            .then(res =>
+            .then((res: any) =>
                 setChannelFps(normalizeVideoPayload(res.data).channelFps),
             )
             .catch(() => {});

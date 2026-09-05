@@ -281,7 +281,7 @@ const VideoQueue: React.FC<VideoQueueProps> = ({
     useEffect(() => {
         if (!conn) return;
         conn.rawRequest(`/api/plugin/lappis/videos`, 'GET', {})
-            .then(res => {
+            .then((res: any) => {
                 // Only apply the GET result if no broadcast has arrived yet.
                 if (!receivedBroadcast.current) setData(res.data);
             })

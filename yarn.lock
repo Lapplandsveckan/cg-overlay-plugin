@@ -1344,17 +1344,16 @@
     node-addon-api "^5.0.0"
     pkg-prebuilds "^0.2.1"
 
-"@lappis/cg-manager@^0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@lappis/cg-manager/-/cg-manager-0.2.0.tgz#e81d45ba16b58bd15e39a5c77b2266dbcf2c5d73"
-  integrity sha512-ezSnWlUcjbp5ITUTv2YR5TzZPq4idLs2KQFgOS9JafxJLSe+vymWugRJWlLiVl0Lur2dREmfrjJEcFJIqSEuwQ==
+"@lappis/cg-manager@0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@lappis/cg-manager/-/cg-manager-0.4.0.tgz#43e201b5ef03109e3568773e65fcbc99001db04d"
+  integrity sha512-comdzGgzYuYdPtxHyMwZvLy72R8yt/7ULqu/eXlyGRNgZsc5fRK5eDrLktz9zbOPYfCY6gpAJMzra/ktkb5dQw==
   dependencies:
     archiver "^7.0.1"
-    babel-loader "^8.2.5"
-    no-try "^3.1.0"
-    rest-exchange-protocol "^0.0.16"
+    babel-loader "^10.1.1"
+    no-try "^4.0.0"
+    rest-exchange-protocol "^0.0.19"
     ts-node "^10.9.1"
-    uuid "^9.0.1"
 
 "@mui/base@5.0.0-beta.37":
   version "5.0.0-beta.37"
@@ -2274,6 +2273,13 @@ b4a@^1.6.4:
   version "1.8.1"
   resolved "https://registry.yarnpkg.com/b4a/-/b4a-1.8.1.tgz#7f16334ca80127aeb26064a28841acbf174840a4"
   integrity sha512-aiqre1Nr0B/6DgE2N5vwTc+2/oQZ4Wh1t4NznYY4E00y8LCt6NqdRv81so00oo27D8MVKTpUa/MwUUtBLXCoDw==
+
+babel-loader@^10.1.1:
+  version "10.1.1"
+  resolved "https://registry.yarnpkg.com/babel-loader/-/babel-loader-10.1.1.tgz#ce9748e85b7071eb88006e3cfa9e6cf14eeb97c5"
+  integrity sha512-JwKSzk2kjIe7mgPK+/lyZ2QAaJcpahNAdM+hgR2HI8D0OJVkdj8Rl6J3kaLYki9pwF7P2iWnD8qVv80Lq1ABtg==
+  dependencies:
+    find-up "^5.0.0"
 
 babel-loader@^8.2.5:
   version "8.3.0"
@@ -3721,11 +3727,6 @@ next@^14.1.1:
     "@next/swc-win32-ia32-msvc" "14.1.1"
     "@next/swc-win32-x64-msvc" "14.1.1"
 
-no-try@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.npmjs.org/no-try/-/no-try-3.1.0.tgz"
-  integrity sha512-4QyjqXvAcbjqEiV5fj8a6ZW/8VWx7SVq0qI2WhbgQ+XgnQ3vMa6zRw99x0pIG6Rgwv1uavlBJq/dP5DNMSzuiw==
-
 no-try@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/no-try/-/no-try-4.0.0.tgz#f1189d9d6299702bf9149456420dceceda1b3e90"
@@ -4139,10 +4140,10 @@ resolve@^1.14.2, resolve@^1.9.0:
     path-parse "^1.0.7"
     supports-preserve-symlinks-flag "^1.0.0"
 
-rest-exchange-protocol@^0.0.16:
-  version "0.0.16"
-  resolved "https://registry.npmjs.org/rest-exchange-protocol/-/rest-exchange-protocol-0.0.16.tgz"
-  integrity sha512-xW5uiq7C3U0LTjRHop20S3ESYCB/Q2mGFcpDTDKhOotQbxVm1BsrkRlrSW5HCibgHK0RYIz/HjzP+giuidCr+g==
+rest-exchange-protocol@^0.0.19:
+  version "0.0.19"
+  resolved "https://registry.yarnpkg.com/rest-exchange-protocol/-/rest-exchange-protocol-0.0.19.tgz#3d66d9bd8b3e2070692e5aa3434926adf48d3ca6"
+  integrity sha512-E8TeEIjlc/o3+wCc2G13EIG2EtnOBVxQSrFubp2zAWjcF34Tokg7s0WIVE7gkLAfG42ZSIHWxYvrZ6ej8SZGjg==
   dependencies:
     uuid "^9.0.0"
     ws "^8.12.1"
@@ -4718,7 +4719,7 @@ util-deprecate@^1.0.1, util-deprecate@~1.0.1:
   resolved "https://registry.yarnpkg.com/util-deprecate/-/util-deprecate-1.0.2.tgz#450d4dc9fa70de732762fbd2d4a28981419a0ccf"
   integrity sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==
 
-uuid@^9.0.0, uuid@^9.0.1:
+uuid@^9.0.0:
   version "9.0.1"
   resolved "https://registry.npmjs.org/uuid/-/uuid-9.0.1.tgz"
   integrity sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==
